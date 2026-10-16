@@ -12,11 +12,12 @@ Compose v2, Java 17 (only for running the Spark job or its tests locally).
 ```bash
 uv sync --all-extras          # creates .venv with dev, spark and eval extras
 cp .env.example .env          # fill in ANTHROPIC_API_KEY only if you have one
-docker compose up -d          # PostgreSQL + Kafka + producer + Spark job
+docker compose up -d          # PostgreSQL + Kafka + MinIO + producer + Spark job
 uv run tributary ask "Which wiki had the most edits in the last hour?"
 ```
 
-Profiles: `docker compose --profile airflow up` adds the scheduler and UI;
+Profiles: `docker compose --profile lakehouse up` adds Trino over the Iceberg
+and PostgreSQL catalogs; `--profile airflow` adds the scheduler and UI;
 `--profile bird` loads the benchmark databases (downloads about 300 MB on
 first use, cached under `~/.cache/tributary`).
 
@@ -33,6 +34,8 @@ first use, cached under `~/.cache/tributary`).
 | `make eval-link` | Schema-linking recall and precision (offline). |
 | `make eval-guard` | Guard suite: block rate and false-block rate (offline). |
 | `make bench` | Ingest fault-injection and latency benchmark against Compose. |
+| `make bench-scale` | Sustained throughput and p95 at 1, 3 and 6 partitions, with per-stage ceilings. |
+| `make bench-query` | Postgres vs Trino-over-Iceberg query latency and partition pruning. `SCALE=` sets the row count. |
 | `make dbt` | `dbt build` on the warehouse project. |
 | `make demo-data` | Regenerate the committed sample from the live stream (maintainers only; keeps factual fields, drops comment text). |
 
