@@ -1,0 +1,142 @@
+"""Kafka records to warehouse rows: the Spark twin of :func:`tributary.events.to_row`.
+
+The JSON schema is explicit (no inference), so a field of the wrong type becomes
+NULL instead of changing the plan. A record is dropped when it is not JSON, has
+no valid lowercase UUID, lacks ``timestamp``, ``wiki`` or ``type``, or is a
+Wikimedia canary. The counts are published as the observed metric ``parse``
+in every ``StreamingQueryProgress``.
+"""
+
+from __future__ import annotations
+
+from pyspark.sql import Column, DataFrame
+from pyspark.sql import functions as F  # noqa: N812
+from pyspark.sql.types import (
+    BooleanType,
+    IntegerType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+)
+
+from tributary.events import COLUMNS, UUID_RE
+
+OBSERVATION = "parse"
+
+_OLD_NEW_INT = StructType(
+    [StructField("old", IntegerType()), StructField("new", IntegerType())],
+)
+_OLD_NEW_LONG = StructType(
+    [StructField("old", LongType()), StructField("new", LongType())],
+)
+
+EVENT_SCHEMA = StructType(
+    [
+        StructField(
+            "meta",
+            StructType(
+                [
+                    StructField("id", StringType()),
+                    StructField("dt", StringType()),
+                    StructField("domain", StringType()),
+                    StructField("stream", StringType()),
+                ]
+            ),
+        ),
+        StructField("id", LongType()),
+        StructField("type", StringType()),
+        StructField("namespace", IntegerType()),
+        StructField("title", StringType()),
+        StructField("timestamp", LongType()),
+        StructField("user", StringType()),
+        StructField("bot", BooleanType()),
+        StructField("minor", BooleanType()),
+        StructField("patrolled", BooleanType()),
+        StructField("length", _OLD_NEW_INT),
+        StructField("revision", _OLD_NEW_LONG),
+        StructField("server_name", StringType()),
+        StructField("wiki", StringType()),
+        StructField("log_id", LongType()),
+        StructField("log_type", StringType()),
+        StructField("log_action", StringType()),
+    ]
+)
+"""Schema of a trimmed recentchange event (see :func:`tributary.events.trim_event`)."""
+
+
+def _is_valid(e: Column) -> Column:
+    return F.coalesce(
+        e["meta"]["id"].rlike(UUID_RE.pattern)
+        & e["timestamp"].isNotNull()
+        & e["wiki"].isNotNull()
+        & e["type"].isNotNull(),
+        F.lit(False),
+    )
+
+
+def _as_int(flag: Column) -> Column:
+    return F.when(flag, 1).otherwise(0)
+
+
+def parse_events(kafka_df: DataFrame) -> DataFrame:
+    """Parse Kafka source rows into the columns of ``raw.recentchange``.
+
+    Reads the Kafka source columns ``value``, ``partition``, ``offset`` and
+    ``timestamp`` and returns exactly :data:`tributary.events.COLUMNS`, in order.
+    ``event_ts`` comes from the MediaWiki ``timestamp``, ``emitted_at`` from
+    ``meta.dt`` (NULL when it does not parse). Requires the session time zone UTC.
+    """
+    e = F.col("e")
+    flagged = (
+        kafka_df.select(
+            F.from_json(F.col("value").cast("string"), EVENT_SCHEMA).alias("e"),
+            F.col("partition"),
+            F.col("offset"),
+            F.col("timestamp"),
+        )
+        .withColumn("_valid", _is_valid(e))
+        .withColumn("_canary", F.coalesce(e["meta"]["domain"] == F.lit("canary"), F.lit(False)))
+        .observe(
+            OBSERVATION,
+            F.count(F.lit(1)).alias("input_rows"),
+            F.sum(_as_int(~F.col("_valid"))).alias("malformed_rows"),
+            F.sum(_as_int(F.col("_valid") & F.col("_canary"))).alias("canary_rows"),
+        )
+        .where(F.col("_valid") & ~F.col("_canary"))
+    )
+    columns = {
+        "event_id": e["meta"]["id"],
+        "event_ts": F.timestamp_seconds(e["timestamp"]),
+        "emitted_at": F.try_to_timestamp(e["meta"]["dt"]),
+        "rc_id": e["id"],
+        "wiki": e["wiki"],
+        "domain": e["meta"]["domain"],
+        "event_type": e["type"],
+        "namespace": e["namespace"],
+        "title": e["title"],
+        "user_name": e["user"],
+        "is_bot": e["bot"],
+        "is_minor": e["minor"],
+        "is_patrolled": e["patrolled"],
+        "length_old": e["length"]["old"],
+        "length_new": e["length"]["new"],
+        "rev_old": e["revision"]["old"],
+        "rev_new": e["revision"]["new"],
+        "log_type": e["log_type"],
+        "log_action": e["log_action"],
+        "kafka_partition": F.col("partition"),
+        "kafka_offset": F.col("offset"),
+        "kafka_ts": F.col("timestamp"),
+    }
+    return flagged.select(*(columns[name].alias(name) for name in COLUMNS))
+
+
+def deduplicate(df: DataFrame, watermark_delay: str) -> DataFrame:
+    """Drop repeated ``event_id`` values within the event-time watermark.
+
+    State for an id is kept until the watermark passes ``event_ts + delay``.
+    Rows whose ``event_ts`` is already behind the watermark are dropped by the
+    operator, so the delay must cover the lateness measured on the stream.
+    """
+    return df.withWatermark("event_ts", watermark_delay).dropDuplicatesWithinWatermark(["event_id"])

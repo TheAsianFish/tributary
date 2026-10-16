@@ -71,6 +71,20 @@ def produce(
         raise typer.Exit(1)
 
 
+@app.command()
+def stream(
+    available_now: Annotated[
+        bool,
+        typer.Option("--available-now", help="Process what is in Kafka now, then stop."),
+    ] = False,
+) -> None:
+    """Run the Spark job: Kafka → watermark + dedup → raw.recentchange."""
+    from tributary.stream.job import run
+
+    bind_run_id("stream")
+    run(get_settings(), available_now=available_now)
+
+
 @sample_app.command("capture")
 def sample_capture(
     count: Annotated[int, typer.Option(min=1, help="Events to keep.")] = 50_000,
