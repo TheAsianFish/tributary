@@ -86,9 +86,12 @@ captured sample ships in the repo so everything is reproducible offline;
 ```mermaid
 flowchart LR
     subgraph Source
-        W[Wikimedia EventStreams<br/>recentchange SSE] -. live .-> P
-        S[(Committed sample<br/>recentchange.jsonl.gz)] -- replay --> P[Producer]
+        W[Wikimedia EventStreams<br/>recentchange SSE]
+        S[(Committed sample<br/>recentchange.jsonl.gz)]
+        P[Producer]
     end
+    W -. live .-> P
+    S -- replay --> P
     P -->|key = event UUID<br/>idempotent| K[(Kafka 4.2<br/>wiki.recentchange)]
     K --> SJ[Spark Structured Streaming<br/>watermark + dedup<br/>foreachBatch upsert]
     SJ --> RAW[(PostgreSQL<br/>raw.recentchange)]
@@ -103,22 +106,24 @@ flowchart LR
     MARTS -.-> TR
     AF -->|compaction, snapshot expiry| ICE
     subgraph Agent
-        CAT --> C[Catalog<br/>schema, docs, FK graph, values]
+        C[Catalog<br/>schema, docs, FK graph, values]
         Q[Question] --> L[Schema linker]
         C --> L
         L --> PL[Planner<br/>Claude structured output]
         PL --> G[Guard<br/>sqlglot AST policy]
-        G -->|read-only role<br/>timeout, row cap| MARTS
-        MARTS -->|error| PL
-        MARTS -->|rows| A[Answer + provenance]
-        QR --> A
+        A[Answer + provenance]
     end
+    CAT --> C
+    G -->|read-only role<br/>timeout, row cap| MARTS
+    MARTS -->|error| PL
+    MARTS -->|rows| A
+    QR --> A
     A --> API[FastAPI /query]
     A --> CLI[tributary ask]
     subgraph Evaluation
         B[(BIRD Mini-Dev<br/>PostgreSQL, 11 DBs)] --> E[make eval<br/>execution accuracy]
-        PL -.-> E
     end
+    PL -.-> E
 ```
 
 ### The agent's query path
