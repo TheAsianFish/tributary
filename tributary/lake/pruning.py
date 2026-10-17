@@ -37,9 +37,14 @@ class PruningReport:
 
     @property
     def pruned(self) -> bool:
-        """The scan read exactly the hour's files and rows, and that is not the whole table."""
+        """The scan read exactly the hour's files and rows, and that is not the whole table.
+
+        An hour without files proves nothing: a scan that reads nothing then
+        matches it whether or not the filter was pushed down, so it does not count.
+        """
         return (
-            self.scan_splits == self.hour_files
+            self.hour_files > 0
+            and self.scan_splits == self.hour_files
             and self.scan_rows == self.hour_rows
             and self.hour_files < self.table_files
         )

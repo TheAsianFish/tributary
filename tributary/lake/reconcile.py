@@ -1,11 +1,19 @@
 """Per-hour reconciliation of the Iceberg lake against the PostgreSQL warehouse.
 
 Both sinks read the same topic with the same parser and dedup, so for every
-closed hour they should hold the same set of event ids. The check compares
-distinct ids per hour (``raw.recentchange`` has a primary key, so its row count
-is its distinct count) and, on the lake side, rows against distinct ids:
-Iceberg has no key, so a duplicate that slipped past the dedup state shows up
-as ``lake_rows > lake_distinct``. Each hour becomes one row in
+closed hour they should hold the same set of event ids. Per hour the check
+compares, on both sides, the number of distinct ids and an id fingerprint:
+the sum over the hour's distinct ids of a signed 32-bit hash (the first four
+bytes of the id's MD5). A sum does not depend on order, so PostgreSQL and
+Trino compute it with plain aggregates, and an exchange (one id missing from
+the lake, another extra, counts equal) changes it unless the two hashes
+happen to coincide (about one chance in four billion per exchange). The ids
+are lowercase UUID strings on both sides (``events.event_id`` rejects any
+other form, PostgreSQL's ``uuid::text`` prints the same form), so both hash
+the same bytes. ``raw.recentchange`` has a primary key, so its rows are its
+distinct ids; on the lake side the check also compares rows against distinct
+ids: Iceberg has no key, so a duplicate that slipped past the dedup state
+shows up as ``lake_rows > lake_distinct``. Each hour becomes one row in
 ``ops.quality_runs``.
 
 "Should", not "must": the two queries trigger at different rates, so at any
@@ -14,7 +22,8 @@ delay can be kept by one and dropped by the other, and after a long outage a
 copy whose dedup key had expired can pass as new in one of them (PostgreSQL's
 key absorbs it, Iceberg stores it). With the measured lateness (max 143 s
 against a 10-minute delay) neither happens on the sample; when an hour fails,
-its ``details`` (missing, extra, duplicates) say which kind it was.
+its ``details`` (missing, extra, duplicates, ``ids_match``) say which kind it
+was.
 
 An hour only counts as closed once *both* stores have moved past it: the
 lake's newest event (Iceberg commits a batch atomically) and the newest event
@@ -54,9 +63,20 @@ class ReconciliationError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class IdSet:
+    """One hour of the warehouse: distinct ids and their fingerprint (see the module doc)."""
+
+    distinct: int
+    fingerprint: int
+
+
+@dataclass(frozen=True, slots=True)
 class LakeCount:
+    """One hour of the lake: rows, distinct ids and the fingerprint of the distinct ids."""
+
     rows: int
     distinct: int
+    fingerprint: int
 
 
 def lag_check(
@@ -83,17 +103,25 @@ def lag_check(
 
 
 def compare_hours(
-    warehouse: Mapping[datetime, int], lake: Mapping[datetime, LakeCount], now: datetime
+    warehouse: Mapping[datetime, IdSet], lake: Mapping[datetime, LakeCount], now: datetime
 ) -> list[CheckResult]:
-    """One check per hour present in either store, in hour order."""
+    """One check per hour present in either store, in hour order.
+
+    An hour fails on a count difference, on lake duplicates, or on a
+    fingerprint difference. With equal counts and differing fingerprints the
+    sets differ by an exchange of ids, which counts as one failure: how many
+    ids were exchanged is not recoverable from the fingerprints.
+    """
     checks = []
     for hour in sorted(set(warehouse) | set(lake)):
-        expected = warehouse.get(hour, 0)
-        got = lake.get(hour, LakeCount(0, 0))
-        missing = max(expected - got.distinct, 0)
-        extra = max(got.distinct - expected, 0)
+        expected = warehouse.get(hour, IdSet(0, 0))
+        got = lake.get(hour, LakeCount(0, 0, 0))
+        missing = max(expected.distinct - got.distinct, 0)
+        extra = max(got.distinct - expected.distinct, 0)
         duplicates = got.rows - got.distinct
-        failures = missing + extra + duplicates
+        ids_match = expected.distinct == got.distinct and expected.fingerprint == got.fingerprint
+        exchanged = 1 if not ids_match and missing == extra == 0 else 0
+        failures = missing + extra + duplicates + exchanged
         checks.append(
             CheckResult(
                 check_name=f"reconcile_hour:{hour:%Y-%m-%dT%H}",
@@ -103,12 +131,15 @@ def compare_hours(
                 failures=failures,
                 details={
                     "hour": hour.isoformat(),
-                    "warehouse_distinct": expected,
+                    "warehouse_distinct": expected.distinct,
                     "lake_rows": got.rows,
                     "lake_distinct": got.distinct,
                     "missing_in_lake": missing,
                     "extra_in_lake": extra,
                     "lake_duplicates": duplicates,
+                    "warehouse_fingerprint": expected.fingerprint,
+                    "lake_fingerprint": got.fingerprint,
+                    "ids_match": ids_match,
                 },
                 started_at=now,
                 finished_at=now,
@@ -134,37 +165,64 @@ def warehouse_newest(conninfo: str) -> datetime | None:
     maximum is the only mark there is.
     """
     with psycopg.connect(conninfo, autocommit=True) as conn:
-        try:
-            row = conn.execute(
-                "SELECT max(max_event_ts) FROM ops.stream_progress WHERE query = 'warehouse'"
-            ).fetchone()
-        except psycopg.errors.UndefinedTable:
-            row = None
-        if row is None or row[0] is None:
-            row = conn.execute("SELECT max(event_ts) FROM raw.recentchange").fetchone()
+        return committed_newest(conn)
+
+
+def committed_newest(conn: psycopg.Connection[tuple[object, ...]]) -> datetime | None:
+    """``warehouse_newest`` on an open connection, so a test can run it inside a transaction.
+
+    The progress table is looked up with ``to_regclass`` rather than by
+    catching the error, which would abort an enclosing transaction (and a
+    ``CASE`` would not help: the table name is resolved when the statement is
+    parsed).
+    """
+    row: tuple[object, ...] | None = None
+    exists = conn.execute("SELECT to_regclass('ops.stream_progress') IS NOT NULL").fetchone()
+    if exists is not None and exists[0]:
+        row = conn.execute(
+            "SELECT max(max_event_ts) FROM ops.stream_progress WHERE query = 'warehouse'"
+        ).fetchone()
+    if row is None or row[0] is None:
+        row = conn.execute("SELECT max(event_ts) FROM raw.recentchange").fetchone()
     return None if row is None or row[0] is None else _utc(row[0])
 
 
-def warehouse_hours(conninfo: str, start: datetime, end: datetime) -> dict[datetime, int]:
-    """Rows per UTC hour in ``[start, end)``; the primary key makes rows = distinct ids."""
+def warehouse_hours(conninfo: str, start: datetime, end: datetime) -> dict[datetime, IdSet]:
+    """Ids and fingerprint per UTC hour in ``[start, end)``; the key makes rows = distinct ids.
+
+    The hash is the first 8 hex digits of the MD5 read as a signed 32-bit
+    integer, the same value Trino's ``from_big_endian_32`` gives in
+    ``lake_hours``; ``sum`` over ``int`` is ``bigint`` on both sides.
+    """
     with psycopg.connect(conninfo) as conn:
         rows = conn.execute(
-            "SELECT date_trunc('hour', event_ts, 'UTC'), count(*) FROM raw.recentchange"
-            " WHERE event_ts >= %s AND event_ts < %s GROUP BY 1",
+            "SELECT date_trunc('hour', event_ts, 'UTC'), count(*),"
+            " sum(('x' || substr(md5(event_id::text), 1, 8))::bit(32)::int)"
+            " FROM raw.recentchange WHERE event_ts >= %s AND event_ts < %s GROUP BY 1",
             (start, end),
         ).fetchall()
-    return {_utc(hour): int(n) for hour, n in rows}
+    return {_utc(hour): IdSet(int(n), int(fp)) for hour, n, fp in rows}
 
 
 def lake_hours(settings: Settings, start: datetime, end: datetime) -> dict[datetime, LakeCount]:
-    """Rows and distinct ids per UTC hour in ``[start, end)``; the filter prunes partitions."""
+    """Rows, distinct ids and their fingerprint per UTC hour in ``[start, end)``.
+
+    The inner query groups by id so the fingerprint sums each id once (as the
+    warehouse's key does) while ``sum(n)`` still counts the rows; the filter
+    prunes partitions.
+    """
     rows = fetch(
         settings,
-        f"SELECT date_trunc('hour', event_ts), count(*), count(DISTINCT event_id)"
-        f" FROM {lake_table(settings)} WHERE event_ts >= ? AND event_ts < ? GROUP BY 1",
+        "SELECT hour, sum(n), count(*),"
+        " sum(from_big_endian_32(substr(md5(to_utf8(event_id)), 1, 4)))"
+        " FROM (SELECT date_trunc('hour', event_ts) AS hour, event_id, count(*) AS n"
+        f" FROM {lake_table(settings)} WHERE event_ts >= ? AND event_ts < ? GROUP BY 1, 2)"
+        " GROUP BY 1",
         [start, end],
     )
-    return {_utc(hour): LakeCount(int(str(n)), int(str(d))) for hour, n, d in rows}
+    return {
+        _utc(hour): LakeCount(int(str(n)), int(str(d)), int(str(fp))) for hour, n, d, fp in rows
+    }
 
 
 def reconcile_closed_hours(settings: Settings, run_id: str) -> list[CheckResult]:
