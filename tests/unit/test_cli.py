@@ -54,3 +54,27 @@ def test_produce_replays_the_sample(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert result.exit_code == 0, result.output
     assert fake.keys == [i.encode() for i in ids[:3]]
     assert topics == [("wiki.recentchange", 3)]
+
+
+def test_produce_exits_nonzero_when_a_delivery_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sample = tmp_path / "s.jsonl.gz"
+    write_sample(
+        sample,
+        [
+            {"meta": {"id": "00000000-0000-4000-8000-000000000001"}, "timestamp": 1, "wiki": "x"},
+            {"meta": {"id": "00000000-0000-4000-8000-000000000002"}, "timestamp": 1, "wiki": "x"},
+        ],
+    )
+
+    class FailingProducer(FakeProducer):
+        def flush(self, timeout: float) -> int:
+            return 1  # one message still undelivered when the flush times out
+
+    monkeypatch.setattr(producer, "make_producer", lambda bootstrap: FailingProducer())
+    monkeypatch.setattr(producer, "ensure_topic", lambda bootstrap, topic, partitions: False)
+
+    result = CliRunner().invoke(app, ["produce", "--sample", str(sample), "--rate", "0"])
+
+    assert result.exit_code == 1, result.output

@@ -54,7 +54,9 @@ class FakeCopy:
 
 
 class FakeCursor:
-    """Records statements; INSERT reports one row per distinct new event id."""
+    """Records statements. INSERT behaves like PostgreSQL on the primary key: with
+    ``ON CONFLICT ... DO NOTHING`` it reports one row per distinct new event id,
+    without it a repeated id raises ``UniqueViolation``."""
 
     def __init__(self, conn: FakeConnection) -> None:
         self.conn = conn
@@ -74,7 +76,12 @@ class FakeCursor:
             error, self.conn.fail_next = self.conn.fail_next, None
             raise error
         if text.startswith("INSERT"):
-            new = {str(r[0]) for r in self.staged} - self.conn.table
+            staged = [str(r[0]) for r in self.staged]
+            new = set(staged) - self.conn.table
+            if "ON CONFLICT (event_id) DO NOTHING" not in text and len(new) < len(staged):
+                raise psycopg.errors.UniqueViolation(
+                    "duplicate key value violates unique constraint"
+                )
             self.conn.table |= new
             self.rowcount = len(new)
 

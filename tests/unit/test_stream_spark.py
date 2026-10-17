@@ -191,12 +191,14 @@ DEDUP_BATCHES: list[list[tuple[int, int]]] = [
     [(4, 1500), (2, 1000)],  # 2: 4 is behind the watermark but the late filter still
     #                             uses 940, so 4 is kept; 2 is still in state; then
     #                             1, 2 and 4 are evicted (expiry ts + 60 < 1940)
-    [(5, 1950)],  # 3: on time -> 5
+    [(5, 1950), (4, 1960)],  # 3: on time -> 5; key 4 expired in batch 2, so this
+    #                             later copy of 4 is a new key and passes (plain
+    #                             dropDuplicates would still remember it)
     [(1, 1000), (6, 100)],  # 4: late filter now at 1940: the duplicate of 1 (state
     #                             gone) and the new event 6 are both dropped as late
     [(7, 1990)],  # 5: on time -> 7; the watermark does not move, so no extra batch follows
 ]
-EXPECTED_OUTPUT = {0: [1, 2], 1: [3], 2: [4], 3: [5], 4: [], 5: [7]}
+EXPECTED_OUTPUT = {0: [1, 2], 1: [3], 2: [4], 3: [4, 5], 4: [], 5: [7]}
 
 
 def write_stream_files(src: Path) -> None:
@@ -269,6 +271,11 @@ def test_deduplicate_semantics_across_micro_batches(spark: SparkSession, tmp_pat
         b: sum(s.numRowsDroppedByWatermark for s in p.stateOperators) for b, p in progress.items()
     }
     assert dropped_late == {0: 0, 1: 0, 2: 0, 3: 0, 4: 2, 5: 0}
+    # Eviction uses the current batch's watermark: 1, 2 and 4 expire in batch 2, nothing else.
+    evicted = {b: sum(s.numRowsRemoved for s in p.stateOperators) for b, p in progress.items()}
+    assert evicted == {0: 0, 1: 0, 2: 3, 3: 0, 4: 0, 5: 0}
+    in_state = {b: sum(s.numRowsTotal for s in p.stateOperators) for b, p in progress.items()}
+    assert in_state == {0: 2, 1: 3, 2: 1, 3: 3, 4: 3, 5: 4}
     assert progress[2].eventTime["watermark"] == "1970-01-01T00:32:20.000Z"
     observed = progress[0].observedMetrics[OBSERVATION].asDict()
     assert observed == {"input_rows": 3, "malformed_rows": 0, "canary_rows": 0}
