@@ -1,7 +1,13 @@
-"""The Spark Structured Streaming job: Kafka to ``raw.recentchange``."""
+"""The Spark Structured Streaming job: Kafka to ``raw.recentchange`` and the Iceberg lake.
+
+One application, two streaming queries over the same topic, each with its own
+Kafka consumer and checkpoint: ``warehouse`` (PostgreSQL, see ``sink.py``) and,
+unless ``TRIBUTARY_LAKE_ENABLED=false``, ``lake`` (Iceberg, see ``lake.py``).
+"""
 
 from __future__ import annotations
 
+import contextlib
 import json
 import signal
 import threading
@@ -9,10 +15,12 @@ from types import FrameType
 from typing import TYPE_CHECKING, override
 
 import structlog
+from pyspark.errors import StreamingQueryException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.streaming.listener import StreamingQueryListener
 from pyspark.sql.streaming.query import StreamingQuery
 
+from tributary.stream.lake import catalog_conf, start_lake_query
 from tributary.stream.parse import deduplicate, parse_events
 from tributary.stream.sink import PostgresSink, ensure_schema
 
@@ -55,6 +63,9 @@ def build_session(settings: Settings) -> SparkSession:
         .config("spark.sql.streaming.stateStore.providerClass", ROCKSDB_PROVIDER)
         .config("spark.sql.streaming.stateStore.rocksdb.changelogCheckpointing.enabled", "true")
     )
+    if settings.lake_enabled:
+        for key, value in catalog_conf(settings).items():
+            builder = builder.config(key, value)
     if settings.spark_packages:
         builder = builder.config("spark.jars.packages", settings.spark_packages)
     spark = builder.getOrCreate()
@@ -62,7 +73,9 @@ def build_session(settings: Settings) -> SparkSession:
     return spark
 
 
-def kafka_source(spark: SparkSession, settings: Settings) -> DataFrame:
+def kafka_source(
+    spark: SparkSession, settings: Settings, max_offsets: int | None = None
+) -> DataFrame:
     """Subscribe to the topic from the earliest offset, bounded per trigger.
 
     ``failOnDataLoss`` stays true: if offsets the checkpoint expects have been
@@ -75,20 +88,32 @@ def kafka_source(spark: SparkSession, settings: Settings) -> DataFrame:
         .option("kafka.bootstrap.servers", settings.kafka_bootstrap)
         .option("subscribe", settings.topic)
         .option("startingOffsets", "earliest")
-        .option("maxOffsetsPerTrigger", str(settings.max_offsets_per_trigger))
+        .option("maxOffsetsPerTrigger", str(max_offsets or settings.max_offsets_per_trigger))
         .option("failOnDataLoss", "true")
         .load()
     )
+
+
+def parsed_events(
+    spark: SparkSession, settings: Settings, max_offsets: int | None = None
+) -> DataFrame:
+    """A fresh Kafka source, parsed and deduplicated: the input of either query.
+
+    Each call builds its own source, so each query runs its own consumer and
+    keeps its own offsets and dedup state in its own checkpoint.
+    """
+    source = kafka_source(spark, settings, max_offsets)
+    return deduplicate(parse_events(source), settings.watermark_delay)
 
 
 def start_warehouse_query(
     spark: SparkSession, settings: Settings, *, available_now: bool = False
 ) -> StreamingQuery:
     """Start Kafka, parse, dedup, PostgreSQL as the ``warehouse`` query."""
-    events = deduplicate(parse_events(kafka_source(spark, settings)), settings.watermark_delay)
+    events = parsed_events(spark, settings)
     writer = (
         events.writeStream.queryName(QUERY_NAME)
-        .foreachBatch(PostgresSink(settings.pg_conninfo))
+        .foreachBatch(PostgresSink(settings.pg_conninfo, QUERY_NAME))
         .option("checkpointLocation", str(settings.checkpoint_dir))
     )
     if available_now:
@@ -160,16 +185,57 @@ def _offsets(raw: str | None) -> object:
     return parsed
 
 
-def run(settings: Settings, *, available_now: bool = False) -> None:
-    """Run the warehouse query until it ends, fails, or SIGTERM/SIGINT stops it.
+def start_queries(
+    spark: SparkSession, settings: Settings, *, available_now: bool = False
+) -> list[StreamingQuery]:
+    """Start the warehouse query and, when the lake is enabled, the lake query."""
+    queries = [start_warehouse_query(spark, settings, available_now=available_now)]
+    if settings.lake_enabled:
+        events = parsed_events(spark, settings, settings.lake_max_offsets_per_trigger)
+        queries.append(start_lake_query(spark, events, settings, available_now=available_now))
+    return queries
 
-    Stopping interrupts the micro-batch in flight; it is redone on restart
-    from the checkpoint, and the idempotent sink absorbs the replay.
+
+def supervise(queries: list[StreamingQuery], stop: threading.Event) -> None:
+    """Wait until every query has finished, one has failed, or ``stop`` is set.
+
+    If one query fails the others are stopped and its exception is raised: the
+    process exits non-zero, Compose restarts it, and both queries resume from
+    their checkpoints. Keeping one sink running while the other is down would
+    only widen the gap the reconciliation check then reports.
+    """
+    try:
+        while not stop.is_set() and any(q.isActive for q in queries):
+            for q in queries:
+                # Raises StreamingQueryException once q has failed.
+                q.awaitTermination(1)
+    finally:
+        for q in queries:
+            if q.isActive:
+                q.stop()
+        for q in queries:
+            with contextlib.suppress(StreamingQueryException):
+                q.awaitTermination()
+    # The last query can fail after its wait timed out and before the loop
+    # re-checks isActive; the loop then ends normally and the error is only here.
+    for q in queries:
+        error = q.exception()
+        if error is not None:
+            raise error
+
+
+def run(settings: Settings, *, available_now: bool = False) -> None:
+    """Run the queries until they end, one fails, or SIGTERM/SIGINT stops them.
+
+    Stopping interrupts the micro-batches in flight; they are redone on restart
+    from the checkpoints, and each sink absorbs the replay (the primary key in
+    PostgreSQL, the committed-batch check in Iceberg).
     """
     from tributary.ingest.producer import ensure_topic
 
     ensure_topic(settings.kafka_bootstrap, settings.topic, settings.topic_partitions)
     ensure_schema(settings.pg_conninfo)
+    ensure_schema(settings.pg_conninfo, "ops.sql")
     spark = build_session(settings)
     stop = threading.Event()
 
@@ -180,12 +246,7 @@ def run(settings: Settings, *, available_now: bool = False) -> None:
     previous = {s: signal.signal(s, request_stop) for s in (signal.SIGTERM, signal.SIGINT)}
     try:
         spark.streams.addListener(ProgressLogger())
-        query = start_warehouse_query(spark, settings, available_now=available_now)
-        while query.isActive and not stop.is_set():
-            query.awaitTermination(1)
-        if query.isActive:
-            query.stop()
-        query.awaitTermination()
+        supervise(start_queries(spark, settings, available_now=available_now), stop)
     finally:
         for s, handler in previous.items():
             signal.signal(s, handler)

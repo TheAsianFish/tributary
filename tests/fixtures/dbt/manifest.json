@@ -1,0 +1,476 @@
+{
+ "metadata": {
+  "dbt_version": "1.12.6",
+  "generated_at": "2026-10-17T15:13:27.071431Z",
+  "invocation_id": "4ea86052-f86c-42e1-a51c-266ada5b353b",
+  "project_name": "tributary_fixture"
+ },
+ "nodes": {
+  "model.tributary_fixture.broken": {
+   "alias": "broken",
+   "columns": {
+    "id": {
+     "config": {
+      "meta": {},
+      "tags": []
+     },
+     "description": "",
+     "meta": {},
+     "name": "id"
+    }
+   },
+   "config": {
+    "materialized": "table",
+    "meta": {}
+   },
+   "depends_on": {
+    "nodes": []
+   },
+   "description": "",
+   "name": "broken",
+   "relation_name": "\"tributary\".\"dbt_fixture\".\"broken\"",
+   "resource_type": "model",
+   "schema": "dbt_fixture",
+   "unique_id": "model.tributary_fixture.broken"
+  },
+  "model.tributary_fixture.wikis": {
+   "alias": "wikis",
+   "columns": {
+    "domain": {
+     "config": {
+      "meta": {
+       "index_values": false
+      },
+      "tags": []
+     },
+     "description": "",
+     "meta": {
+      "index_values": false
+     },
+     "name": "domain"
+    },
+    "edits": {
+     "config": {
+      "meta": {},
+      "tags": []
+     },
+     "description": "",
+     "meta": {},
+     "name": "edits"
+    },
+    "project_family": {
+     "config": {
+      "meta": {
+       "index_values": true
+      },
+      "tags": []
+     },
+     "description": "",
+     "meta": {
+      "index_values": true
+     },
+     "name": "project_family"
+    },
+    "wiki": {
+     "config": {
+      "meta": {},
+      "tags": []
+     },
+     "description": "",
+     "meta": {},
+     "name": "wiki"
+    }
+   },
+   "config": {
+    "materialized": "table",
+    "meta": {}
+   },
+   "depends_on": {
+    "nodes": [
+     "source.tributary_fixture.raw.recentchange"
+    ]
+   },
+   "description": "One row per wiki.",
+   "name": "wikis",
+   "relation_name": "\"tributary\".\"dbt_fixture\".\"wikis\"",
+   "resource_type": "model",
+   "schema": "dbt_fixture",
+   "unique_id": "model.tributary_fixture.wikis"
+  },
+  "seed.tributary_fixture.wiki_family": {
+   "alias": "wiki_family",
+   "columns": {},
+   "config": {
+    "materialized": "seed",
+    "meta": {}
+   },
+   "depends_on": {
+    "nodes": []
+   },
+   "description": "",
+   "name": "wiki_family",
+   "relation_name": "\"tributary\".\"dbt_fixture\".\"wiki_family\"",
+   "resource_type": "seed",
+   "schema": "dbt_fixture",
+   "unique_id": "seed.tributary_fixture.wiki_family"
+  },
+  "test.tributary_fixture.accepted_values_broken_id__False__1.af38ca106b": {
+   "alias": "accepted_values_broken_id__False__1",
+   "attached_node": "model.tributary_fixture.broken",
+   "column_name": "id",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.broken"
+    ]
+   },
+   "description": "",
+   "name": "accepted_values_broken_id__False__1",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "id",
+     "model": "{{ get_where_subquery(ref('broken')) }}",
+     "quote": false,
+     "values": [
+      1
+     ]
+    },
+    "name": "accepted_values",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.accepted_values_broken_id__False__1.af38ca106b"
+  },
+  "test.tributary_fixture.accepted_values_wikis_project_family__wikipedia.cfcae99c16": {
+   "alias": "accepted_values_wikis_project_family__wikipedia",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": "project_family",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "warn"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "accepted_values_wikis_project_family__wikipedia",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "project_family",
+     "model": "{{ get_where_subquery(ref('wikis')) }}",
+     "values": [
+      "wikipedia"
+     ]
+    },
+    "name": "accepted_values",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.accepted_values_wikis_project_family__wikipedia.cfcae99c16"
+  },
+  "test.tributary_fixture.min_value_broken_id__not_a_number.98078c9fce": {
+   "alias": "min_value_broken_id__not_a_number",
+   "attached_node": "model.tributary_fixture.broken",
+   "column_name": "id",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.broken"
+    ]
+   },
+   "description": "",
+   "name": "min_value_broken_id__not_a_number",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "id",
+     "minimum": "not a number",
+     "model": "{{ get_where_subquery(ref('broken')) }}"
+    },
+    "name": "min_value",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.min_value_broken_id__not_a_number.98078c9fce"
+  },
+  "test.tributary_fixture.min_value_wikis_edits__1000000.d6296091f9": {
+   "alias": "min_value_wikis_edits__1000000",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": "edits",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "min_value_wikis_edits__1000000",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "edits",
+     "minimum": 1000000,
+     "model": "{{ get_where_subquery(ref('wikis')) }}"
+    },
+    "name": "min_value",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.min_value_wikis_edits__1000000.d6296091f9"
+  },
+  "test.tributary_fixture.no_future_events": {
+   "alias": "no_future_events",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "source.tributary_fixture.raw.recentchange"
+    ]
+   },
+   "description": "",
+   "name": "no_future_events",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "unique_id": "test.tributary_fixture.no_future_events"
+  },
+  "test.tributary_fixture.not_null_broken_id.259308ea2b": {
+   "alias": "not_null_broken_id",
+   "attached_node": "model.tributary_fixture.broken",
+   "column_name": "id",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.broken"
+    ]
+   },
+   "description": "",
+   "name": "not_null_broken_id",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "id",
+     "model": "{{ get_where_subquery(ref('broken')) }}"
+    },
+    "name": "not_null",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.not_null_broken_id.259308ea2b"
+  },
+  "test.tributary_fixture.not_null_wikis_wiki.ad7b45b1cc": {
+   "alias": "not_null_wikis_wiki",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": "wiki",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "not_null_wikis_wiki",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "wiki",
+     "model": "{{ get_where_subquery(ref('wikis')) }}"
+    },
+    "name": "not_null",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.not_null_wikis_wiki.ad7b45b1cc"
+  },
+  "test.tributary_fixture.relationships_wikis_project_family__project_family__ref_wiki_family_.9173546f72": {
+   "alias": "relationships_wikis_5a66b619b04ea15e39356fe48b3dce9f",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": "project_family",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "seed.tributary_fixture.wiki_family",
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "relationships_wikis_project_family__project_family__ref_wiki_family_",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "project_family",
+     "field": "project_family",
+     "model": "{{ get_where_subquery(ref('wikis')) }}",
+     "to": "ref('wiki_family')"
+    },
+    "name": "relationships",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.relationships_wikis_project_family__project_family__ref_wiki_family_.9173546f72"
+  },
+  "test.tributary_fixture.row_count_between_wikis_100000__1.94ff38fc70": {
+   "alias": "row_count_between_wikis_100000__1",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": null,
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "row_count_between_wikis_100000__1",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "high": 100000,
+     "low": 1,
+     "model": "{{ get_where_subquery(ref('wikis')) }}"
+    },
+    "name": "row_count_between",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.row_count_between_wikis_100000__1.94ff38fc70"
+  },
+  "test.tributary_fixture.source_not_null_raw_recentchange_event_id.8d6c83b444": {
+   "alias": "source_not_null_raw_recentchange_event_id",
+   "attached_node": null,
+   "column_name": "event_id",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "source.tributary_fixture.raw.recentchange"
+    ]
+   },
+   "description": "",
+   "name": "source_not_null_raw_recentchange_event_id",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "event_id",
+     "model": "{{ get_where_subquery(source('raw', 'recentchange')) }}"
+    },
+    "name": "not_null",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.source_not_null_raw_recentchange_event_id.8d6c83b444"
+  },
+  "test.tributary_fixture.unique_wikis_wiki.2aa4dd2f57": {
+   "alias": "unique_wikis_wiki",
+   "attached_node": "model.tributary_fixture.wikis",
+   "column_name": "wiki",
+   "columns": {},
+   "config": {
+    "materialized": "test",
+    "meta": {},
+    "severity": "ERROR"
+   },
+   "depends_on": {
+    "nodes": [
+     "model.tributary_fixture.wikis"
+    ]
+   },
+   "description": "",
+   "name": "unique_wikis_wiki",
+   "relation_name": null,
+   "resource_type": "test",
+   "schema": "dbt_fixture_dbt_test__audit",
+   "test_metadata": {
+    "kwargs": {
+     "column_name": "wiki",
+     "model": "{{ get_where_subquery(ref('wikis')) }}"
+    },
+    "name": "unique",
+    "namespace": null
+   },
+   "unique_id": "test.tributary_fixture.unique_wikis_wiki.2aa4dd2f57"
+  }
+ },
+ "sources": {
+  "source.tributary_fixture.raw.recentchange": {
+   "columns": {
+    "event_id": {
+     "config": {
+      "meta": {},
+      "tags": []
+     },
+     "description": "",
+     "meta": {},
+     "name": "event_id"
+    }
+   },
+   "config": {
+    "meta": {}
+   },
+   "description": "",
+   "identifier": "recentchange",
+   "name": "recentchange",
+   "relation_name": "\"tributary\".\"raw\".\"recentchange\"",
+   "resource_type": "source",
+   "schema": "raw",
+   "unique_id": "source.tributary_fixture.raw.recentchange"
+  }
+ }
+}

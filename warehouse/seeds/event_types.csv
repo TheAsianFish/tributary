@@ -1,0 +1,6 @@
+event_type,description
+edit,An existing page was changed and a new revision saved.
+new,A page was created (its first revision).
+log,"A logged action (block, upload, move, deletion, account creation, ...); no revision."
+categorize,A page was added to or removed from a category; the event's page is the category.
+external,A change imported from an external system such as Wikidata into a client wiki.

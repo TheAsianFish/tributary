@@ -1,0 +1,83 @@
+# M2: the airflow profile on the Compose stack (after the full sample replay and the two injected lake faults in bench/results/m2-lake-sample.txt)
+
+$ docker compose --profile airflow --profile lakehouse up -d --build --wait airflow-init airflow-apiserver airflow-scheduler airflow-dag-processor
+(26 s, exit 0; Airflow metadata database freshly created; then nothing by hand for about 17 minutes)
+
+$ docker compose exec airflow-scheduler airflow dags list-runs raw_recentchange
+dag_id           | run_id                               | state   | run_after                 | logical_date              | start_date                       | end_date                        
+=================+======================================+=========+===========================+===========================+==================================+=================================
+raw_recentchange | scheduled__2026-10-17T17:00:00+00:00 | success | 2026-10-17T17:00:00+00:00 | 2026-10-17T17:00:00+00:00 | 2026-10-17T17:00:00.429672+00:00 | 2026-10-17T17:00:10.462980+00:00
+raw_recentchange | scheduled__2026-10-17T16:55:00+00:00 | success | 2026-10-17T16:55:00+00:00 | 2026-10-17T16:55:00+00:00 | 2026-10-17T16:55:48.422149+00:00 | 2026-10-17T16:55:53.966943+00:00
+
+$ docker compose exec airflow-scheduler airflow dags list-runs warehouse_refresh
+dag_id            | run_id                                             | state   | run_after                        | logical_date | start_date                       | end_date                        
+==================+====================================================+=========+==================================+==============+==================================+=================================
+warehouse_refresh | asset_triggered__2026-10-17T16:55:53.485678+00:00_ | success | 2026-10-17T16:55:53.485678+00:00 |              | 2026-10-17T16:55:53.910118+00:00 | 2026-10-17T16:56:31.778443+00:00
+                  | 8Rfohhrr                                           |         |                                  |              |                                  |                                 
+
+$ docker compose exec airflow-scheduler airflow dags list-runs lake_maintenance
+dag_id           | run_id                               | state  | run_after                 | logical_date              | start_date                       | end_date                        
+=================+======================================+========+===========================+===========================+==================================+=================================
+lake_maintenance | scheduled__2026-10-17T16:07:00+00:00 | failed | 2026-10-17T16:07:00+00:00 | 2026-10-17T16:07:00+00:00 | 2026-10-17T16:55:48.418912+00:00 | 2026-10-17T16:57:57.363563+00:00
+
+$ docker compose exec airflow-scheduler airflow tasks states-for-dag-run raw_recentchange scheduled__2026-10-17T17:00:00+00:00
+dag_id           | logical_date              | task_id         | state   | start_date                       | end_date                        
+=================+===========================+=================+=========+==================================+=================================
+raw_recentchange | 2026-10-17T17:00:00+00:00 | detect_new_rows | skipped | 2026-10-17T17:00:00.522876+00:00 | 2026-10-17T17:00:09.990617+00:00
+
+$ docker compose exec airflow-scheduler airflow tasks states-for-dag-run lake_maintenance scheduled__2026-10-17T16:07:00+00:00
+dag_id           | logical_date              | task_id                | state   | start_date                       | end_date                        
+=================+===========================+========================+=========+==================================+=================================
+lake_maintenance | 2026-10-17T16:07:00+00:00 | optimize_closed_hours  | success | 2026-10-17T16:55:48.571321+00:00 | 2026-10-17T16:55:53.817460+00:00
+lake_maintenance | 2026-10-17T16:07:00+00:00 | expire_snapshots       | success | 2026-10-17T16:55:54.258085+00:00 | 2026-10-17T16:55:54.766979+00:00
+lake_maintenance | 2026-10-17T16:07:00+00:00 | remove_orphan_files    | success | 2026-10-17T16:55:55.384599+00:00 | 2026-10-17T16:55:55.751817+00:00
+lake_maintenance | 2026-10-17T16:07:00+00:00 | reconcile_closed_hours | failed  | 2026-10-17T16:57:55.303282+00:00 | 2026-10-17T16:57:56.321650+00:00
+
+$ docker compose exec postgres psql -U tributary -c "select run_id, source, check_type, status, count(*) from ops.quality_runs group by 1, 2, 3, 4 order by min(recorded_at)"
+                           run_id                           |  source   |     check_type     | status | count 
+------------------------------------------------------------+-----------+--------------------+--------+-------
+ 5638e1ccceca                                               | reconcile | lake_lag           | pass   |     1
+ 5638e1ccceca                                               | reconcile | reconcile          | pass   |     1
+ 13e84ba269f8                                               | reconcile | lake_lag           | pass   |     1
+ 13e84ba269f8                                               | reconcile | reconcile          | fail   |     1
+ 8456e1c148a4                                               | reconcile | lake_lag           | pass   |     1
+ 8456e1c148a4                                               | reconcile | reconcile          | fail   |     1
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | freshness          | pass   |     2
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | not_null           | pass   |    31
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | accepted_values    | pass   |     2
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | relationships      | pass   |     3
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | unique             | pass   |     6
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | unique_combination | pass   |     3
+ asset_triggered__2026-10-17T16:55:53.485678+00:00_8Rfohhrr | dbt       | volume_anomaly     | pass   |     2
+ scheduled__2026-10-17T16:07:00+00:00                       | reconcile | lake_lag           | pass   |     1
+ scheduled__2026-10-17T16:07:00+00:00                       | reconcile | reconcile          | fail   |     1
+ scheduled__2026-10-17T17:00:00+00:00                       | dbt       | freshness          | pass   |     2
+(16 rows)
+
+$ psql: the scheduled reconciliation's hour
+          check_name          | status | failures |  wh   | lake_distinct | dups | ids_match 
+------------------------------+--------+----------+-------+---------------+------+-----------
+ lake_lag                     | pass   |        0 |       |               |      | 
+ reconcile_hour:2026-10-16T23 | fail   |        1 | 19271 | 19271         | 0    | false
+(2 rows)
+
+$ docker compose exec airflow-scheduler ls -l /data/catalog
+total 4
+drwxr-xr-x 2 airflow root 4096 Oct 17 16:56 20261017T165631217725Z-b1422677-c19e-4cb6-bbf8-f1bc1338c7c2
+lrwxrwxrwx 1 airflow root   59 Oct 17 16:56 current -> 20261017T165631217725Z-b1422677-c19e-4cb6-bbf8-f1bc1338c7c2
+$ docker compose exec airflow-scheduler python -c "<columns in values.json; any user/title column?>"
+['marts.agg_editor_activity.wiki', 'marts.agg_edits_hourly.wiki', 'marts.dim_page.namespace_name', 'marts.dim_page.page_key', 'marts.dim_page.wiki', 'marts.dim_wiki.domain', 'marts.dim_wiki.language_code', 'marts.dim_wiki.project_family', 'marts.dim_wiki.wiki', 'marts.fct_edits.namespace_name', 'marts.fct_edits.page_key', 'marts.fct_edits.wiki']
+user/title columns: []
+
+# The airflow profile before docker/airflow/Dockerfile reinstalled the package: the uv cache mount served the
+# first build's tributary wheel, so the image ran stale code (rebuilt with --build after the review fixes)
+$ docker compose exec airflow-scheduler airflow dags list-import-errors
+dags-folder | raw_recentchange.py | Traceback (most recent call last):                                                                                                                          
+            |                     | ImportError: cannot import name 'check_freshness' from 'tributary.warehouse.refresh' (/opt/venv/lib/python3.12/site-packages/tributary/warehouse/refresh.py)
+$ psql: reconciliation rows of the scheduled lake_maintenance run (the old code: no fingerprint, so the injected exchange passed)
+                run_id                |          check_name          | status | ids_match 
+--------------------------------------+------------------------------+--------+-----------
+ scheduled__2026-10-17T16:07:00+00:00 | lake_lag                     | pass   | 
+ scheduled__2026-10-17T16:07:00+00:00 | reconcile_hour:2026-10-16T23 | pass   | 
+(2 rows)
+

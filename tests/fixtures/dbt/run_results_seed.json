@@ -1,0 +1,42 @@
+{
+ "args": {
+  "which": "seed"
+ },
+ "elapsed_time": 0.2606470584869385,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:13:10.830508Z",
+  "invocation_id": "5a25b033-a3e0-4cab-a33b-6e2b382960f3",
+  "invocation_started_at": "2026-10-17T15:13:06.799164Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "INSERT 2",
+    "code": "INSERT",
+    "rows_affected": 2
+   },
+   "execution_time": 0.08628988265991211,
+   "failures": null,
+   "message": "INSERT 2",
+   "relation_name": null,
+   "status": "success",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:10.728588Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:10.728582Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:10.812701Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:10.729047Z"
+    }
+   ],
+   "unique_id": "seed.tributary_fixture.wiki_family"
+  }
+ ]
+}

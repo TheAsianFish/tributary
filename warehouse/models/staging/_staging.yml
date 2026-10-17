@@ -1,0 +1,95 @@
+version: 2
+
+models:
+  - name: stg_recentchange
+    description: >
+      Every recentchange event with derived columns: hour bucket, project family,
+      language, anonymity, byte delta and namespace name. One row per event_id; a
+      view over raw.recentchange, so it is always current.
+    columns:
+      - name: event_id
+        description: Event UUID; primary key.
+        data_tests: [unique, not_null]
+      - name: event_ts
+        description: When the change happened on the wiki (UTC, 1 s resolution).
+        data_tests: [not_null]
+      - name: event_hour
+        description: event_ts truncated to the hour (UTC).
+        data_tests: [not_null]
+      - name: emitted_at
+        description: When EventGate emitted the event; NULL if absent.
+      - name: rc_id
+        description: The wiki's own recentchanges id; unique only within a wiki.
+      - name: wiki
+        description: Wiki database name, e.g. enwiki.
+        data_tests: [not_null]
+      - name: domain
+        description: Host name the event was recorded under, e.g. en.wikipedia.org.
+      - name: project_family
+        description: >
+          Project derived from domain: wikipedia, wiktionary, wikisource, wikiquote,
+          wikibooks, wikivoyage, wikiversity, wikinews, wikidata, commons, wikispecies,
+          wikifunctions, mediawiki, abstract_wikipedia or wikimedia (meta, wikitech and
+          other wikimedia.org wikis). NULL for events logged under the shared login
+          domain auth.wikimedia.org (account creations), which does not identify a project.
+      - name: language_code
+        description: >
+          Language subdomain of a per-language project (en, fr, zh-min-nan; simple
+          English is en). NULL for multilingual projects, test wikis and the shared login domain.
+      - name: event_type
+        description: edit, new, log, categorize or external; see the event_types seed.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [edit, new, log, categorize, external]
+          - relationships:
+              arguments:
+                to: ref('event_types')
+                field: event_type
+      - name: namespace
+        description: MediaWiki namespace id.
+      - name: namespace_name
+        description: Canonical English namespace name (Main for 0); NULL if the id is not in the namespaces seed.
+      - name: title
+        description: Page title including the namespace prefix.
+      - name: user_name
+        description: Account name, temporary account name or IP address of the actor.
+      - name: is_anonymous
+        description: >
+          True when the actor is not logged in: the user name is an IPv4/IPv6 address
+          or a temporary account (~YYYY-NNNNN-NN), which replaced IP display on most
+          Wikimedia wikis in 2025.
+      - name: is_temporary_account
+        description: True when user_name is a temporary account (~YYYY-NNNNN-NN).
+      - name: is_bot
+        description: True when the actor has the bot flag.
+      - name: is_minor
+        description: Minor-edit flag; NULL for event types other than edit and new.
+      - name: is_patrolled
+        description: Patrolled flag; NULL where the wiki does not use patrolling.
+      - name: length_old
+        description: Page size in bytes before the change; NULL for creations and non-edit events.
+      - name: length_new
+        description: Page size in bytes after the change; NULL for non-edit events.
+      - name: byte_delta
+        description: >
+          length_new - length_old in bytes (a creation counts from 0); negative when
+          content was removed. NULL for non-edit events.
+      - name: rev_old
+        description: Revision id before the change; NULL for creations and non-edit events.
+      - name: rev_new
+        description: Revision id saved by the change; NULL for non-edit events.
+      - name: log_type
+        description: Log type for log events; NULL otherwise.
+      - name: log_action
+        description: Log action within log_type; NULL otherwise.
+      - name: kafka_partition
+        description: Kafka partition; -1 for rows loaded without Kafka.
+      - name: kafka_offset
+        description: Kafka offset (input position for direct loads).
+      - name: kafka_ts
+        description: Kafka record timestamp set by the producer.
+      - name: ingested_at
+        description: When the sink inserted the row (warehouse arrival time).
+        data_tests: [not_null]

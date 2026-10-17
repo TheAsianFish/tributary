@@ -1,0 +1,71 @@
+name: Warehouse
+
+# dbt build on the sample, the custom quality tests against their fixtures, and
+# the warehouse DAGs under dag.test(), against a bare PostgreSQL (no Kafka, no
+# Spark: the sample is loaded straight into raw.recentchange). Runs only when
+# the warehouse or orchestration path changes, or by hand.
+on:
+  pull_request:
+    paths:
+      - "warehouse/**"
+      - "orchestration/**"
+      - "tributary/**"
+      - "tests/warehouse/**"
+      - "tests/dbt/**"
+      - "tests/fixtures/**"
+      - "data/sample/**"
+      - "pyproject.toml"
+      - "Makefile"
+      - "uv.lock"
+      - ".github/workflows/warehouse.yml"
+  push:
+    branches: [main]
+    paths:
+      - "warehouse/**"
+      - "orchestration/**"
+      - "tributary/**"
+      - "tests/warehouse/**"
+      - "tests/dbt/**"
+      - "tests/fixtures/**"
+      - "data/sample/**"
+      - "pyproject.toml"
+      - "Makefile"
+      - "uv.lock"
+      - ".github/workflows/warehouse.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: warehouse-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dbt-and-dags:
+    name: dbt build and dag.test() on the sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tributary
+          POSTGRES_PASSWORD: tributary
+          POSTGRES_DB: tributary
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tributary" --health-interval 2s
+          --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --extra warehouse --extra lakehouse --extra airflow
+      - name: Load the sample into raw.recentchange
+        run: uv run tributary sample load
+      - run: make dbt
+      - run: make test-warehouse

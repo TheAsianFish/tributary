@@ -1,0 +1,12 @@
+tributary_fixture:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('TRIBUTARY_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('TRIBUTARY_PG_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('TRIBUTARY_PG_DATABASE', 'tributary') }}"
+      user: "{{ env_var('TRIBUTARY_PG_USER', 'tributary') }}"
+      password: "{{ env_var('TRIBUTARY_PG_PASSWORD', 'tributary') }}"
+      schema: dbt_fixture
+      threads: 2

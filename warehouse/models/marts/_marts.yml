@@ -1,0 +1,203 @@
+version: 2
+
+# user_name (editor accounts and IP addresses) and title carry index_values: false:
+# the catalog's value index lists a low-cardinality text column's values and sends
+# them to the model, and editor identities and page titles must never be among them.
+
+models:
+  - name: fct_edits
+    description: >
+      One row per page edit or page creation on any Wikimedia wiki (recentchange
+      events of type edit or new); grain is event_id. Excludes log actions and
+      category membership changes. All timestamps are UTC. Built incrementally on
+      arrival time, so late-arriving events are included on the next run.
+    data_tests:
+      - volume_anomaly:
+          arguments:
+            column_name: event_ts
+    columns:
+      - name: event_id
+        description: Event UUID; primary key, one row per edit.
+        data_tests: [unique, not_null]
+      - name: event_ts
+        description: When the edit was saved on the wiki (UTC, 1 s resolution). Use this for "when" questions.
+        data_tests: [not_null]
+      - name: event_hour
+        description: event_ts truncated to the hour (UTC); joins to agg_edits_hourly.event_hour.
+        data_tests: [not_null]
+      - name: wiki
+        description: Wiki database name, e.g. enwiki (English Wikipedia), commonswiki, wikidatawiki. Foreign key to dim_wiki.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wiki')
+                field: wiki
+      - name: page_key
+        description: Stable page identifier, md5 of wiki, namespace and title. Foreign key to dim_page.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_page')
+                field: page_key
+      - name: namespace
+        description: MediaWiki namespace id (0 = articles, 2 = user pages, 6 = files, 14 = categories; odd ids are talk pages).
+      - name: namespace_name
+        description: Canonical English namespace name, e.g. Main (articles), Talk, User, File, Category, Draft; NULL if unknown.
+      - name: title
+        description: Page title as shown on the wiki, including the namespace prefix (e.g. "Draft:Foo").
+        config:
+          meta: {index_values: false}
+      - name: user_name
+        description: Who made the edit - account name, temporary account name (~YYYY-NNNNN-NN) or IP address.
+        config:
+          meta: {index_values: false}
+      - name: is_bot
+        description: True when the editor has the bot flag.
+        data_tests: [not_null]
+      - name: is_minor
+        description: True when the editor marked the edit as minor.
+      - name: is_patrolled
+        description: True when the edit was patrolled; NULL on wikis that do not use patrolling.
+      - name: is_anonymous
+        description: True when the editor was not logged in (IP address or temporary account).
+        data_tests: [not_null]
+      - name: is_new_page
+        description: True when the event created the page (recentchange type new); false for edits to existing pages.
+        data_tests: [not_null]
+      - name: length_old
+        description: Page size in bytes before the edit; NULL for page creations.
+      - name: length_new
+        description: Page size in bytes after the edit.
+      - name: byte_delta
+        description: Size change in bytes, length_new - length_old (a creation counts from 0); negative when content was removed.
+      - name: rev_old
+        description: Revision id before the edit; NULL for page creations.
+      - name: rev_new
+        description: Revision id saved by the edit.
+      - name: ingested_at
+        description: When the row arrived in the warehouse (pipeline time, not edit time). Use event_ts for analysis.
+        data_tests:
+          - not_null
+          - freshness
+
+  - name: dim_wiki
+    description: >
+      One row per wiki seen in the data, with its project family, language and
+      activity totals over all data loaded so far. Grain is wiki.
+    columns:
+      - name: wiki
+        description: Wiki database name, e.g. enwiki, frwiktionary, commonswiki; primary key.
+        data_tests: [unique, not_null]
+      - name: domain
+        description: Host name, e.g. en.wikipedia.org; NULL if the wiki was only seen through the shared login domain.
+      - name: project_family
+        description: >
+          wikipedia, wiktionary, wikisource, wikiquote, wikibooks, wikivoyage,
+          wikiversity, wikinews, wikidata, commons, wikispecies, wikifunctions,
+          mediawiki, abstract_wikipedia or wikimedia (meta, wikitech, chapter wikis);
+          NULL when domain is NULL.
+      - name: language_code
+        description: Language subdomain for per-language projects (en, de, zh-min-nan; simple English is en); NULL for multilingual projects (commons, wikidata, meta) and test wikis.
+      - name: first_event_ts
+        description: Earliest event (any type) on this wiki, UTC.
+      - name: last_event_ts
+        description: Latest event (any type) on this wiki, UTC.
+      - name: events
+        description: Number of events of all types (edits, creations, log actions, categorisations).
+      - name: edits
+        description: Number of edits plus page creations (the rows of fct_edits for this wiki).
+
+  - name: dim_page
+    description: >
+      One row per page that received at least one edit or creation; grain is
+      page_key. Counts cover all data loaded so far.
+    columns:
+      - name: page_key
+        description: Stable page identifier (md5 of wiki, namespace, title); primary key.
+        data_tests: [unique, not_null]
+      - name: wiki
+        description: Wiki database name the page belongs to.
+        data_tests: [not_null]
+      - name: namespace
+        description: MediaWiki namespace id (0 = articles).
+      - name: namespace_name
+        description: Canonical English namespace name, e.g. Main, Talk, User, Category; NULL if unknown.
+      - name: title
+        description: Page title including the namespace prefix.
+        config:
+          meta: {index_values: false}
+      - name: first_seen_ts
+        description: Earliest edit or creation of the page in the data, UTC.
+      - name: last_seen_ts
+        description: Latest edit or creation of the page in the data, UTC.
+      - name: edits
+        description: Number of edits plus creations of the page.
+      - name: distinct_editors
+        description: Number of different user names that edited the page.
+      - name: created_in_window
+        description: True when the page's creation (a new event) is in the data; false means the page existed before the data starts.
+
+  - name: agg_edits_hourly
+    description: >
+      Edit activity per wiki and hour (UTC); grain is (wiki, event_hour). Hours with
+      no edits on a wiki have no row. Sums across wikis give platform totals, but
+      distinct_editors must not be summed across rows.
+    data_tests:
+      - unique_combination:
+          arguments:
+            combination_of_columns: [wiki, event_hour]
+    columns:
+      - name: wiki
+        description: Wiki database name.
+        data_tests: [not_null]
+      - name: event_hour
+        description: Start of the hour (UTC) the edits were saved in.
+        data_tests: [not_null]
+      - name: edits
+        description: Edits plus page creations in the hour.
+      - name: new_pages
+        description: Page creations in the hour.
+      - name: bot_edits
+        description: Edits and creations by accounts with the bot flag.
+      - name: anonymous_edits
+        description: Edits and creations by editors who were not logged in (IP or temporary account).
+      - name: distinct_editors
+        description: Number of different user names editing in the hour on this wiki.
+      - name: bytes_added
+        description: Sum of positive byte_delta in the hour (bytes of content added, 0 if none).
+      - name: bytes_removed
+        description: Sum of the absolute value of negative byte_delta (bytes removed, a positive number, 0 if none).
+
+  - name: agg_editor_activity
+    description: >
+      Activity per editor and wiki; grain is (wiki, user_name). The same person on
+      two wikis is two rows. Covers all data loaded so far.
+    data_tests:
+      - unique_combination:
+          arguments:
+            combination_of_columns: [wiki, user_name]
+    columns:
+      - name: wiki
+        description: Wiki database name.
+        data_tests: [not_null]
+      - name: user_name
+        description: Account name, temporary account name or IP address.
+        config:
+          meta: {index_values: false}
+        data_tests: [not_null]
+      - name: is_bot
+        description: True when any of the editor's edits carried the bot flag.
+      - name: is_anonymous
+        description: True when the editor is an IP address or temporary account.
+      - name: edits
+        description: Number of edits plus page creations by this editor on this wiki.
+      - name: pages_edited
+        description: Number of distinct pages the editor edited on this wiki.
+      - name: first_edit_ts
+        description: Earliest edit by this editor on this wiki, UTC.
+      - name: last_edit_ts
+        description: Latest edit by this editor on this wiki, UTC.
+      - name: net_bytes
+        description: Sum of byte_delta over the editor's edits (bytes added minus bytes removed).

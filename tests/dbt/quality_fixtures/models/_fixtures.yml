@@ -1,0 +1,74 @@
+version: 2
+
+# Expected status in the test name: *_fails must fail, *_passes must pass.
+models:
+  - name: volume_flat
+    description: Steady ~100 events per hour; the latest closed hour is normal.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_flat_passes
+          arguments: {column_name: event_ts}
+
+  - name: volume_spike
+    description: Steady history, then 400 events in the latest closed hour.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_spike_fails
+          arguments: {column_name: event_ts}
+
+  - name: volume_outage
+    description: Steady history, then no rows at all in the latest closed hour.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_outage_fails
+          arguments: {column_name: event_ts}
+
+  - name: volume_short_history
+    description: A spike, but only two hours of history before it.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_short_history_passes
+          arguments: {column_name: event_ts}
+      - tributary.volume_anomaly:
+          name: volume_short_history_low_minimum_fails
+          arguments: {column_name: event_ts, min_history: 2}
+
+  - name: volume_constant_history
+    description: Identical counts in every history hour (stddev 0), then a change.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_constant_history_passes
+          arguments: {column_name: event_ts}
+
+  - name: volume_future_event
+    description: >
+      Steady history and a partial current hour, plus one event dated an hour ahead;
+      the closed hour must stay the one before now, not the partial current hour.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_future_event_passes
+          arguments: {column_name: event_ts}
+
+  - name: arrivals_fresh
+    description: Newest arrival five minutes ago.
+    data_tests:
+      - tributary.freshness:
+          name: freshness_fresh_passes
+          arguments: {column_name: ingested_at}
+
+  - name: arrivals_stale
+    description: Newest arrival three hours ago.
+    data_tests:
+      - tributary.freshness:
+          name: freshness_stale_fails
+          arguments: {column_name: ingested_at}
+      - tributary.freshness:
+          name: freshness_stale_within_limit_passes
+          arguments: {column_name: ingested_at, max_lag_minutes: 240}
+
+  - name: arrivals_empty
+    description: No rows at all.
+    data_tests:
+      - tributary.freshness:
+          name: freshness_empty_fails
+          arguments: {column_name: ingested_at}

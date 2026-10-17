@@ -1,0 +1,17 @@
+# Every connection value comes from the same TRIBUTARY_PG_* variables as the rest of
+# the platform (see .env.example); the defaults match compose.yaml.
+tributary:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('TRIBUTARY_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('TRIBUTARY_PG_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('TRIBUTARY_PG_DATABASE', 'tributary') }}"
+      user: "{{ env_var('TRIBUTARY_PG_USER', 'tributary') }}"
+      password: "{{ env_var('TRIBUTARY_PG_PASSWORD', 'tributary') }}"
+      # Models without a custom schema would land here; every model in this project
+      # sets one (staging or marts), see macros/generate_schema_name.sql.
+      schema: public
+      threads: 4
+      connect_timeout: 10

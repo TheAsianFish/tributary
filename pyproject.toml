@@ -18,6 +18,12 @@ dependencies = [
 [project.optional-dependencies]
 # Matches the apache/spark:4.1.3 image used by the stream container.
 spark = ["pyspark==4.1.3"]
+# dbt runs the warehouse models and tests; dbt-postgres has no 1.12 release yet.
+warehouse = ["dbt-core>=1.12.6,<1.13", "dbt-postgres>=1.11,<1.12"]
+# Trino client for lake maintenance, reconciliation and the query benchmarks.
+lakehouse = ["trino>=0.340,<1"]
+# The scheduler, its DAGs and dag.test(); the Airflow image installs this extra.
+airflow = ["apache-airflow==3.3.2"]
 
 [project.scripts]
 tributary = "tributary.cli:app"
@@ -50,7 +56,7 @@ ignore = ["S101", "S608"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["tributary", "tests"]
+files = ["tributary", "tests", "orchestration"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
@@ -58,5 +64,7 @@ testpaths = ["tests/unit"]
 addopts = "-ra --strict-markers"
 markers = [
     "spark: needs pyspark and a JVM (runs offline in local mode)",
-    "integration: needs the Compose services (Kafka, Spark, PostgreSQL)",
+    "integration: needs the Compose services (Kafka, Spark, PostgreSQL, MinIO)",
+    "warehouse: needs PostgreSQL only (TRIBUTARY_PG_*), with dbt and Airflow installed",
+    "lakehouse: needs the Compose stack with the lakehouse profile (Trino)",
 ]

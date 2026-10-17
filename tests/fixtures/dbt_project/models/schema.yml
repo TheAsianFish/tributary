@@ -1,0 +1,47 @@
+version: 2
+models:
+  - name: wikis
+    description: One row per wiki.
+    columns:
+      - name: wiki
+        data_tests:
+          - not_null
+          - unique
+      - name: project_family
+        meta:
+          index_values: true
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["wikipedia"]
+              config:
+                severity: warn
+          - relationships:
+              arguments:
+                to: ref('wiki_family')
+                field: project_family
+      - name: domain
+        meta:
+          index_values: false
+      - name: edits
+        data_tests:
+          - min_value:
+              arguments:
+                minimum: 1000000
+    data_tests:
+      - row_count_between:
+          arguments:
+            low: 1
+            high: 100000
+  - name: broken
+    columns:
+      - name: id
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1]
+                quote: false
+          - min_value:
+              arguments:
+                minimum: "not a number"

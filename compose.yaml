@@ -1,5 +1,7 @@
-# The ingest spine: Kafka (KRaft) and PostgreSQL, the Spark stream job, and a
-# producer that replays the committed sample once. `docker compose up -d`.
+# Kafka (KRaft), PostgreSQL, MinIO, the Spark stream job writing both the
+# warehouse and the Iceberg lake, and a producer that replays the committed
+# sample once: `docker compose up -d`. Profile `lakehouse` adds Trino; profile
+# `airflow` adds the scheduler and its UI.
 name: tributary
 
 x-app: &app
@@ -22,6 +24,61 @@ x-app: &app
     TRIBUTARY_MAX_OFFSETS_PER_TRIGGER: ${TRIBUTARY_MAX_OFFSETS_PER_TRIGGER:-20000}
     TRIBUTARY_SPARK_MASTER: local[${TRIBUTARY_TOPIC_PARTITIONS:-3}]
     TRIBUTARY_LOG_LEVEL: ${TRIBUTARY_LOG_LEVEL:-INFO}
+    TRIBUTARY_LAKE_ENABLED: ${TRIBUTARY_LAKE_ENABLED:-true}
+    TRIBUTARY_LAKE_TRIGGER_INTERVAL: ${TRIBUTARY_LAKE_TRIGGER_INTERVAL:-1 minute}
+    <<: &s3
+      TRIBUTARY_S3_ENDPOINT: http://minio:9000
+      TRIBUTARY_S3_REGION: ${TRIBUTARY_S3_REGION:-us-east-1}
+      TRIBUTARY_S3_ACCESS_KEY: ${TRIBUTARY_S3_ACCESS_KEY:-tributary}
+      TRIBUTARY_S3_SECRET_KEY: ${TRIBUTARY_S3_SECRET_KEY:-tributary-dev-secret}
+
+# Profile `airflow`: Airflow 3 with the LocalExecutor, its metadata in the
+# `airflow` database of the platform's PostgreSQL (created by docker/postgres/init.sh).
+# UI on http://localhost:8080; every user is admin, so it is for local use only.
+x-airflow: &airflow
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  image: tributary-airflow:dev
+  profiles: [airflow]
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    # The platform refreshes itself once the profile is up; nothing to unpause by hand.
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+    AIRFLOW__CORE__DAGS_FOLDER: /opt/tributary/orchestration/dags
+    # psycopg 3 (already a dependency) for both engines. Airflow derives the async
+    # URL as postgresql+asyncpg when this is unset, and asyncpg is not installed.
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg://${TRIBUTARY_PG_USER:-tributary}:${TRIBUTARY_PG_PASSWORD:-tributary}@postgres:5432/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN_ASYNC: postgresql+psycopg://${TRIBUTARY_PG_USER:-tributary}:${TRIBUTARY_PG_PASSWORD:-tributary}@postgres:5432/airflow
+    # Task processes call back into the API server (Airflow 3's execution API).
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-apiserver:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:-tributary-dev-jwt-secret-change-me}
+    AIRFLOW__API__SECRET_KEY: ${AIRFLOW_API_SECRET_KEY:-tributary-dev-api-secret-change-me}
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
+    AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"
+    # The DAGs' tasks read the platform's own settings (TRIBUTARY_*), not Airflow
+    # connections: one configuration source for every component.
+    TRIBUTARY_PG_HOST: postgres
+    TRIBUTARY_PG_PORT: "5432"
+    TRIBUTARY_PG_DATABASE: ${TRIBUTARY_PG_DATABASE:-tributary}
+    TRIBUTARY_PG_USER: ${TRIBUTARY_PG_USER:-tributary}
+    TRIBUTARY_PG_PASSWORD: ${TRIBUTARY_PG_PASSWORD:-tributary}
+    TRIBUTARY_TRINO_HOST: trino
+    TRIBUTARY_TRINO_PORT: "8080"
+    # Closed hours (compaction, reconciliation) follow the stream job's watermark.
+    TRIBUTARY_WATERMARK_DELAY: ${TRIBUTARY_WATERMARK_DELAY:-10 minutes}
+    TRIBUTARY_DBT_VARS: ${TRIBUTARY_DBT_VARS:-}
+    TRIBUTARY_CATALOG_DIR: /data/catalog
+    TRIBUTARY_LOG_LEVEL: ${TRIBUTARY_LOG_LEVEL:-INFO}
+  volumes:
+    - catalog:/data/catalog
+  depends_on: &airflow-depends
+    postgres:
+      condition: service_healthy
+    airflow-init:
+      condition: service_completed_successfully
 
 services:
   postgres:
@@ -30,10 +87,14 @@ services:
       POSTGRES_USER: ${TRIBUTARY_PG_USER:-tributary}
       POSTGRES_PASSWORD: ${TRIBUTARY_PG_PASSWORD:-tributary}
       POSTGRES_DB: ${TRIBUTARY_PG_DATABASE:-tributary}
+      TRIBUTARY_READER_USER: ${TRIBUTARY_READER_USER:-tributary_reader}
+      TRIBUTARY_READER_PASSWORD: ${TRIBUTARY_READER_PASSWORD:-tributary_reader}
     ports:
       - "127.0.0.1:${TRIBUTARY_PG_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Airflow's database, the schemas and the read-only role, on first start.
+      - ./docker/postgres/init.sh:/docker-entrypoint-initdb.d/10-init.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
@@ -74,6 +135,45 @@ services:
       start_period: 10s
     mem_limit: 1g
 
+  minio:
+    build:
+      context: docker/minio
+    image: tributary-minio:dev
+    environment:
+      MINIO_ROOT_USER: ${TRIBUTARY_S3_ACCESS_KEY:-tributary}
+      MINIO_ROOT_PASSWORD: ${TRIBUTARY_S3_SECRET_KEY:-tributary-dev-secret}
+    ports:
+      - "127.0.0.1:9000:9000"   # S3 API
+      - "127.0.0.1:9001:9001"   # web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    mem_limit: 512m
+
+  # Creates the `lake` bucket once (an S3 PUT signed with curl's SigV4 support);
+  # an existing bucket answers 409, which is fine.
+  lake-init:
+    image: tributary-minio:dev
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      <<: *s3
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        code=$$(curl -s -o /dev/null -w '%{http_code}' -X PUT
+        --aws-sigv4 "aws:amz:$${TRIBUTARY_S3_REGION}:s3"
+        --user "$${TRIBUTARY_S3_ACCESS_KEY}:$${TRIBUTARY_S3_SECRET_KEY}"
+        http://minio:9000/lake);
+        echo "create bucket lake: HTTP $$code";
+        [ "$$code" = 200 ] || [ "$$code" = 409 ]
+    restart: "no"
+
   stream:
     <<: *app
     command: ["stream"]
@@ -82,6 +182,8 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      lake-init:
+        condition: service_completed_successfully
     volumes:
       - checkpoints:/data/checkpoints
     # Healthy once the Spark driver is up and serving its REST API, so
@@ -106,7 +208,93 @@ services:
     restart: "no"
     mem_limit: 512m
 
+  trino:
+    image: trinodb/trino:484
+    profiles: [lakehouse]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lake-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *s3
+      TRIBUTARY_PG_HOST: postgres
+      TRIBUTARY_PG_PORT: "5432"
+      TRIBUTARY_PG_DATABASE: ${TRIBUTARY_PG_DATABASE:-tributary}
+      TRIBUTARY_PG_USER: ${TRIBUTARY_PG_USER:-tributary}
+      TRIBUTARY_PG_PASSWORD: ${TRIBUTARY_PG_PASSWORD:-tributary}
+      TRIBUTARY_READER_USER: ${TRIBUTARY_READER_USER:-tributary_reader}
+      TRIBUTARY_READER_PASSWORD: ${TRIBUTARY_READER_PASSWORD:-tributary_reader}
+    volumes:
+      - ./docker/trino/catalog:/etc/trino/catalog:ro
+    ports:
+      - "127.0.0.1:${TRIBUTARY_TRINO_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD", "/usr/lib/trino/bin/health-check"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    # The image sizes the heap at 80% of the container limit: 1.6 GB.
+    mem_limit: 2g
+
+  airflow-init:
+    <<: *airflow
+    command: ["db", "migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    mem_limit: 1g
+
+  airflow-apiserver:
+    <<: *airflow
+    command: ["api-server"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      # No curl in python:3.12-slim; the interpreter is there.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/v2/monitor/health', timeout=5)"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    mem_limit: 1g
+
+  airflow-scheduler:
+    <<: *airflow
+    command: ["scheduler"]
+    depends_on:
+      <<: *airflow-depends
+      airflow-apiserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    # The LocalExecutor runs the tasks here, dbt subprocesses included.
+    mem_limit: 2g
+
+  airflow-dag-processor:
+    <<: *airflow
+    command: ["dag-processor"]
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname \"$${HOSTNAME}\""]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    mem_limit: 768m
+
 volumes:
   pgdata:
   kafka-data:
   checkpoints:
+  minio-data:
+  # The published catalog (manifest, catalog, value index); the API mounts it from M3.
+  catalog:

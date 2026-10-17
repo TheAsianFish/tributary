@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Rows landed by the Spark stream job (or `tributary sample load`), unmodelled.
+    schema: raw
+    tables:
+      - name: recentchange
+        description: >
+          One row per Wikimedia recentchange event, keyed by the event UUID. Written
+          idempotently (ON CONFLICT DO NOTHING), so a replayed event never duplicates.
+          Rows loaded without Kafka carry kafka_partition = -1.
+        data_tests:
+          - volume_anomaly:
+              arguments:
+                column_name: event_ts
+        columns:
+          - name: event_id
+            description: Event UUID (meta.id); primary key.
+            data_tests: [unique, not_null]
+          - name: event_ts
+            description: When the change happened on the wiki (MediaWiki timestamp, 1 s resolution, UTC).
+            data_tests: [not_null]
+          - name: emitted_at
+            description: When Wikimedia's EventGate emitted the event (meta.dt); NULL if absent.
+          - name: rc_id
+            description: The wiki's own recentchanges row id; unique only within one wiki. NULL for some log events.
+          - name: wiki
+            description: Wiki database name, e.g. enwiki, commonswiki, wikidatawiki.
+            data_tests: [not_null]
+          - name: domain
+            description: >
+              Host name the event was recorded under, e.g. en.wikipedia.org. Account
+              creations are logged under the shared auth.wikimedia.org domain.
+          - name: event_type
+            description: Event type (edit, new, log, categorize, external); see the event_types seed.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: [edit, new, log, categorize, external]
+          - name: namespace
+            description: MediaWiki namespace id of the page; see the namespaces seed.
+          - name: title
+            description: Page title including the namespace prefix, as displayed on the wiki.
+          - name: user_name
+            description: Account name, temporary account name (~YYYY-NNNNN-NN) or IP address of the actor.
+          - name: is_bot
+            description: True when the actor has the bot flag.
+          - name: is_minor
+            description: Minor-edit flag; NULL for event types other than edit and new.
+          - name: is_patrolled
+            description: Patrolled flag; NULL on wikis without patrolling and for most non-edit events.
+          - name: length_old
+            description: Page size in bytes before the change; NULL for page creations and non-edit events.
+          - name: length_new
+            description: Page size in bytes after the change; NULL for non-edit events.
+          - name: rev_old
+            description: Revision id before the change; NULL for page creations and non-edit events.
+          - name: rev_new
+            description: Revision id saved by the change; NULL for non-edit events.
+          - name: log_type
+            description: Log type for log events (block, upload, newusers, ...); NULL otherwise.
+          - name: log_action
+            description: Log action within log_type (e.g. create, overwrite); NULL otherwise.
+          - name: kafka_partition
+            description: Kafka partition the row was read from; -1 when loaded directly without Kafka.
+          - name: kafka_offset
+            description: Kafka offset within the partition (input position for direct loads).
+          - name: kafka_ts
+            description: Kafka record timestamp set by the producer (load time for direct loads).
+          - name: ingested_at
+            description: When the sink inserted the row (arrival time in the warehouse).
+            data_tests:
+              - not_null
+              - freshness

@@ -31,3 +31,20 @@ def test_rejects_zero_partitions(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TRIBUTARY_TOPIC_PARTITIONS", "0")
     with pytest.raises(ValueError, match="topic_partitions"):
         Settings(_env_file=None)
+
+
+def test_iceberg_catalog_url_follows_the_warehouse_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TRIBUTARY_PG_HOST", "postgres")
+    s = Settings(_env_file=None)
+    assert s.iceberg_jdbc_url == (
+        "jdbc:postgresql://postgres:5432/tributary?currentSchema=iceberg_catalog"
+    )
+    assert "password" not in s.iceberg_jdbc_url
+
+
+def test_host_spark_packages_include_the_lake_jars() -> None:
+    packages = Settings(_env_file=None).spark_packages.split(",")
+    assert any("iceberg-spark-runtime-4.1_2.13" in p for p in packages)
+    assert any(p.startswith("org.postgresql:postgresql:") for p in packages)

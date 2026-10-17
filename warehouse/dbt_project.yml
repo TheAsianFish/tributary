@@ -1,0 +1,41 @@
+name: tributary
+version: "0.1.0"
+config-version: 2
+require-dbt-version: [">=1.10.0", "<2.0.0"]
+
+profile: tributary
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: [target, dbt_packages, logs]
+
+flags:
+  send_anonymous_usage_stats: false
+
+vars:
+  # fct_edits re-reads this many minutes of arrivals before its high-water mark, so a
+  # sink transaction that committed after a later-stamped one is still picked up.
+  fct_edits_lookback_minutes: 60
+  # Custom quality tests (tests/generic). Severities are vars so an orchestrator can
+  # demote a check to warn during a known backfill or replay without editing YAML.
+  freshness_max_lag_minutes: 60
+  freshness_severity: error
+  volume_anomaly_severity: error
+
+models:
+  tributary:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+seeds:
+  tributary:
+    # Seeds are small lookups that only the staging layer joins, so they live next to
+    # it; marts carry the looked-up names denormalised and never reference a seed.
+    +schema: staging

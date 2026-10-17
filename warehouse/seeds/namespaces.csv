@@ -1,0 +1,84 @@
+namespace_id,project_family,wiki,namespace_name,is_talk
+-2,,,Media,false
+-1,,,Special,false
+0,,,Main,false
+1,,,Talk,true
+2,,,User,false
+3,,,User talk,true
+4,,,Project,false
+5,,,Project talk,true
+6,,,File,false
+7,,,File talk,true
+8,,,MediaWiki,false
+9,,,MediaWiki talk,true
+10,,,Template,false
+11,,,Template talk,true
+12,,,Help,false
+13,,,Help talk,true
+14,,,Category,false
+15,,,Category talk,true
+100,,,Portal,false
+101,,,Portal talk,true
+102,,,WikiProject,false
+103,,,WikiProject talk,true
+118,,,Draft,false
+119,,,Draft talk,true
+710,,,TimedText,false
+711,,,TimedText talk,true
+828,,,Module,false
+829,,,Module talk,true
+1198,,,Translations,false
+1199,,,Translations talk,true
+1728,,,Event,false
+1729,,,Event talk,true
+2300,,,Gadget,false
+2301,,,Gadget talk,true
+2302,,,Gadget definition,false
+2303,,,Gadget definition talk,true
+2600,,,Topic,false
+100,wiktionary,,Appendix,false
+101,wiktionary,,Appendix talk,true
+100,wikisource,,Portal,false
+101,wikisource,,Portal talk,true
+102,wikisource,,Author,false
+103,wikisource,,Author talk,true
+104,wikisource,,Page,false
+105,wikisource,,Page talk,true
+106,wikisource,,Index,false
+107,wikisource,,Index talk,true
+250,wikisource,,Page,false
+251,wikisource,,Page talk,true
+252,wikisource,,Index,false
+253,wikisource,,Index talk,true
+120,wikidata,,Property,false
+121,wikidata,,Property talk,true
+146,wikidata,,Lexeme,false
+147,wikidata,,Lexeme talk,true
+640,wikidata,,EntitySchema,false
+641,wikidata,,EntitySchema talk,true
+100,commons,,Creator,false
+101,commons,,Creator talk,true
+102,commons,,TimedText,false
+103,commons,,TimedText talk,true
+106,commons,,Institution,false
+107,commons,,Institution talk,true
+486,commons,,Data,false
+487,commons,,Data talk,true
+114,,enwiktionary,Citations,false
+115,,enwiktionary,Citations talk,true
+118,,enwiktionary,Reconstruction,false
+119,,enwiktionary,Reconstruction talk,true
+104,,eswiki,Appendix,false
+105,,eswiki,Appendix talk,true
+104,,ruwiki,WikiProject,false
+105,,ruwiki,WikiProject talk,true
+104,,ltwiki,List,false
+105,,ltwiki,List talk,true
+106,,fiwiki,WikiProject,false
+107,,fiwiki,WikiProject talk,true
+102,,cswiki,Index,false
+103,,cswiki,Index talk,true
+106,,ptwikisource,Page,false
+107,,ptwikisource,Page talk,true
+498,,labswiki,Nova Resource,false
+499,,labswiki,Nova Resource talk,true

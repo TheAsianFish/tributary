@@ -1,0 +1,25 @@
+$ docker compose --profile lakehouse down -v && docker compose --profile lakehouse up -d --wait postgres kafka minio lake-init stream trino
+every service healthy after 21 s (images already built)
+$ docker compose up -d producer   # then every ~7 s: count(*) in raw.recentchange (psql) and iceberg.raw.recentchange (Trino)
+7s warehouse=0 lake=0
+21s warehouse=0 lake=0
+28s warehouse=11333 lake=3818
+35s warehouse=14955 lake=3818
+43s warehouse=17450 lake=3818
+50s warehouse=22454 lake=3818
+56s warehouse=24953 lake=3818
+64s warehouse=27451 lake=3818
+71s warehouse=32451 lake=32451
+78s warehouse=34957 lake=32451
+85s warehouse=39953 lake=32451
+91s warehouse=42454 lake=32451
+99s warehouse=44953 lake=32451
+105s warehouse=49949 lake=32451
+112s warehouse=50000 lake=32451
+119s warehouse=50000 lake=32451
+126s warehouse=50000 lake=32451
+133s warehouse=50000 lake=50000
+$ psql: select count(*), count(distinct event_id) from raw.recentchange
+50000|50000
+$ trino: select count(*), count(distinct event_id) from iceberg.raw.recentchange
+50000	50000

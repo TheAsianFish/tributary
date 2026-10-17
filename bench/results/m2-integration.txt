@@ -1,0 +1,31 @@
+$ make down && make up-lakehouse
+healthy after 48 s (image build cached)
+$ make test-integration
+uv run pytest tests/integration -m integration
+tests/integration/test_lakehouse.py ...                                  [ 42%]
+tests/integration/test_pipeline.py .                                     [ 57%]
+tests/integration/test_sink_postgres.py ...                              [100%]
+========================= 7 passed in 87.10s (0:01:27) =========================
+real	1m27.556s
+$ uv run pytest tests/warehouse -m lakehouse
+================================= dag timings ==================================
+airflow db migrate (sqlite): 2.7 s
+dag.test() lake_maintenance: 7.4 s
+====================== 1 passed, 11 deselected in 12.65s =======================
+real	0m15.340s
+
+$ docker compose exec postgres psql -U tributary -c "select check_name, status, failures, details->>'warehouse_distinct', details->>'lake_rows', details->>'lake_distinct', details->>'warehouse_fingerprint', details->>'lake_fingerprint', details->>'ids_match' from ops.quality_runs where source = 'reconcile' order by check_name"
+          check_name          | status | failures | warehouse | lake_rows | lake_distinct |    wh_fp     |   lake_fp    | ids_match 
+------------------------------+--------+----------+-----------+-----------+---------------+--------------+--------------+-----------
+ lake_lag                     | pass   |        0 |           |           |               |              |              | 
+ reconcile_hour:2026-10-17T13 | pass   |        0 | 721       | 721       | 721           | 55143486433  | 55143486433  | true
+ reconcile_hour:2026-10-17T14 | pass   |        0 | 1800      | 1800      | 1800          | 111871119879 | 111871119879 | true
+ reconcile_hour:2026-10-17T15 | pass   |        0 | 1800      | 1800      | 1800          | 135228906277 | 135228906277 | true
+(4 rows)
+
+$ docker compose exec postgres psql -U tributary -c "select count(*), max(max_event_ts) from ops.stream_progress"
+ count |          max           
+-------+------------------------
+     3 | 2026-10-17 16:26:34+00
+(1 row)
+

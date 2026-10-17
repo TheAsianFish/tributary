@@ -1,0 +1,47 @@
+version: 2
+
+seeds:
+  - name: namespaces
+    description: >
+      MediaWiki namespace ids and their canonical English names. Ids 0 to 15 and the
+      extension namespaces are the same on every wiki; ids from 100 up are chosen by
+      each project, so a row can be scoped to a project family or to one wiki. Lookup
+      order is wiki, then project family, then the default row (both scopes NULL).
+    config:
+      column_types:
+        namespace_id: integer
+        project_family: text
+        wiki: text
+        namespace_name: text
+        is_talk: boolean
+    data_tests:
+      - unique_combination:
+          arguments:
+            combination_of_columns: [namespace_id, project_family, wiki]
+    columns:
+      - name: namespace_id
+        description: MediaWiki namespace id (0 = articles, 14 = categories, odd ids are talk pages).
+        data_tests: [not_null]
+      - name: project_family
+        description: Project family the row applies to (e.g. wikisource); NULL when not family-specific.
+      - name: wiki
+        description: Wiki database name the row applies to (e.g. enwiktionary); NULL when not wiki-specific.
+      - name: namespace_name
+        description: Canonical English namespace name (Main for namespace 0).
+        data_tests: [not_null]
+      - name: is_talk
+        description: True for discussion namespaces (odd ids).
+        data_tests: [not_null]
+
+  - name: event_types
+    description: The recentchange event types and what each one means.
+    config:
+      column_types:
+        event_type: text
+        description: text
+    columns:
+      - name: event_type
+        description: Value of recentchange `type`.
+        data_tests: [unique, not_null]
+      - name: description
+        description: One-line meaning of the event type.

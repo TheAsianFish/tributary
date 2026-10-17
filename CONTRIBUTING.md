@@ -10,18 +10,20 @@ Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Docker with
 Compose v2, Java 17 (only for running the Spark job or its tests locally).
 
 ```bash
-uv sync --all-extras          # creates .venv with the dev group and the spark extra
+uv sync --all-extras          # .venv with the dev group and the spark, warehouse, lakehouse, airflow extras
 cp .env.example .env          # optional; the defaults match compose.yaml
-make up                       # PostgreSQL + Kafka + the Spark stream job
+make up-lakehouse             # PostgreSQL, Kafka, MinIO, the Spark stream job, Trino
 uv run tributary produce --limit 5000
 make test-integration
 ```
 
 `docker compose up -d` additionally starts the producer, which replays the
-whole sample once. `make down` deletes the volumes (topic, table and
-checkpoints together, so they never disagree). Later milestones add MinIO,
-the `lakehouse`, `airflow` and `bird` profiles and `tributary ask`; they are
-described in PLAN.md and appear here when they exist.
+whole sample once. `make down` deletes the volumes (topic, tables, lake
+files and checkpoints together, so they never disagree). The warehouse can
+be worked on without the streaming stack: any PostgreSQL 17 plus
+`uv run tributary sample load` (the sample straight into `raw.recentchange`)
+is enough for `make dbt` and `make test-warehouse`. The `bird` profile and
+`tributary ask` arrive with later milestones (PLAN.md).
 
 ## Commands
 
@@ -29,15 +31,19 @@ described in PLAN.md and appear here when they exist.
 |---|---|
 | `make check` | ruff format check, ruff lint, mypy strict, pytest (offline). The quality gate; CI runs exactly this. |
 | `make test` | Unit tests only (fast, offline, deterministic; the Spark tests run in local mode and need Java 17). |
-| `make test-integration` | Integration tests against the Compose services (Kafka, Spark, Postgres). Run `make up` first. |
-| `make up` / `make down` | Start Kafka, PostgreSQL and the stream job (no replay) / stop and delete the volumes. |
+| `make test-integration` | Integration tests against the Compose services: 5,000 events into PostgreSQL and Iceberg, pruning. Run `make up-lakehouse` first. |
+| `make up` / `make down` | Start Kafka, PostgreSQL, MinIO and the stream job (no replay) / stop everything and delete the volumes. |
+| `make up-lakehouse` | `make up` plus Trino (profile `lakehouse`, about 2 GB). |
+| `make up-airflow` | `make up` plus the Airflow scheduler, DAG processor and UI on http://localhost:8080 (profile `airflow`). |
+| `make dbt` | `dbt build` on the warehouse: seeds, staging, marts and every test. Needs `raw.recentchange` populated. |
+| `make test-warehouse` | dbt quality-test fixtures, `dbt build` on the sample and the warehouse DAGs under `dag.test()`, against PostgreSQL alone. |
 | `make logs` | Follow the stream job and producer logs. |
 | `make demo-data` | Regenerate the committed sample from the live stream (maintainers only; keeps factual fields, drops comment text; about 45 minutes). |
 | `make sample-stats` | Counts, duplicates, emit delay and lateness of the committed sample. |
 
 Planned targets (`make eval`, `make bench`, `make bench-scale`,
-`make bench-query`, `make bird`, `make dbt`, `make test-live`) are specified in
-PLAN.md and land with their milestones.
+`make bench-query`, `make bird`, `make test-live`) are specified in PLAN.md
+and land with their milestones.
 
 ## Conventions
 
@@ -45,8 +51,9 @@ PLAN.md and land with their milestones.
   without a comment saying why.
 - **Formatted and linted** with ruff (line length 100). Imports sorted by
   ruff.
-- **Tests** live in `tests/unit`, `tests/integration`, `tests/live`. Unit
-  tests never touch the network or Docker; the Anthropic client is replaced
+- **Tests** live in `tests/unit`, `tests/warehouse` (PostgreSQL only),
+  `tests/integration` (the Compose stack), `tests/live`. Unit tests never
+  touch the network or Docker; the Anthropic client is replaced
   by the `fake` provider, which replays recordings from
   `tests/recordings/`. A recording is real API output captured once with
   `make record`; never hand-write one.
