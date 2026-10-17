@@ -1,5 +1,9 @@
 version: 2
 
+# user_name (editor accounts and IP addresses) and title carry index_values: false:
+# the catalog's value index lists a low-cardinality text column's values and sends
+# them to the model, and editor identities and page titles must never be among them.
+
 models:
   - name: fct_edits
     description: >
@@ -43,8 +47,12 @@ models:
         description: Canonical English namespace name, e.g. Main (articles), Talk, User, File, Category, Draft; NULL if unknown.
       - name: title
         description: Page title as shown on the wiki, including the namespace prefix (e.g. "Draft:Foo").
+        config:
+          meta: {index_values: false}
       - name: user_name
         description: Who made the edit - account name, temporary account name (~YYYY-NNNNN-NN) or IP address.
+        config:
+          meta: {index_values: false}
       - name: is_bot
         description: True when the editor has the bot flag.
         data_tests: [not_null]
@@ -118,6 +126,8 @@ models:
         description: Canonical English namespace name, e.g. Main, Talk, User, Category; NULL if unknown.
       - name: title
         description: Page title including the namespace prefix.
+        config:
+          meta: {index_values: false}
       - name: first_seen_ts
         description: Earliest edit or creation of the page in the data, UTC.
       - name: last_seen_ts
@@ -174,6 +184,8 @@ models:
         data_tests: [not_null]
       - name: user_name
         description: Account name, temporary account name or IP address.
+        config:
+          meta: {index_values: false}
         data_tests: [not_null]
       - name: is_bot
         description: True when any of the editor's edits carried the bot flag.
