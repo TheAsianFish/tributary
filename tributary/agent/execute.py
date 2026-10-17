@@ -18,6 +18,12 @@ guard wrongly lets through cannot do much. Every query
 One connection per query keeps sessions from sharing state (a ``set_config``
 that slipped through would die with its connection). The transaction is
 always rolled back: nothing a read can do needs committing.
+
+What the database cannot enforce: any role may raise its own
+``statement_timeout`` (``set_config`` inside the query), and every role can
+read ``pg_catalog``. Those two are held by the guard alone, which denies
+``set_config``, ``SET`` and system-catalog reads; ``make eval-guard-db``
+lists every such case.
 """
 
 from __future__ import annotations
