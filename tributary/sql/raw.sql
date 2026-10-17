@@ -33,3 +33,8 @@ COMMENT ON COLUMN raw.recentchange.event_ts IS 'When the change happened (MediaW
 COMMENT ON COLUMN raw.recentchange.emitted_at IS 'When EventGate emitted the event (meta.dt).';
 COMMENT ON COLUMN raw.recentchange.kafka_ts IS 'Kafka record timestamp, set by the producer.';
 COMMENT ON COLUMN raw.recentchange.ingested_at IS 'When the sink inserted the row.';
+
+-- fct_edits loads incrementally on arrival time. Rows arrive in roughly
+-- ingested_at order, so a BRIN index is a few pages and costs the sink almost nothing.
+CREATE INDEX IF NOT EXISTS recentchange_ingested_at_brin
+    ON raw.recentchange USING brin (ingested_at);
