@@ -69,13 +69,16 @@ class FakeCursor:
     def __exit__(self, *exc: object) -> None:
         return None
 
-    def execute(self, query: sql.Composable) -> None:
+    def execute(self, query: sql.Composable, params: Sequence[object] | None = None) -> None:
         text = query.as_string()
         self.conn.statements.append(text)
         if self.conn.fail_next is not None:
             error, self.conn.fail_next = self.conn.fail_next, None
             raise error
-        if text.startswith("INSERT"):
+        if text.startswith("INSERT INTO ops.stream_progress"):
+            assert params is not None
+            self.conn.progress.append(tuple(params))
+        elif text.startswith("INSERT"):
             staged = [str(r[0]) for r in self.staged]
             new = set(staged) - self.conn.table
             if "ON CONFLICT (event_id) DO NOTHING" not in text and len(new) < len(staged):
@@ -99,6 +102,7 @@ class FakeConnection:
         self.info = FakeInfo()
         self.statements: list[str] = []
         self.table: set[str] = set()
+        self.progress: list[tuple[object, ...]] = []
         self.cursors: list[FakeCursor] = []
         self.commits = 0
         self.closed = False
@@ -237,6 +241,13 @@ def test_write_partition_empty_partition_opens_no_connection(
     assert connections == []
 
 
+def test_write_partition_reports_its_newest_event_time(
+    connections: list[FakeConnection],
+) -> None:
+    [result] = collect(write_partition("dbname=x"), [row(5), row(9), row(2)])
+    assert result.max_event_ts == datetime.fromtimestamp(1792193655 + 9, tz=UTC)
+
+
 def test_write_partition_replaces_a_broken_connection(
     connections: list[FakeConnection],
 ) -> None:
@@ -311,6 +322,9 @@ def test_postgres_sink_writes_each_partition_and_logs_the_batch(
     assert (entry["rows"], entry["inserted"], entry["duplicates_skipped"]) == (4, 3, 1)
     assert entry["partitions"] == 3
     assert entry["sink_ms"] >= 0
+    # Recorded once every partition has committed: the batch's newest event time.
+    newest = datetime.fromtimestamp(1792193655 + 3, tz=UTC)
+    assert connections[0].progress == [("warehouse", 7, newest, 4, 3)]
 
 
 def test_postgres_sink_empty_batch_writes_nothing(connections: list[FakeConnection]) -> None:

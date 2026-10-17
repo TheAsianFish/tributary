@@ -44,16 +44,25 @@ INSERT_FROM_STAGE = sql.SQL(
 _TIMESTAMP_INDEXES = tuple(
     i for i, name in enumerate(COLUMNS) if name in ("event_ts", "emitted_at", "kafka_ts")
 )
+_EVENT_TS = COLUMNS.index("event_ts")
+
+RECORD_PROGRESS = sql.SQL(
+    "INSERT INTO ops.stream_progress (query, batch_id, max_event_ts, rows, inserted)"
+    " VALUES (%s, %s, %s, %s, %s)"
+    " ON CONFLICT (query, batch_id) DO UPDATE SET max_event_ts = EXCLUDED.max_event_ts,"
+    " rows = EXCLUDED.rows, inserted = EXCLUDED.inserted, committed_at = clock_timestamp()"
+)
 
 log = structlog.get_logger("tributary.stream.sink")
 
 
 class SinkResult(NamedTuple):
-    """Outcome of one write: rows offered, rows inserted, seconds spent."""
+    """Outcome of one write: rows offered, rows inserted, seconds spent, newest event time."""
 
     rows: int
     inserted: int
     seconds: float
+    max_event_ts: datetime | None = None
 
 
 def ensure_schema(conninfo: str, script: str = "raw.sql") -> None:
@@ -145,7 +154,8 @@ def write_partition(
         except psycopg.OperationalError:
             _discard(conninfo)
             result = write_rows(_connection(conninfo), batch)
-        yield result
+        times = [ts for row in batch if isinstance(ts := row[_EVENT_TS], datetime)]
+        yield result._replace(max_event_ts=max(times, default=None))
 
     return write
 
@@ -157,10 +167,15 @@ class PostgresSink:
     dedup) runs once and the dedup state for the batch is committed even when
     the batch is empty. ``sink_ms`` times that action, which includes the
     upstream stage; ``db_ms_max`` is the slowest partition's time in PostgreSQL.
+
+    Once every partition has committed, the batch's newest event time goes to
+    ``ops.stream_progress``: until then some of its rows may not be visible,
+    so the table's own ``max(event_ts)`` is not a safe "landed up to" mark.
     """
 
-    def __init__(self, conninfo: str) -> None:
+    def __init__(self, conninfo: str, query: str = "warehouse") -> None:
         self._conninfo = conninfo
+        self._query = query
         # foreachBatch runs on a py4j callback thread, which does not inherit contextvars.
         self._log = log.bind(**structlog.contextvars.get_contextvars())
 
@@ -185,3 +200,8 @@ class PostgresSink:
             sink_ms=round(sink_ms, 1),
             db_ms_max=round(max(r.seconds for r in results) * 1000, 1),
         )
+        newest = max((r.max_event_ts for r in results if r.max_event_ts is not None), default=None)
+        if newest is not None:
+            conn = _connection(self._conninfo)
+            with conn.transaction(), conn.cursor() as cur:
+                cur.execute(RECORD_PROGRESS, (self._query, batch_id, newest, rows, inserted))

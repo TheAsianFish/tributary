@@ -35,6 +35,20 @@ CREATE TABLE IF NOT EXISTS ops.refresh_runs (
     PRIMARY KEY (run_id, node)
 );
 
+-- One row per micro-batch the warehouse query has fully written (every partition
+-- committed): the newest event time it holds. Rows of a batch commit partition by
+-- partition, so max(event_ts) of the table can run ahead of a batch still being
+-- written; checks that need "everything up to T has landed" read this instead.
+CREATE TABLE IF NOT EXISTS ops.stream_progress (
+    query        text        NOT NULL,
+    batch_id     bigint      NOT NULL,
+    max_event_ts timestamptz NOT NULL,
+    rows         bigint      NOT NULL,
+    inserted     bigint      NOT NULL,
+    committed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    PRIMARY KEY (query, batch_id)
+);
+
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS
 SELECT DISTINCT ON (check_name) *

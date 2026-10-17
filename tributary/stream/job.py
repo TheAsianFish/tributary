@@ -113,7 +113,7 @@ def start_warehouse_query(
     events = parsed_events(spark, settings)
     writer = (
         events.writeStream.queryName(QUERY_NAME)
-        .foreachBatch(PostgresSink(settings.pg_conninfo))
+        .foreachBatch(PostgresSink(settings.pg_conninfo, QUERY_NAME))
         .option("checkpointLocation", str(settings.checkpoint_dir))
     )
     if available_now:
@@ -235,6 +235,7 @@ def run(settings: Settings, *, available_now: bool = False) -> None:
 
     ensure_topic(settings.kafka_bootstrap, settings.topic, settings.topic_partitions)
     ensure_schema(settings.pg_conninfo)
+    ensure_schema(settings.pg_conninfo, "ops.sql")
     spark = build_session(settings)
     stop = threading.Event()
 

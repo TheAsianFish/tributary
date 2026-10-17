@@ -1,18 +1,28 @@
 """Per-hour reconciliation of the Iceberg lake against the PostgreSQL warehouse.
 
 Both sinks read the same topic with the same parser and dedup, so for every
-closed hour they must hold the same set of event ids. The check compares
+closed hour they should hold the same set of event ids. The check compares
 distinct ids per hour (``raw.recentchange`` has a primary key, so its row count
 is its distinct count) and, on the lake side, rows against distinct ids:
 Iceberg has no key, so a duplicate that slipped past the dedup state shows up
 as ``lake_rows > lake_distinct``. Each hour becomes one row in
 ``ops.quality_runs``.
 
-An hour only counts as closed once *both* stores have moved past it, so a lake
-that trails by one trigger is not flagged. A lake that has stopped would then
-close no hours at all and pass silently; the separate ``lake_lag`` check fails
-when the lake's newest event trails the warehouse's by more than
-``TRIBUTARY_LAKE_MAX_LAG_MINUTES``.
+"Should", not "must": the two queries trigger at different rates, so at any
+Kafka offset their watermarks differ. An event later than the watermark
+delay can be kept by one and dropped by the other, and after a long outage a
+copy whose dedup key had expired can pass as new in one of them (PostgreSQL's
+key absorbs it, Iceberg stores it). With the measured lateness (max 143 s
+against a 10-minute delay) neither happens on the sample; when an hour fails,
+its ``details`` (missing, extra, duplicates) say which kind it was.
+
+An hour only counts as closed once *both* stores have moved past it: the
+lake's newest event (Iceberg commits a batch atomically) and the newest event
+of the warehouse's fully committed batches (``ops.stream_progress``), so a
+lake that trails by one trigger, or a warehouse batch half committed, is not
+flagged. A lake that has stopped would then close no hours at all and pass
+silently; the separate ``lake_lag`` check fails when the lake's newest event
+trails the warehouse's by more than ``TRIBUTARY_LAKE_MAX_LAG_MINUTES``.
 """
 
 from __future__ import annotations
@@ -114,8 +124,24 @@ def _utc(value: object) -> datetime:
 
 
 def warehouse_newest(conninfo: str) -> datetime | None:
-    with psycopg.connect(conninfo) as conn:
-        row = conn.execute("SELECT max(event_ts) FROM raw.recentchange").fetchone()
+    """Newest event time of the micro-batches the warehouse has fully committed.
+
+    Not ``max(event_ts)`` of the table: a batch commits partition by partition,
+    and the dedup shuffle spreads event times over partitions, so while one
+    batch is half written the table's maximum can sit ahead of rows still to
+    come for an hour that would already look closed. Rows loaded without the
+    stream (``tributary sample load``) leave no progress; then the table's
+    maximum is the only mark there is.
+    """
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        try:
+            row = conn.execute(
+                "SELECT max(max_event_ts) FROM ops.stream_progress WHERE query = 'warehouse'"
+            ).fetchone()
+        except psycopg.errors.UndefinedTable:
+            row = None
+        if row is None or row[0] is None:
+            row = conn.execute("SELECT max(event_ts) FROM raw.recentchange").fetchone()
     return None if row is None or row[0] is None else _utc(row[0])
 
 

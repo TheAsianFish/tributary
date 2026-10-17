@@ -179,6 +179,27 @@ def test_postgres_and_trino_over_iceberg_count_the_same_distinct_ids(
     assert scalar(present) == N_EVENTS
 
 
+def test_the_warehouse_records_each_fully_committed_batch(conn: PgConn, replay: Replay) -> None:
+    """ops.stream_progress catches up with the table once the replay's batches have committed.
+
+    The reconciliation closes hours on this mark rather than on max(event_ts),
+    which can run ahead while a batch is committed partition by partition.
+    """
+    newest = replay.start + timedelta(seconds=(N_EVENTS - 1) * SPACING_S)
+    deadline = time.monotonic() + 30
+    mark: object = None
+    while time.monotonic() < deadline:
+        mark = scalar(
+            conn.execute(
+                "SELECT max(max_event_ts) FROM ops.stream_progress WHERE query = 'warehouse'"
+            ).fetchall()
+        )
+        if isinstance(mark, datetime) and mark >= newest:
+            break
+        time.sleep(1)
+    assert mark == newest
+
+
 def test_a_one_hour_filter_reads_only_that_hours_data_files(
     settings: Settings, replay: Replay
 ) -> None:

@@ -119,7 +119,7 @@ different failure:
 | Failure | What handles it |
 |---|---|
 | Producer retries after a lost ack | Kafka's idempotent producer (`enable.idempotence`, `acks=all`): the broker drops the retried copy. |
-| The same event sent twice (re-run, live-stream reconnect) | `dropDuplicatesWithinWatermark` on the event UUID, keyed in Spark's state store. A copy arriving after its key expired is older than the watermark, and Spark drops it as late (pinned by a test). |
+| The same event sent twice (re-run, live-stream reconnect) | `dropDuplicatesWithinWatermark` on the event UUID, keyed in Spark's state store. A copy arriving after its key expired is normally behind the watermark and dropped as late; if the watermark jumped by more than the delay in one batch (after an outage) it passes as a new key, and then the primary key below stops it (both cases pinned by a test). |
 | A micro-batch replayed after a crash between the sink's write and Spark's commit | The sink: `COPY` into a temp table, then `INSERT ... ON CONFLICT (event_id) DO NOTHING`. Writing the same batch twice is a no-op. Spark's state cannot help here: the replay re-runs the batch from the previous state. |
 | Offsets lost or truncated in Kafka | `failOnDataLoss=true`: the job stops instead of silently skipping. |
 | Events that arrive late | The watermark delay (10 min) is chosen from the measured lateness of the real stream: p99 8 s, max 143 s over 50,000 events, 0 that a 10-minute delay would drop. Rows dropped by the watermark are logged per batch. |
@@ -137,7 +137,13 @@ twice. What it cannot absorb is a duplicate that got past the dedup state.
 The `lake_maintenance` DAG therefore compares every *closed* hour (one the
 watermark has passed, so neither sink will receive another row for it):
 distinct ids in PostgreSQL against rows and distinct ids in Iceberg, one
-`ops.quality_runs` row per hour. A lake that has stopped would close no hours
+`ops.quality_runs` row per hour. An hour is closed on the newest event of the
+warehouse's *fully committed* batches (the sink records each in
+`ops.stream_progress`), because a batch commits partition by partition and the
+table's own maximum can run ahead of rows still being written. The two
+queries trigger at different rates, so an event later than the watermark
+delay could be kept by one and dropped by the other; the hour's details say
+which kind of mismatch it was. A lake that has stopped would close no hours
 and pass silently, so a separate `lake_lag` check fails when the lake's
 newest event trails the warehouse's by more than 15 minutes. On the sample
 the closed hour matched (19,271 = 19,271, 0 duplicates); with one row copied
