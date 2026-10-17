@@ -1,4 +1,4 @@
-"""End to end: sample events → Kafka → Spark stream job → raw.recentchange.
+"""End to end: 5,000 sample events → Kafka → Spark stream job → raw.recentchange.
 
 Needs the Compose services (``docker compose up -d --wait``) with the stream job
 running, and reaches them through the host ports in ``.env.example``.
@@ -10,6 +10,7 @@ import copy
 import time
 import uuid
 from collections.abc import Iterator
+from datetime import datetime
 
 import psycopg
 import pytest
@@ -70,35 +71,42 @@ def produce(settings: Settings, events: list[Event]) -> None:
     assert stats.delivered == len(events) - stats.skipped_invalid
 
 
-def sentinel_after(events: list[Event]) -> Event:
-    """A fresh event, newer than every replayed one so the watermark keeps it."""
+def sentinel_after(conn: psycopg.Connection[tuple[object, ...]], events: list[Event]) -> Event:
+    """A fresh event one second newer than anything landed or replayed.
+
+    The watermark trails the newest event time the job has seen, so the
+    sentinel must not be older than what is already in the table (a stack that
+    has ingested the whole sample) or the job would drop it as late.
+    """
+    row = conn.execute("SELECT max(event_ts) FROM raw.recentchange").fetchone()
+    landed = row[0] if row is not None and isinstance(row[0], datetime) else None
+    newest = max(event_time(e) for e in events)
+    if landed is not None:
+        newest = max(newest, landed)
     event = copy.deepcopy(events[-1])
     event["meta"]["id"] = str(uuid.uuid4())
-    event["timestamp"] = int(max(event_time(e) for e in events).timestamp()) + 1
+    event["timestamp"] = int(newest.timestamp()) + 1
     return event
 
 
-def test_replay_lands_every_event_exactly_once(
+def test_replay_lands_every_event_once_and_a_resend_adds_nothing(
     settings: Settings, conn: psycopg.Connection[tuple[object, ...]], events: list[Event]
 ) -> None:
     assert len(events) == N_EVENTS
     ids = sorted({event_id(e) for e in events})
 
+    # No loss: every distinct id of the replay is in the table.
     produce(settings, events)
     assert wait_for(conn, ids, len(ids)) == len(ids)
 
     # Re-send the whole batch (a producer retry storm), then, once every re-sent
     # event is acknowledged, a sentinel behind it. A micro-batch that contains the
     # sentinel was planned after the re-sends were in the log, so when it lands
-    # they have been processed too, and the count must not have moved.
+    # they have been processed too. The primary key makes a duplicate row
+    # impossible; what this checks is that the re-send was absorbed (by Spark's
+    # dedup state or the sink's ON CONFLICT) without failing the query.
     produce(settings, events)
-    sentinel = sentinel_after(events)
+    sentinel = sentinel_after(conn, events)
     produce(settings, [sentinel])
     assert wait_for(conn, [event_id(sentinel)], 1) == 1
     assert count_present(conn, ids) == len(ids)
-    row = conn.execute(
-        "SELECT count(*), count(DISTINCT event_id) FROM raw.recentchange "
-        "WHERE event_id = ANY(%s::uuid[])",
-        ([*ids, event_id(sentinel)],),
-    ).fetchone()
-    assert row == (len(ids) + 1, len(ids) + 1)

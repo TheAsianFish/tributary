@@ -83,6 +83,16 @@ services:
         condition: service_healthy
     volumes:
       - checkpoints:/data/checkpoints
+    # Healthy once the Spark driver is up and serving its REST API, so
+    # `up --wait` fails fast on a job that crashes at start-up.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4040/api/v1/applications > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 90s
+    # Time for query.stop() and spark.stop() after SIGTERM.
+    stop_grace_period: 30s
     restart: unless-stopped
     mem_limit: 3g
 
