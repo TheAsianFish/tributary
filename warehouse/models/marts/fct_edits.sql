@@ -27,8 +27,11 @@ with edits as (
     select * from {{ ref('stg_recentchange') }}
     where event_type in ('edit', 'new')
     {% if is_incremental() %}
+        -- coalesce: if the first build found no edits, max() is NULL and a bare
+        -- comparison would select nothing on every later run.
         and ingested_at > (
-            select max(ingested_at) - interval '{{ var("fct_edits_lookback_minutes") | int }} minutes'
+            select coalesce(max(ingested_at), '-infinity'::timestamptz)
+                - interval '{{ var("fct_edits_lookback_minutes") | int }} minutes'
             from {{ this }}
         )
     {% endif %}

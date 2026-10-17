@@ -28,6 +28,7 @@ from psycopg import sql
 
 from tributary.config import REPO_ROOT, Settings
 from tributary.ingest.sample import read_sample
+from tributary.stream.sink import ensure_schema
 from tributary.warehouse.load import load_events
 
 pytestmark = pytest.mark.warehouse
@@ -164,3 +165,41 @@ def test_warehouse_builds_on_the_sample(settings: Settings, tmp_path: Path) -> N
     assert build.returncode == 0, build.stdout[-4000:]
     marts = {"fct_edits", "dim_wiki", "dim_page", "agg_edits_hourly", "agg_editor_activity"}
     assert marts <= set(got)
+
+
+@pytest.fixture
+def empty_database(settings: Settings) -> Iterator[Settings]:
+    """A throwaway database on the same server, with an empty raw.recentchange."""
+    name = f"tributary_empty_{uuid.uuid4().hex[:8]}"
+    with psycopg.connect(settings.pg_conninfo, autocommit=True) as conn:
+        conn.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
+    scratch = settings.model_copy(update={"pg_database": name})
+    ensure_schema(scratch.pg_conninfo)
+    yield scratch
+    with psycopg.connect(settings.pg_conninfo, autocommit=True) as conn:
+        conn.execute(sql.SQL("DROP DATABASE {} WITH (FORCE)").format(sql.Identifier(name)))
+
+
+def test_fct_edits_loads_after_a_first_build_on_an_empty_table(
+    empty_database: Settings, tmp_path: Path
+) -> None:
+    """A warehouse refreshed before any data arrived must still pick the data up later."""
+    env = dbt_env(empty_database)
+    models = ("run", "--select", "stg_recentchange", "fct_edits")
+    first = dbt(WAREHOUSE, tmp_path / "first", env, "seed")
+    assert first.returncode == 0, first.stdout[-4000:]
+    first = dbt(WAREHOUSE, tmp_path / "first", env, *models)
+    assert first.returncode == 0, first.stdout[-4000:]
+
+    load_events(empty_database.pg_conninfo, read_sample(empty_database.sample_path, limit=500))
+    second = dbt(WAREHOUSE, tmp_path / "second", env, *models)
+    assert second.returncode == 0, second.stdout[-4000:]
+    with psycopg.connect(empty_database.pg_conninfo) as conn:
+        edits = conn.execute(
+            "SELECT count(*) FROM raw.recentchange WHERE event_type IN ('edit', 'new')"
+        ).fetchone()
+        loaded = conn.execute("SELECT count(*) FROM marts.fct_edits").fetchone()
+    assert edits is not None
+    assert loaded is not None
+    assert edits[0] > 0
+    assert loaded[0] == edits[0]
