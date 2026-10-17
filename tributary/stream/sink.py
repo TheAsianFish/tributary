@@ -69,6 +69,10 @@ def write_rows(conn: Connection, rows: Iterable[Sequence[object]]) -> SinkResult
     Rows whose ``event_id`` already exists, in the table or earlier in ``rows``,
     are skipped; ``inserted`` counts only new rows. An empty input touches nothing.
     """
+    if conn.info.transaction_status != psycopg.pq.TransactionStatus.IDLE:
+        # Inside an open transaction conn.transaction() is a savepoint, and the
+        # ON COMMIT DROP staging table would outlive it.
+        raise ValueError("write_rows needs a connection with no open transaction")
     start = time.perf_counter()
     it = iter(rows)
     first = next(it, None)

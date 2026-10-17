@@ -1,4 +1,5 @@
 import pytest
+from psycopg.conninfo import conninfo_to_dict
 
 from tributary.config import Settings
 
@@ -19,6 +20,11 @@ def test_environment_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "host=postgres" in s.pg_conninfo
     assert "password=s3cret" in s.pg_conninfo
     assert "s3cret" not in repr(s)
+
+
+def test_conninfo_quotes_awkward_passwords(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRIBUTARY_PG_PASSWORD", "it's a secret")
+    assert conninfo_to_dict(Settings(_env_file=None).pg_conninfo)["password"] == "it's a secret"
 
 
 def test_rejects_zero_partitions(monkeypatch: pytest.MonkeyPatch) -> None:

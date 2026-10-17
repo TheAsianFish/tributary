@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from psycopg.conninfo import make_conninfo
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -52,10 +53,13 @@ class Settings(BaseSettings):
 
     @property
     def pg_conninfo(self) -> str:
-        """libpq connection string (password included; never log it)."""
-        return (
-            f"host={self.pg_host} port={self.pg_port} dbname={self.pg_database} "
-            f"user={self.pg_user} password={self.pg_password.get_secret_value()}"
+        """libpq connection string, values quoted (password included; never log it)."""
+        return make_conninfo(
+            host=self.pg_host,
+            port=self.pg_port,
+            dbname=self.pg_database,
+            user=self.pg_user,
+            password=self.pg_password.get_secret_value(),
         )
 
 

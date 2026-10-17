@@ -83,8 +83,13 @@ class FakeCursor:
         return FakeCopy(self.staged)
 
 
+class FakeInfo:
+    transaction_status = psycopg.pq.TransactionStatus.IDLE
+
+
 class FakeConnection:
     def __init__(self) -> None:
+        self.info = FakeInfo()
         self.statements: list[str] = []
         self.table: set[str] = set()
         self.cursors: list[FakeCursor] = []
@@ -179,6 +184,14 @@ def test_write_rows_rolls_back_on_failure() -> None:
         write_rows(as_conn(conn), [row(1)])
     assert conn.commits == 0
     assert conn.table == set()
+
+
+def test_write_rows_refuses_a_connection_inside_a_transaction() -> None:
+    conn = FakeConnection()
+    conn.info.transaction_status = psycopg.pq.TransactionStatus.INTRANS
+    with pytest.raises(ValueError, match="no open transaction"):
+        write_rows(as_conn(conn), [row(1)])
+    assert conn.statements == []
 
 
 def test_adapt_row_makes_naive_timestamps_aware() -> None:
