@@ -176,14 +176,17 @@ def warehouse_refresh() -> None:
 @warehouse_app.command("publish-catalog")
 def warehouse_publish_catalog(
     max_distinct: Annotated[
-        int, typer.Option(min=1, help="Index the values of text columns with at most N.")
-    ] = 100,
+        int | None,
+        typer.Option(min=1, help="Index the values of text columns with at most N (default 250)."),
+    ] = None,
 ) -> None:
     """dbt docs generate + the value index, published atomically to the catalog dir."""
+    from tributary.warehouse.catalog import MAX_DISTINCT
     from tributary.warehouse.refresh import publish_catalog
 
     run_id = bind_run_id("warehouse-publish-catalog")
-    path = publish_catalog(get_settings(), run_id, max_distinct=max_distinct)
+    limit = MAX_DISTINCT if max_distinct is None else max_distinct
+    path = publish_catalog(get_settings(), run_id, max_distinct=limit)
     typer.echo(str(path))
 
 
@@ -211,7 +214,7 @@ def lake_reconcile() -> None:
 
     run_id = bind_run_id("lake-reconcile")
     try:
-        checks = reconcile_closed_hours(get_settings(), f"cli-{run_id}")
+        checks = reconcile_closed_hours(get_settings(), run_id)
     except ReconciliationError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from None

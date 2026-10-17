@@ -78,3 +78,25 @@ def test_produce_exits_nonzero_when_a_delivery_fails(
     result = CliRunner().invoke(app, ["produce", "--sample", str(sample), "--rate", "0"])
 
     assert result.exit_code == 1, result.output
+
+
+def test_publish_catalog_indexes_up_to_the_library_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tributary.warehouse import catalog, refresh
+
+    limits: list[int] = []
+
+    def publish(_settings: object, _run_id: str, *, max_distinct: int) -> Path:
+        limits.append(max_distinct)
+        return tmp_path
+
+    monkeypatch.setattr(refresh, "publish_catalog", publish)
+    runner = CliRunner()
+    assert runner.invoke(app, ["warehouse", "publish-catalog"]).exit_code == 0
+    assert (
+        runner.invoke(app, ["warehouse", "publish-catalog", "--max-distinct", "7"]).exit_code == 0
+    )
+    # The wiki names (160 in the sample) must fit under the default.
+    assert limits == [catalog.MAX_DISTINCT, 7]
+    assert catalog.MAX_DISTINCT >= 160
