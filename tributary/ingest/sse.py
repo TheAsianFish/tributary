@@ -97,9 +97,36 @@ def exponential_backoff(attempt: int) -> float:
 
 def _request_headers(user_agent: str, last_event_id: str | None) -> dict[str, str]:
     headers = {"Accept": "text/event-stream", "User-Agent": user_agent}
-    if last_event_id is not None:
+    if last_event_id:  # the spec omits the header when the last id is empty
         headers["Last-Event-ID"] = last_event_id
     return headers
+
+
+def iter_event_lines(chunks: Iterable[str]) -> Iterator[str]:
+    """Split a text stream into lines on CRLF, CR or LF only, as ``text/event-stream`` requires.
+
+    ``str.splitlines`` (and so ``httpx.Response.iter_lines``) also breaks on
+    U+2028, U+0085 and other separators, which JSON leaves unescaped inside
+    strings; that would cut a ``data:`` line in two and lose the event.
+    """
+    buffer = ""
+    for chunk in chunks:
+        buffer += chunk
+        start = 0
+        while True:
+            i = min(
+                (j for j in (buffer.find("\r", start), buffer.find("\n", start)) if j >= 0),
+                default=-1,
+            )
+            if i < 0:
+                break
+            if buffer[i] == "\r" and i == len(buffer) - 1:
+                break  # a CR at the chunk end may be half of a CRLF; wait for more
+            yield buffer[start:i]
+            start = i + 2 if buffer[i] == "\r" and buffer[i + 1] == "\n" else i + 1
+        buffer = buffer[start:]
+    if buffer:
+        yield buffer.rstrip("\r")
 
 
 def _is_retryable(exc: Exception) -> bool:
@@ -140,7 +167,7 @@ def stream_messages(
                 headers = _request_headers(user_agent, last_event_id)
                 with client.stream("GET", url, headers=headers) as response:
                     response.raise_for_status()
-                    for line in response.iter_lines():
+                    for line in iter_event_lines(response.iter_text()):
                         message = parser.feed(line)
                         last_event_id = parser.last_event_id
                         if message is not None:

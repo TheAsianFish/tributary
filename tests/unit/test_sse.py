@@ -7,6 +7,7 @@ from tributary.ingest.sse import (
     SSEMessage,
     SSEParser,
     exponential_backoff,
+    iter_event_lines,
     parse_sse,
     stream_messages,
 )
@@ -176,3 +177,50 @@ def test_timeouts_are_retried() -> None:
             )
         )
     assert [m.data for m in messages] == ["ok"]
+
+
+def test_event_lines_split_on_crlf_cr_and_lf_only() -> None:
+    chunks = ["data: a\u2028b\r", "\ndata: c\rdata: d\n", "\n", "data: tail"]
+    assert list(iter_event_lines(chunks)) == [
+        "data: a\u2028b",
+        "data: c",
+        "data: d",
+        "",
+        "data: tail",
+    ]
+    assert list(iter_event_lines(["x\r"])) == ["x"]
+    assert list(iter_event_lines([])) == []
+
+
+def test_unicode_line_separators_inside_a_payload_do_not_split_the_message() -> None:
+    body = 'id: 9\ndata: {"comment": "one\u2028two\u0085three"}\n\n'.encode()
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=body)
+
+    with mock_client(handler) as client:
+        messages = list(
+            stream_messages(
+                URL, user_agent=UA, client=client, max_reconnects=0, sleep=lambda s: None
+            )
+        )
+    assert messages == [SSEMessage('{"comment": "one\u2028two\u0085three"}', "9", "message")]
+
+
+def test_an_empty_last_event_id_is_not_sent() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, content=b"id\ndata: a\n\n")
+
+    with mock_client(handler) as client:
+        list(
+            stream_messages(
+                URL, user_agent=UA, client=client, max_reconnects=1, sleep=lambda s: None
+            )
+        )
+    assert len(seen) == 2
+    assert "Last-Event-ID" not in seen[1].headers
