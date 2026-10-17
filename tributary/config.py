@@ -11,7 +11,8 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LIVE_STREAM_URL = "https://stream.wikimedia.org/v2/stream/recentchange"
-DEFAULT_SAMPLE = Path(__file__).resolve().parent.parent / "data/sample/recentchange.jsonl.gz"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_SAMPLE = REPO_ROOT / "data/sample/recentchange.jsonl.gz"
 
 
 class Settings(BaseSettings):
@@ -49,7 +50,37 @@ class Settings(BaseSettings):
     spark_master: str = "local[3]"
     # Maven coordinates resolved at start-up; empty when the jars are already on the
     # classpath (the stream image bakes them into /opt/spark/jars).
-    spark_packages: str = "org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.3"
+    spark_packages: str = ",".join(
+        (
+            "org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.3",
+            "org.apache.iceberg:iceberg-spark-runtime-4.1_2.13:1.11.0",
+            "org.apache.iceberg:iceberg-aws-bundle:1.11.0",
+            "org.postgresql:postgresql:42.7.14",
+        )
+    )
+
+    # Lakehouse: the second streaming query writes lake.raw.recentchange (Iceberg).
+    lake_enabled: bool = True
+    lake_checkpoint_dir: Path = Path("spark-checkpoints/lake")
+    s3_endpoint: str = "http://localhost:9000"
+    s3_region: str = "us-east-1"
+    s3_access_key: str = "tributary"
+    s3_secret_key: SecretStr = SecretStr("tributary-dev-secret")
+    lake_warehouse: str = "s3://lake/warehouse"
+    # PostgreSQL schema holding the Iceberg JDBC catalog's two tables.
+    iceberg_catalog_schema: str = "iceberg_catalog"
+
+    # Trino (profile lakehouse)
+    trino_host: str = "localhost"
+    trino_port: int = 8081
+    trino_user: str = "tributary"
+
+    # Warehouse: dbt project and the published catalog the agent reads.
+    dbt_project_dir: Path = REPO_ROOT / "warehouse"
+    catalog_dir: Path = Path("catalog")
+    # Read-only role for Trino's postgresql catalog and, from M3, the agent.
+    reader_user: str = "tributary_reader"
+    reader_password: SecretStr = SecretStr("tributary_reader")
 
     @property
     def pg_conninfo(self) -> str:
@@ -60,6 +91,14 @@ class Settings(BaseSettings):
             dbname=self.pg_database,
             user=self.pg_user,
             password=self.pg_password.get_secret_value(),
+        )
+
+    @property
+    def iceberg_jdbc_url(self) -> str:
+        """JDBC URL of the Iceberg catalog (credentials are passed separately)."""
+        return (
+            f"jdbc:postgresql://{self.pg_host}:{self.pg_port}/{self.pg_database}"
+            f"?currentSchema={self.iceberg_catalog_schema}"
         )
 
 
