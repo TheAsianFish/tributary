@@ -138,6 +138,11 @@ MALFORMED = [
     # Past year 9999: valid JSON, but PySpark could not convert the row for the sink.
     json.dumps(event(14, ts=300_000_000_000)).encode(),
     json.dumps(event(15, ts=-1)).encode(),
+    # More than a day ahead of the Kafka record time: would ratchet the watermark.
+    json.dumps(event(18, ts=int(KAFKA_TS.timestamp()) + 2 * 86_400)).encode(),
+    # A NUL byte in a text column: PostgreSQL rejects it in COPY, so it must not reach the sink.
+    json.dumps(event(16, title="a\u0000b")).encode(),
+    json.dumps(event(17, user="\u0000")).encode(),
 ]
 
 

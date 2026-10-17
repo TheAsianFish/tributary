@@ -2,9 +2,12 @@
 
 The JSON schema is explicit (no inference), so a field of the wrong type becomes
 NULL instead of changing the plan. A record is dropped when it is not JSON, has
-no valid lowercase UUID, lacks ``timestamp``, ``wiki`` or ``type``, or is a
-Wikimedia canary. The counts are published as the observed metric ``parse``
-in every ``StreamingQueryProgress``.
+no valid lowercase UUID, lacks ``timestamp``, ``wiki`` or ``type``, has a
+``timestamp`` more than a day ahead of its Kafka record time (it would ratchet
+the watermark and drop every later event), carries a NUL byte in a text field
+(PostgreSQL rejects it, and the sink would fail the same batch on every
+replay), or is a Wikimedia canary. The counts are published
+as the observed metric ``parse`` in every ``StreamingQueryProgress``.
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from tributary.events import COLUMNS, MAX_EVENT_TS, MIN_EVENT_TS, UUID_RE
+from tributary.events import COLUMNS, MAX_EVENT_TS, MAX_FUTURE_SKEW_S, MIN_EVENT_TS, UUID_RE
 
 OBSERVATION = "parse"
 
@@ -64,13 +67,26 @@ EVENT_SCHEMA = StructType(
 )
 """Schema of a trimmed recentchange event (see :func:`tributary.events.trim_event`)."""
 
+TEXT_FIELDS = ("title", "user", "wiki", "type", "log_type", "log_action", "server_name")
+"""Free-text fields that land in ``text`` columns; a NUL byte in any of them is malformed."""
 
-def _is_valid(e: Column) -> Column:
+
+def _has_nul(e: Column) -> Column:
+    tests = [e["meta"]["domain"].contains("\x00")] + [e[f].contains("\x00") for f in TEXT_FIELDS]
+    clause = tests[0]
+    for t in tests[1:]:
+        clause = clause | t
+    return F.coalesce(clause, F.lit(False))
+
+
+def _is_valid(e: Column, kafka_ts: Column) -> Column:
     return F.coalesce(
         e["meta"]["id"].rlike(UUID_RE.pattern)
         & e["timestamp"].between(MIN_EVENT_TS, MAX_EVENT_TS)
+        & (e["timestamp"] <= F.unix_timestamp(kafka_ts) + MAX_FUTURE_SKEW_S)
         & e["wiki"].isNotNull()
-        & e["type"].isNotNull(),
+        & e["type"].isNotNull()
+        & ~_has_nul(e),
         F.lit(False),
     )
 
@@ -100,7 +116,7 @@ def parse_events(kafka_df: DataFrame) -> DataFrame:
             F.col("offset"),
             F.col("timestamp"),
         )
-        .withColumn("_valid", _is_valid(e))
+        .withColumn("_valid", _is_valid(e, F.col("timestamp")))
         .withColumn("_canary", F.coalesce(e["meta"]["domain"] == F.lit("canary"), F.lit(False)))
         .observe(
             OBSERVATION,

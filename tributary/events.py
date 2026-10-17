@@ -41,6 +41,11 @@ META_FIELDS = ("id", "dt", "domain", "stream")
 MIN_EVENT_TS = 0
 MAX_EVENT_TS = 253_402_300_799
 
+# An event time more than this far ahead of its Kafka record time is a bug upstream,
+# not a late-arriving edit. The watermark only moves forward, so one such event
+# would make every later real event "late" and drop it; the row is rejected instead.
+MAX_FUTURE_SKEW_S = 24 * 3600
+
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 # Column order of raw.recentchange as written by the sink (ingested_at is defaulted).
@@ -104,8 +109,8 @@ def event_id(event: Mapping[str, Any]) -> str:
 def event_time(event: Mapping[str, Any]) -> datetime:
     """When the change happened in MediaWiki (``timestamp``, unix seconds, UTC).
 
-    ``meta.dt`` is when the event was emitted, which trails the change by up to
-    tens of seconds; the warehouse keeps it as ``emitted_at``.
+    ``meta.dt`` is when the event was emitted, which trails the change (p50 1.5 s,
+    max 144 s in the committed sample); the warehouse keeps it as ``emitted_at``.
     """
     ts = event.get("timestamp")
     if not isinstance(ts, int) or isinstance(ts, bool):
@@ -117,7 +122,11 @@ def event_time(event: Mapping[str, Any]) -> datetime:
 
 @dataclass(frozen=True, slots=True)
 class RawRow:
-    """One row of ``raw.recentchange``. Mirrors the Spark parser in ``stream/parse.py``."""
+    """One row of ``raw.recentchange``.
+
+    The Python twin of the Spark parser in ``stream/parse.py``: the stream job
+    never calls it, the tests use it as the oracle the Spark plan must match.
+    """
 
     event_id: str
     event_ts: datetime
@@ -180,9 +189,12 @@ def to_row(
     if not isinstance(wiki, str) or not isinstance(event_type, str):
         raise InvalidEventError("wiki and type are required strings")
     length, revision = _obj(event.get("length")), _obj(event.get("revision"))
+    event_ts = event_time(event)
+    if (event_ts - kafka_ts).total_seconds() > MAX_FUTURE_SKEW_S:
+        raise InvalidEventError(f"timestamp {event_ts.isoformat()} is ahead of the record time")
     return RawRow(
         event_id=event_id(event),
-        event_ts=event_time(event),
+        event_ts=event_ts,
         emitted_at=_parse_dt(meta.get("dt")),
         rc_id=_opt_int(event.get("id")),
         wiki=wiki,

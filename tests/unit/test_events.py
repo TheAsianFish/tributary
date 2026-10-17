@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -112,3 +112,18 @@ def test_to_row_handles_a_log_event_without_rc_id() -> None:
 
 def test_row_fields_match_the_sink_columns() -> None:
     assert tuple(RawRow.__dataclass_fields__) == COLUMNS
+
+
+def test_to_row_rejects_an_event_time_far_ahead_of_the_record_time() -> None:
+    kafka_ts = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
+    too_far = int(kafka_ts.timestamp()) + 86_400 + 1
+    event: dict[str, Any] = {
+        "meta": {"id": "00000000-0000-4000-8000-000000000001"},
+        "timestamp": too_far,
+        "wiki": "enwiki",
+        "type": "edit",
+    }
+    with pytest.raises(InvalidEventError, match="ahead of the record time"):
+        to_row(event, kafka_ts=kafka_ts)
+    event["timestamp"] = too_far - 2
+    assert to_row(event, kafka_ts=kafka_ts).event_ts == kafka_ts + timedelta(seconds=86_399)
