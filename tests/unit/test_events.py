@@ -81,6 +81,12 @@ def test_event_time_is_the_mediawiki_timestamp_not_meta_dt() -> None:
         event_time(raw_edit(timestamp=True))
 
 
+@pytest.mark.parametrize("ts", [-1, 253_402_300_800, 10**20])
+def test_event_time_rejects_unrepresentable_timestamps(ts: int) -> None:
+    with pytest.raises(InvalidEventError, match="out of range"):
+        event_time(raw_edit(timestamp=ts))
+
+
 def test_to_row_flattens_an_edit() -> None:
     row = to_row(trim_event(raw_edit()), partition=2, offset=7, kafka_ts=KAFKA_TS)
     assert row.event_id == "26cc4453-4f29-4e7f-bd43-922efe25a82f"

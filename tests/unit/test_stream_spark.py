@@ -123,6 +123,7 @@ VALID = [
     },
     event(4, bot="yes", namespace="zero"),
     event(5, meta={"id": uuid(5), "dt": "not a date"}),
+    event(13, meta={"id": uuid(13), "dt": "+10000-01-01T00:00:00Z"}),
 ]
 MALFORMED = [
     b"{not json",
@@ -134,6 +135,9 @@ MALFORMED = [
     json.dumps({k: v for k, v in event(10).items() if k != "wiki"}).encode(),
     json.dumps({k: v for k, v in event(11).items() if k != "type"}).encode(),
     json.dumps(event(12, meta={"id": uuid(12), "domain": "canary"})).encode(),
+    # Past year 9999: valid JSON, but PySpark could not convert the row for the sink.
+    json.dumps(event(14, ts=300_000_000_000)).encode(),
+    json.dumps(event(15, ts=-1)).encode(),
 ]
 
 
@@ -144,7 +148,7 @@ def test_parse_events_matches_the_python_parser(spark: SparkSession) -> None:
     assert tuple(parsed.columns) == COLUMNS
     got = {r["event_id"]: adapt_row(r) for r in parsed.collect()}
     expected = {
-        uuid(n + 1): to_row(e, partition=n % 3, offset=100 + n, kafka_ts=KAFKA_TS).as_tuple()
+        e["meta"]["id"]: to_row(e, partition=n % 3, offset=100 + n, kafka_ts=KAFKA_TS).as_tuple()
         for n, e in enumerate(VALID)
     }
     assert got == expected

@@ -36,6 +36,11 @@ TOP_LEVEL_FIELDS = (
 )
 META_FIELDS = ("id", "dt", "domain", "stream")
 
+# Event times outside 1970-01-01 .. 9999-12-31 are rejected: Python's datetime
+# (and so PySpark's row conversion) cannot represent anything past year 9999.
+MIN_EVENT_TS = 0
+MAX_EVENT_TS = 253_402_300_799
+
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 # Column order of raw.recentchange as written by the sink (ingested_at is defaulted).
@@ -105,6 +110,8 @@ def event_time(event: Mapping[str, Any]) -> datetime:
     ts = event.get("timestamp")
     if not isinstance(ts, int) or isinstance(ts, bool):
         raise InvalidEventError(f"timestamp is not an integer: {ts!r}")
+    if not MIN_EVENT_TS <= ts <= MAX_EVENT_TS:
+        raise InvalidEventError(f"timestamp out of range: {ts}")
     return datetime.fromtimestamp(ts, tz=UTC)
 
 

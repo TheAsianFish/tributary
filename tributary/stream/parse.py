@@ -20,7 +20,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from tributary.events import COLUMNS, UUID_RE
+from tributary.events import COLUMNS, MAX_EVENT_TS, MIN_EVENT_TS, UUID_RE
 
 OBSERVATION = "parse"
 
@@ -68,11 +68,16 @@ EVENT_SCHEMA = StructType(
 def _is_valid(e: Column) -> Column:
     return F.coalesce(
         e["meta"]["id"].rlike(UUID_RE.pattern)
-        & e["timestamp"].isNotNull()
+        & e["timestamp"].between(MIN_EVENT_TS, MAX_EVENT_TS)
         & e["wiki"].isNotNull()
         & e["type"].isNotNull(),
         F.lit(False),
     )
+
+
+def _representable(ts: Column) -> Column:
+    """NULL for timestamps past year 9999, which PySpark cannot hand to Python."""
+    return F.when(F.year(ts) <= 9999, ts)
 
 
 def _as_int(flag: Column) -> Column:
@@ -108,7 +113,7 @@ def parse_events(kafka_df: DataFrame) -> DataFrame:
     columns = {
         "event_id": e["meta"]["id"],
         "event_ts": F.timestamp_seconds(e["timestamp"]),
-        "emitted_at": F.try_to_timestamp(e["meta"]["dt"]),
+        "emitted_at": _representable(F.try_to_timestamp(e["meta"]["dt"])),
         "rc_id": e["id"],
         "wiki": e["wiki"],
         "domain": e["meta"]["domain"],
