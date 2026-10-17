@@ -6,6 +6,9 @@
 
   - Hours without rows inside the history window count as zero, so an outage cannot
     hide by leaving no bucket behind.
+  - The newest hour is capped at the current one: event times come from clients, and
+    a single event dated in the future would otherwise make the current, partial hour
+    the "closed" one and fire on its low count.
   - The first hour of data is left out of the history: it is almost always partial
     (the pipeline started mid-hour) and would drag the mean down.
   - With fewer than min_history hours of history, or a stddev of 0, the test passes:
@@ -32,7 +35,7 @@ bounds as (
 
     select
         min(hour) as first_hour,
-        max(hour) - interval '1 hour' as closed_hour
+        least(max(hour), date_trunc('hour', now(), 'UTC')) - interval '1 hour' as closed_hour
     from hourly
 
 ),

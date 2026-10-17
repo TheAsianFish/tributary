@@ -40,6 +40,15 @@ models:
           name: volume_constant_history_passes
           arguments: {column_name: event_ts}
 
+  - name: volume_future_event
+    description: >
+      Steady history and a partial current hour, plus one event dated an hour ahead;
+      the closed hour must stay the one before now, not the partial current hour.
+    data_tests:
+      - tributary.volume_anomaly:
+          name: volume_future_event_passes
+          arguments: {column_name: event_ts}
+
   - name: arrivals_fresh
     description: Newest arrival five minutes ago.
     data_tests:

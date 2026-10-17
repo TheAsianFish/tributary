@@ -45,6 +45,7 @@ EXPECTED = {
     "volume_short_history_passes": "pass",
     "volume_short_history_low_minimum_fails": "fail",
     "volume_constant_history_passes": "pass",
+    "volume_future_event_passes": "pass",
     "freshness_fresh_passes": "pass",
     "freshness_stale_fails": "fail",
     "freshness_stale_within_limit_passes": "pass",
