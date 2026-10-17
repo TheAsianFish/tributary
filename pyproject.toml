@@ -64,5 +64,7 @@ testpaths = ["tests/unit"]
 addopts = "-ra --strict-markers"
 markers = [
     "spark: needs pyspark and a JVM (runs offline in local mode)",
-    "integration: needs the Compose services (Kafka, Spark, PostgreSQL)",
+    "integration: needs the Compose services (Kafka, Spark, PostgreSQL, MinIO)",
+    "warehouse: needs PostgreSQL only (TRIBUTARY_PG_*), with dbt and Airflow installed",
+    "lakehouse: needs the Compose stack with the lakehouse profile (Trino)",
 ]

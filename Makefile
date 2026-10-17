@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration up down logs demo-data sample-stats
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up down logs demo-data sample-stats dbt
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -33,6 +33,12 @@ test-integration: ## Needs `make up` first
 	@# A crash that Compose restarted would pass the tests from the checkpoint; refuse that.
 	@restarts=$$(docker inspect -f '{{.RestartCount}}' $$(docker compose ps -q stream)); \
 	test "$$restarts" = 0 || { echo "stream job restarted $$restarts time(s)"; exit 1; }
+
+dbt: ## Build and test the warehouse (seeds, staging, marts, quality tests)
+	uv run dbt build --project-dir warehouse --profiles-dir warehouse
+
+test-warehouse: ## dbt and DAG tests against PostgreSQL alone (TRIBUTARY_PG_*)
+	uv run pytest tests/warehouse -m warehouse
 
 demo-data: ## Re-capture the committed sample from the live stream (~45 min)
 	uv run tributary sample capture --count 50000

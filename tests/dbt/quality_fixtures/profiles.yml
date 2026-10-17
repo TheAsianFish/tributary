@@ -1,0 +1,13 @@
+tributary_quality:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('TRIBUTARY_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('TRIBUTARY_PG_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('TRIBUTARY_PG_DATABASE', 'tributary') }}"
+      user: "{{ env_var('TRIBUTARY_PG_USER', 'tributary') }}"
+      password: "{{ env_var('TRIBUTARY_PG_PASSWORD', 'tributary') }}"
+      # The integration test sets a fresh schema per run and drops it afterwards.
+      schema: "{{ env_var('TRIBUTARY_DBT_SCHEMA', 'dbt_quality_fixtures') }}"
+      threads: 4

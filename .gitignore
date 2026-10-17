@@ -35,3 +35,9 @@ AGENTS.md
 .idea/
 .vscode/
 .DS_Store
+
+# dbt quality-test fixtures
+tests/dbt/quality_fixtures/target/
+tests/dbt/quality_fixtures/dbt_packages/
+tests/dbt/quality_fixtures/logs/
+.user.yml

@@ -1,0 +1,32 @@
+# Fixtures for the warehouse's custom quality tests (freshness, volume_anomaly).
+# tests/integration/test_dbt_quality.py builds this project into a throwaway schema
+# and asserts the exact pass/fail status of every test below.
+name: tributary_quality_fixtures
+version: "0.1.0"
+config-version: 2
+
+profile: tributary_quality
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+target-path: target
+clean-targets: [target, dbt_packages, logs]
+
+flags:
+  send_anonymous_usage_stats: false
+
+# Only the generic tests of the warehouse package are wanted, not its models.
+models:
+  tributary:
+    +enabled: false
+  tributary_quality_fixtures:
+    +materialized: table
+seeds:
+  tributary:
+    +enabled: false
+sources:
+  tributary:
+    +enabled: false
+data_tests:
+  tributary:
+    +enabled: false
