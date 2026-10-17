@@ -21,8 +21,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         --extra airflow --extra warehouse --extra lakehouse
 COPY README.md LICENSE ./
 COPY tributary ./tributary
+# --reinstall-package: uv keys its cached wheel of a local project on pyproject.toml
+# alone, so with the cache mount a rebuild after a code change would install the
+# previous build's wheel and the scheduler would run stale code.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-editable \
+    uv sync --locked --no-dev --no-editable --reinstall-package tributary \
         --extra airflow --extra warehouse --extra lakehouse
 
 # The dbt project (sources only: no target/ or logs/ from a developer's machine;
