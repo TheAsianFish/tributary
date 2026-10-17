@@ -1,0 +1,10 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: recentchange
+        columns:
+          - name: event_id
+            data_tests:
+              - not_null

@@ -1,0 +1,17 @@
+# A deliberately small dbt project used to capture the run_results.json and
+# manifest.json fixtures under tests/fixtures/dbt/. It covers every outcome the
+# quality recorder maps: passing, warning, failing and erroring tests, a seed,
+# a model, and a custom generic test with arguments.
+name: tributary_fixture
+version: "1.0.0"
+profile: tributary_fixture
+config-version: 2
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+models:
+  tributary_fixture:
+    +materialized: table

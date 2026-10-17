@@ -1,0 +1,68 @@
+{
+ "args": {
+  "which": "seed"
+ },
+ "elapsed_time": 0.2765157222747803,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:22:27.091931Z",
+  "invocation_id": "5beac2e3-4487-4ebc-ac58-5dbc44791b27",
+  "invocation_started_at": "2026-10-17T15:22:23.496366Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "INSERT 5",
+    "code": "INSERT",
+    "rows_affected": 5
+   },
+   "execution_time": 0.14533352851867676,
+   "failures": null,
+   "message": "INSERT 5",
+   "relation_name": null,
+   "status": "success",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:26.928511Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:26.928504Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:27.070351Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:26.929626Z"
+    }
+   ],
+   "unique_id": "seed.tributary.event_types"
+  },
+  {
+   "adapter_response": {
+    "_message": "INSERT 83",
+    "code": "INSERT",
+    "rows_affected": 83
+   },
+   "execution_time": 0.15021443367004395,
+   "failures": null,
+   "message": "INSERT 83",
+   "relation_name": null,
+   "status": "success",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:26.929042Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:26.929035Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:27.075984Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:26.944786Z"
+    }
+   ],
+   "unique_id": "seed.tributary.namespaces"
+  }
+ ]
+}

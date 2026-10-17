@@ -1,0 +1,298 @@
+{
+ "args": {
+  "which": "test"
+ },
+ "elapsed_time": 0.4508969783782959,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:13:23.349500Z",
+  "invocation_id": "3348996f-afb6-4767-8c23-4fd254dd8ebf",
+  "invocation_started_at": "2026-10-17T15:13:19.725323Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07937836647033691,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.006329Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:22.983123Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.057613Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.014280Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.accepted_values_broken_id__False__1.af38ca106b"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07976102828979492,
+   "failures": 1,
+   "message": "Got 1 result, configured to warn if != 0",
+   "relation_name": null,
+   "status": "warn",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.000637Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:22.993400Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.056009Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.001244Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.accepted_values_wikis_project_family__wikipedia.cfcae99c16"
+  },
+  {
+   "adapter_response": {},
+   "execution_time": 0.04860877990722656,
+   "failures": null,
+   "message": "Database Error in test min_value_broken_id__not_a_number (models/schema.yml)\n  syntax error at or near \"number\"\n  LINE 12: ...m \"tributary\".\"dbt_fixture\".\"broken\" where id < not a number\n                                                                    ^\n  compiled code at /tmp/tmp65tmv_iz/test/target/run/tributary_fixture/models/schema.yml/min_value_broken_id__not_a_number.sql",
+   "relation_name": null,
+   "status": "error",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.088350Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.069019Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.106946Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.088993Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.min_value_broken_id__not_a_number.98078c9fce"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.046683549880981445,
+   "failures": 160,
+   "message": "Got 160 results, configured to fail if != 0",
+   "relation_name": null,
+   "status": "fail",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.090678Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.079724Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.113941Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.091474Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.min_value_wikis_edits__1000000.d6296091f9"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.04335141181945801,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.150292Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.131104Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.168512Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.151220Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.not_null_broken_id.259308ea2b"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07040286064147949,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.136279Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.125679Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.185864Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.137128Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.no_future_events"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.05147552490234375,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.189839Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.177718Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.224683Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.190930Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.not_null_wikis_wiki.ad7b45b1cc"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06013298034667969,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.217300Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.197597Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.248041Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.218102Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.relationships_wikis_project_family__project_family__ref_wiki_family_.9173546f72"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.04767036437988281,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.248879Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.235974Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.277130Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.249785Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.row_count_between_wikis_100000__1.94ff38fc70"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.05640387535095215,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.271526Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.261742Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.310289Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.273164Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.source_not_null_raw_recentchange_event_id.8d6c83b444"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.04588580131530762,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:23.305421Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:23.289682Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:23.331207Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:23.306260Z"
+    }
+   ],
+   "unique_id": "test.tributary_fixture.unique_wikis_wiki.2aa4dd2f57"
+  }
+ ]
+}

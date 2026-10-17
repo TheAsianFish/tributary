@@ -1,0 +1,1290 @@
+{
+ "args": {
+  "which": "test"
+ },
+ "elapsed_time": 1.6493897438049316,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:22:42.349938Z",
+  "invocation_id": "35316b97-9e55-46cb-959f-074ba5d5a665",
+  "invocation_started_at": "2026-10-17T15:22:36.892864Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.1661999225616455,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:40.894915Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:40.833804Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:40.980972Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:40.899748Z"
+    }
+   ],
+   "unique_id": "test.tributary.freshness_fct_edits_ingested_at.e66f37cac3"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.1705760955810547,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:40.897864Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:40.834623Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:40.984666Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:40.952452Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_agg_editor_activity_user_name.1ba6599740"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.17831206321716309,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:40.895952Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:40.827093Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:40.992302Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:40.916837Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_agg_editor_activity_wiki.c2b0d3515f"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.19370794296264648,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:40.898868Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:40.833004Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.002894Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:40.940302Z"
+    }
+   ],
+   "unique_id": "test.tributary.accepted_values_stg_recentchange_event_type__edit__new__log__categorize__external.27d433344c"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07958412170410156,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.019061Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.007940Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.073174Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.027581Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_agg_edits_hourly_event_hour.8651c5e838"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08204078674316406,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.030869Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.019860Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.076979Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.038157Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_agg_edits_hourly_wiki.b92857ffa2"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07417178153991699,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.041362Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.031500Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.084959Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.044085Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_dim_page_page_key.a3d39f638a"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06384921073913574,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.057902Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.046552Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.091156Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.060252Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_dim_page_wiki.bb0f7f43d9"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06980752944946289,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.109475Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.096660Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.157692Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.117814Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_dim_wiki_wiki.27c6b445d7"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08368754386901855,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.140579Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.110818Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.180118Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.142578Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_event_types_event_type.9195e09186"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08566093444824219,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.130420Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.120036Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.185583Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.139007Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_event_hour.5a3c2d4eb0"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06941914558410645,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.142002Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.131734Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.187370Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.145505Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_event_id.e539d01428"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07639884948730469,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.190826Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.171624Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.235257Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.192133Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_event_ts.79c3cbb33c"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.0692758560180664,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.233514Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.210063Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.271796Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.236093Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_ingested_at.2d627a8ce6"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07921552658081055,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.237925Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.220206Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.280308Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.239807Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_is_anonymous.4bd8d749f6"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08968234062194824,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.239280Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.227519Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.283832Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.242649Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_is_bot.a1872106b0"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.05436110496520996,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.265605Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.256720Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.299846Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.266538Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_is_new_page.6e5fb37d91"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07351803779602051,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.297344Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.287462Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.348200Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.301129Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_page_key.881586b5ed"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.05734896659851074,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.350069Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.335354Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.385450Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.352556Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_namespaces_namespace_id.7dc3db22a5"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08217954635620117,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.334456Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.320568Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.383912Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.344273Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_namespaces_is_talk.5a1a5a6168"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08943390846252441,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.319998Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.310611Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.387232Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.330631Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_fct_edits_wiki.9b9fa9234f"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.0770571231842041,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.378692Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.366524Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.433019Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.380583Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_namespaces_namespace_name.a43fe34a00"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07686543464660645,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.433893Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.415125Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.475068Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.436085Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_event_id.86fa2abbd4"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07433438301086426,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.435455Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.424116Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.479545Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.439012Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_event_ts.d492189b92"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.05951094627380371,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.464057Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.454587Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.502590Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.464844Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_event_type.a2127f1627"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.11429977416992188,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.414609Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.404567Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.505173Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.429349Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_event_hour.2253bb8075"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.0799560546875,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.505906Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.491095Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.551347Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.508027Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_ingested_at.f45bc52973"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.0986948013305664,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.529998Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.518895Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.599454Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.532265Z"
+    }
+   ],
+   "unique_id": "test.tributary.not_null_stg_recentchange_wiki.3a38c008a1"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.11251068115234375,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.552483Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.534460Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.633376Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.563514Z"
+    }
+   ],
+   "unique_id": "test.tributary.relationships_fct_edits_page_key__page_key__ref_dim_page_.36d4ea9003"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.10292959213256836,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.572013Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.553311Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.637081Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.574620Z"
+    }
+   ],
+   "unique_id": "test.tributary.relationships_fct_edits_wiki__wiki__ref_dim_wiki_.76ba808e98"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06625890731811523,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.681943Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.666933Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.715270Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.682719Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_not_null_raw_recentchange_event_id.8d6c83b444"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.1087949275970459,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.627246Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.617168Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.718397Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.628728Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_accepted_values_raw_recentchange_event_type__edit__new__log__categorize__external.e59ec31ac4"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07689857482910156,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.678813Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.657600Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.721346Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.679553Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_freshness_raw_recentchange_ingested_at.5ec3fbb6d1"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.0935211181640625,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.772615Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.740201Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.819355Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.775918Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_not_null_raw_recentchange_event_ts.96066174a5"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.08350324630737305,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.779469Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.762141Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.824052Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.780842Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_not_null_raw_recentchange_ingested_at.a05f883ae3"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.09755611419677734,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.771817Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.752883Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.821305Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.773580Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_not_null_raw_recentchange_event_type.3a24926373"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.3340761661529541,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.600572Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.579504Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.904094Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.601552Z"
+    }
+   ],
+   "unique_id": "test.tributary.relationships_stg_recentchange_event_type__event_type__ref_event_types_.3cbc1fb1a3"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.09596657752990723,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.856051Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.840748Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.917853Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.858539Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_not_null_raw_recentchange_wiki.3851c65211"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.11641716957092285,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.876810Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.860957Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.959386Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.887338Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_unique_raw_recentchange_event_id.2a0f98cfa9"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.060369014739990234,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.929480Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.918659Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.966711Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.930259Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_combination_agg_editor_activity_wiki__user_name.4ad7b11d72"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.14538359642028809,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.889614Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.877598Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.995491Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.890421Z"
+    }
+   ],
+   "unique_id": "test.tributary.source_volume_anomaly_raw_recentchange_event_ts.60a8ad4758"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07345318794250488,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:41.960303Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.942755Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:41.999458Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:41.962141Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_combination_agg_edits_hourly_wiki__event_hour.95e0463c98"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07432746887207031,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.000284Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:41.984463Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.044755Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.002552Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_combination_namespaces_namespace_id__project_family__wiki.f9c049d66c"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06375885009765625,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.046961Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.035959Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.082730Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.048933Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_event_types_event_type.08120e6acc"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07027173042297363,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.042649Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.026870Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.080608Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.045471Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_dim_wiki_wiki.6f5bd31892"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.09933352470397949,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.019707Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.005250Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.087765Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.022743Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_dim_page_page_key.cb28f4a537"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.07756829261779785,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.081137Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.066385Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.135931Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.083859Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_fct_edits_event_id.f3e0f42e08"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.06406545639038086,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.127745Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.115538Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.175641Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.128454Z"
+    }
+   ],
+   "unique_id": "test.tributary.volume_anomaly_fct_edits_event_ts.4705be66ea"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.2330918312072754,
+   "failures": 0,
+   "message": null,
+   "relation_name": null,
+   "status": "pass",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:42.124395Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:42.103583Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:42.330863Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:42.125325Z"
+    }
+   ],
+   "unique_id": "test.tributary.unique_stg_recentchange_event_id.df60f6b97e"
+  }
+ ]
+}

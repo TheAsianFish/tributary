@@ -1,0 +1,172 @@
+{
+ "args": {
+  "which": "run"
+ },
+ "elapsed_time": 1.3599355220794678,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:22:34.629093Z",
+  "invocation_id": "fe180883-5cd2-4917-9c8a-ad55c5ca91fb",
+  "invocation_started_at": "2026-10-17T15:22:29.609291Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "CREATE VIEW",
+    "code": "CREATE VIEW",
+    "rows_affected": -1
+   },
+   "execution_time": 0.11642265319824219,
+   "failures": null,
+   "message": "CREATE VIEW",
+   "relation_name": "\"tributary\".\"staging\".\"stg_recentchange\"",
+   "status": "success",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:33.424697Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:33.412198Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:33.524721Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:33.425334Z"
+    }
+   ],
+   "unique_id": "model.tributary.stg_recentchange"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 160",
+    "code": "SELECT",
+    "rows_affected": 160
+   },
+   "execution_time": 0.6366639137268066,
+   "failures": null,
+   "message": "SELECT 160",
+   "relation_name": "\"tributary\".\"marts\".\"dim_wiki\"",
+   "status": "success",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:33.544869Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:33.535745Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:34.168915Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:33.545966Z"
+    }
+   ],
+   "unique_id": "model.tributary.dim_wiki"
+  },
+  {
+   "adapter_response": {
+    "_message": "MERGE 25901",
+    "code": "MERGE",
+    "rows_affected": 25901
+   },
+   "execution_time": 0.8416798114776611,
+   "failures": null,
+   "message": "MERGE 25901",
+   "relation_name": "\"tributary\".\"marts\".\"fct_edits\"",
+   "status": "success",
+   "thread_id": "Thread-4 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:33.545470Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:33.538287Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:34.374987Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:33.551133Z"
+    }
+   ],
+   "unique_id": "model.tributary.fct_edits"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 242",
+    "code": "SELECT",
+    "rows_affected": 242
+   },
+   "execution_time": 0.15335822105407715,
+   "failures": null,
+   "message": "SELECT 242",
+   "relation_name": "\"tributary\".\"marts\".\"agg_edits_hourly\"",
+   "status": "success",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:34.395039Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:34.388181Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:34.534921Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:34.399215Z"
+    }
+   ],
+   "unique_id": "model.tributary.agg_edits_hourly"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 2304",
+    "code": "SELECT",
+    "rows_affected": 2304
+   },
+   "execution_time": 0.22748184204101562,
+   "failures": null,
+   "message": "SELECT 2304",
+   "relation_name": "\"tributary\".\"marts\".\"agg_editor_activity\"",
+   "status": "success",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:34.394531Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:34.386070Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:34.606659Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:34.395697Z"
+    }
+   ],
+   "unique_id": "model.tributary.agg_editor_activity"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 20677",
+    "code": "SELECT",
+    "rows_affected": 20677
+   },
+   "execution_time": 0.22812151908874512,
+   "failures": null,
+   "message": "SELECT 20677",
+   "relation_name": "\"tributary\".\"marts\".\"dim_page\"",
+   "status": "success",
+   "thread_id": "Thread-3 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:22:34.398572Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:22:34.391768Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:22:34.608444Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:22:34.402021Z"
+    }
+   ],
+   "unique_id": "model.tributary.dim_page"
+  }
+ ]
+}

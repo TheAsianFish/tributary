@@ -1,0 +1,68 @@
+{
+ "args": {
+  "which": "run"
+ },
+ "elapsed_time": 0.4885420799255371,
+ "metadata": {
+  "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v6.json",
+  "dbt_version": "1.12.6",
+  "env": {},
+  "generated_at": "2026-10-17T15:13:16.913179Z",
+  "invocation_id": "41d4b74f-9090-4a59-b82c-7e09499393b5",
+  "invocation_started_at": "2026-10-17T15:13:13.149634Z"
+ },
+ "results": [
+  {
+   "adapter_response": {
+    "_message": "SELECT 1",
+    "code": "SELECT",
+    "rows_affected": 1
+   },
+   "execution_time": 0.2638895511627197,
+   "failures": null,
+   "message": "SELECT 1",
+   "relation_name": "\"tributary\".\"dbt_fixture\".\"broken\"",
+   "status": "success",
+   "thread_id": "Thread-1 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:16.627455Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:16.613334Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:16.864505Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:16.628293Z"
+    }
+   ],
+   "unique_id": "model.tributary_fixture.broken"
+  },
+  {
+   "adapter_response": {
+    "_message": "SELECT 160",
+    "code": "SELECT",
+    "rows_affected": 160
+   },
+   "execution_time": 0.26482367515563965,
+   "failures": null,
+   "message": "SELECT 160",
+   "relation_name": "\"tributary\".\"dbt_fixture\".\"wikis\"",
+   "status": "success",
+   "thread_id": "Thread-2 (worker)",
+   "timing": [
+    {
+     "completed_at": "2026-10-17T15:13:16.635578Z",
+     "name": "compile",
+     "started_at": "2026-10-17T15:13:16.621268Z"
+    },
+    {
+     "completed_at": "2026-10-17T15:13:16.883209Z",
+     "name": "execute",
+     "started_at": "2026-10-17T15:13:16.636449Z"
+    }
+   ],
+   "unique_id": "model.tributary_fixture.wikis"
+  }
+ ]
+}

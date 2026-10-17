@@ -16,6 +16,10 @@ from tributary.logging import bind_run_id, configure_logging
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
 sample_app = typer.Typer(no_args_is_help=True, help="Capture and describe the committed sample.")
 app.add_typer(sample_app, name="sample")
+warehouse_app = typer.Typer(
+    no_args_is_help=True, help="Build and test the dbt models; publish the agent's catalog."
+)
+app.add_typer(warehouse_app, name="warehouse")
 
 log = structlog.get_logger(__name__)
 
@@ -138,3 +142,42 @@ def sample_stats_command(
 
     bind_run_id("sample-stats")
     typer.echo(format_stats(sample_stats(read_sample(path or get_settings().sample_path))))
+
+
+@warehouse_app.command("refresh")
+def warehouse_refresh() -> None:
+    """dbt seed + run, dbt test (results to ops.quality_runs), then publish the catalog.
+
+    The same steps, in the same order, as the warehouse_refresh DAG; the catalog
+    is published only when no check failed.
+    """
+    from tributary.warehouse.dbt import DbtCrashError
+    from tributary.warehouse.refresh import WarehouseError, refresh
+
+    run_id = bind_run_id("warehouse-refresh")
+    try:
+        summary = refresh(get_settings(), run_id)
+    except WarehouseError as exc:  # failed checks or builds: recorded, see ops.*
+        typer.echo(f"run {run_id}: {exc}", err=True)
+        raise typer.Exit(1) from None
+    except DbtCrashError as exc:
+        typer.echo(f"run {run_id}: {exc}", err=True)
+        raise typer.Exit(2) from None
+    typer.echo(
+        f"run {run_id}: {len(summary.refreshed)} relations built, "
+        f"{len(summary.checks)} checks passed, catalog {summary.catalog}"
+    )
+
+
+@warehouse_app.command("publish-catalog")
+def warehouse_publish_catalog(
+    max_distinct: Annotated[
+        int, typer.Option(min=1, help="Index the values of text columns with at most N.")
+    ] = 100,
+) -> None:
+    """dbt docs generate + the value index, published atomically to the catalog dir."""
+    from tributary.warehouse.refresh import publish_catalog
+
+    run_id = bind_run_id("warehouse-publish-catalog")
+    path = publish_catalog(get_settings(), run_id, max_distinct=max_distinct)
+    typer.echo(str(path))

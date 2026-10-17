@@ -40,4 +40,6 @@ AGENTS.md
 tests/dbt/quality_fixtures/target/
 tests/dbt/quality_fixtures/dbt_packages/
 tests/dbt/quality_fixtures/logs/
-.user.yml
+**/.user.yml
+# Published catalog (tributary warehouse publish-catalog), default TRIBUTARY_CATALOG_DIR
+catalog/

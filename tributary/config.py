@@ -92,6 +92,8 @@ class Settings(BaseSettings):
 
     # Warehouse: dbt project and the published catalog the agent reads.
     dbt_project_dir: Path = REPO_ROOT / "warehouse"
+    # YAML/JSON mapping passed as --vars to every dbt run, e.g. '{freshness_severity: warn}'.
+    dbt_vars: str = ""
     catalog_dir: Path = Path("catalog")
     # Read-only role for Trino's postgresql catalog and, from M3, the agent.
     reader_user: str = "tributary_reader"
