@@ -1,0 +1,29 @@
+# The warehouse workflow's steps, run locally against a fresh postgres:17 container (TRIBUTARY_PG_PORT=55432)
+$ uv run tributary sample load
+offered 50000, inserted 50000, invalid 0
+$ make dbt
+[0m15:37:27  Finished running 1 incremental model, 2 seeds, 4 table models, 49 data tests, 1 view model in 0 hours 0 minutes and 2.25 seconds (2.25s).
+[0m15:37:27  Done. PASS=57 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=57
+real	0m7.814s
+$ make test-warehouse
+
+tests/warehouse/test_dbt_quality.py ..                                   [ 28%]
+tests/warehouse/test_warehouse_refresh.py .....                          [100%]
+================================= dag timings ==================================
+
+airflow db migrate (sqlite): 3.0 s
+dag.test() raw_recentchange (new rows): 6.9 s
+dag.test() raw_recentchange (nothing new): 0.1 s
+dag.test() warehouse_refresh: 26.5 s
+======================= 7 passed, 1 deselected in 53.93s =======================
+
+real	0m56.176s
+user	0m50.565s
+sys	0m3.332s
+
+$ docker exec trib-pg-main psql -U tributary -tAc "select <mart>, count(*) ..."  (after make test-warehouse)
+fct_edits|25901
+dim_page|20677
+agg_editor_activity|2304
+agg_edits_hourly|242
+dim_wiki|160

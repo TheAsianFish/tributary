@@ -1,0 +1,54 @@
+# M2: the airflow profile on the Compose stack (after the full sample replay and the injected lake duplicate in bench/results/m2-lake-sample.txt)
+
+$ docker compose --profile airflow --profile lakehouse up -d --build --wait airflow-init airflow-apiserver airflow-scheduler airflow-dag-processor
+(44 s)
+
+$ docker compose exec airflow-scheduler airflow dags list-runs raw_recentchange
+dag_id           | run_id                               | state   | run_after                 | logical_date              | start_date                       | end_date                        
+raw_recentchange | scheduled__2026-10-17T15:40:00+00:00 | success | 2026-10-17T15:40:00+00:00 | 2026-10-17T15:40:00+00:00 | 2026-10-17T15:40:20.831696+00:00 | 2026-10-17T15:40:26.506781+00:00
+
+$ docker compose exec airflow-scheduler airflow dags list-runs warehouse_refresh
+dag_id            | run_id                                             | state   | run_after                        | logical_date | start_date                       | end_date                        
+warehouse_refresh | asset_triggered__2026-10-17T15:40:25.479829+00:00_ | success | 2026-10-17T15:40:25.479829+00:00 |              | 2026-10-17T15:40:26.467979+00:00 | 2026-10-17T15:41:02.034734+00:00
+
+$ docker compose exec airflow-scheduler airflow dags list-runs lake_maintenance
+dag_id           | run_id                               | state   | run_after                 | logical_date              | start_date                       | end_date
+lake_maintenance | scheduled__2026-10-17T15:07:00+00:00 | running | 2026-10-17T15:07:00+00:00 | 2026-10-17T15:07:00+00:00 | 2026-10-17T15:40:20.828291+00:00 |         
+
+$ docker compose exec postgres psql -U tributary -c "select run_id, source, status, count(*) from ops.quality_runs group by 1, 2, 3 order by 1"
+                           run_id                           |  source   | status | count 
+------------------------------------------------------------+-----------+--------+-------
+ asset_triggered__2026-10-17T15:40:25.479829+00:00_GBSVG6om | dbt       | pass   |    49
+ cli-925540542488                                           | reconcile | pass   |     2
+ cli-bd768a45b2b0                                           | reconcile | fail   |     1
+ cli-bd768a45b2b0                                           | reconcile | pass   |     1
+ scheduled__2026-10-17T15:07:00+00:00                       | reconcile | fail   |     1
+ scheduled__2026-10-17T15:07:00+00:00                       | reconcile | pass   |     1
+(6 rows)
+
+$ docker compose exec postgres psql -U tributary -c "select check_name, status, failures, details from ops.quality_runs where source = 'reconcile' and run_id like 'scheduled%'"
+          check_name          | status | failures |                                                                                    details                                                                                     
+------------------------------+--------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ lake_lag                     | pass   |        0 | {"lag_seconds": 0.0, "lake_newest": "2026-10-17T00:21:44+00:00", "max_lag_seconds": 900.0, "warehouse_newest": "2026-10-17T00:21:44+00:00"}
+ reconcile_hour:2026-10-16T23 | fail   |        1 | {"hour": "2026-10-16T23:00:00+00:00", "lake_rows": 19272, "extra_in_lake": 0, "lake_distinct": 19271, "lake_duplicates": 1, "missing_in_lake": 0, "warehouse_distinct": 19271}
+(2 rows)
+
+$ docker compose exec airflow-scheduler ls -l /data/catalog/current/
+total 788
+-rw-r--r-- 1 airflow root  14315 Oct 17 15:41 catalog.json
+-rw-r--r-- 1 airflow root    353 Oct 17 15:41 export.json
+-rw-r--r-- 1 airflow root 737949 Oct 17 15:41 manifest.json
+-rw-r--r-- 1 airflow root  41735 Oct 17 15:41 values.json
+
+# Later: the lake_maintenance run finished (reconcile failed on the injected duplicate after its retry; maintenance succeeded)
+$ docker compose exec airflow-scheduler airflow dags list-runs lake_maintenance
+dag_id           | run_id                               | state  | run_after                 | logical_date              | start_date                       | end_date                        
+=================+======================================+========+===========================+===========================+==================================+=================================
+lake_maintenance | scheduled__2026-10-17T15:07:00+00:00 | failed | 2026-10-17T15:07:00+00:00 | 2026-10-17T15:07:00+00:00 | 2026-10-17T15:40:20.828291+00:00 | 2026-10-17T15:42:28.730470+00:00
+$ docker compose exec airflow-scheduler airflow tasks states-for-dag-run lake_maintenance scheduled__2026-10-17T15:07:00+00:00
+dag_id           | logical_date              | task_id                | state   | start_date                       | end_date                        
+=================+===========================+========================+=========+==================================+=================================
+lake_maintenance | 2026-10-17T15:07:00+00:00 | optimize_closed_hours  | success | 2026-10-17T15:40:20.982892+00:00 | 2026-10-17T15:40:27.174487+00:00
+lake_maintenance | 2026-10-17T15:07:00+00:00 | expire_snapshots       | success | 2026-10-17T15:40:27.828538+00:00 | 2026-10-17T15:40:28.093720+00:00
+lake_maintenance | 2026-10-17T15:07:00+00:00 | remove_orphan_files    | success | 2026-10-17T15:40:28.948390+00:00 | 2026-10-17T15:40:29.246687+00:00
+lake_maintenance | 2026-10-17T15:07:00+00:00 | reconcile_closed_hours | failed  | 2026-10-17T15:42:26.710437+00:00 | 2026-10-17T15:42:27.688576+00:00
