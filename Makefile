@@ -30,6 +30,9 @@ logs:
 
 test-integration: ## Needs `make up` first
 	uv run pytest tests/integration -m integration
+	@# A crash that Compose restarted would pass the tests from the checkpoint; refuse that.
+	@restarts=$$(docker inspect -f '{{.RestartCount}}' $$(docker compose ps -q stream)); \
+	test "$$restarts" = 0 || { echo "stream job restarted $$restarts time(s)"; exit 1; }
 
 demo-data: ## Re-capture the committed sample from the live stream (~45 min)
 	uv run tributary sample capture --count 50000
