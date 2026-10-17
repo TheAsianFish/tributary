@@ -1,12 +1,16 @@
 name: Integration
 
-# Kafka + Spark + PostgreSQL under Compose, 5,000 events end to end. Runs only
-# when the ingest path changes (or by hand) to keep CI minutes for the gate.
+# Kafka + Spark + PostgreSQL + MinIO + Trino under Compose: 5,000 events end to
+# end into both the warehouse and the Iceberg lake, partition pruning, and the
+# lake_maintenance DAG under dag.test(). Runs only when the ingest or lake path
+# changes (or by hand) to keep CI minutes for the gate.
 on:
   pull_request:
     paths:
       - "tributary/**"
+      - "orchestration/**"
       - "tests/integration/**"
+      - "tests/warehouse/**"
       - "docker/**"
       - "compose.yaml"
       - "data/sample/**"
@@ -17,7 +21,9 @@ on:
     branches: [main]
     paths:
       - "tributary/**"
+      - "orchestration/**"
       - "tests/integration/**"
+      - "tests/warehouse/**"
       - "docker/**"
       - "compose.yaml"
       - "data/sample/**"
@@ -35,24 +41,46 @@ permissions:
 
 jobs:
   pipeline:
-    name: replay 5,000 events through Kafka and Spark
+    name: replay 5,000 events into PostgreSQL and Iceberg
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
           python-version: "3.12"
-      - run: uv sync --locked
+      - run: uv sync --locked --extra warehouse --extra lakehouse --extra airflow
+      - uses: docker/setup-buildx-action@v3
+      # MinIO compiles from source (about 2.5 min cold); both images are cached by layer.
+      - name: Build the MinIO image
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/minio
+          tags: tributary-minio:dev
+          load: true
+          cache-from: type=gha,scope=minio
+          cache-to: type=gha,scope=minio,mode=max
       - name: Build the stream image
-        run: docker compose build stream
-      - name: Start Kafka, PostgreSQL and the stream job
-        run: docker compose up -d --wait postgres kafka stream
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/spark/Dockerfile
+          tags: tributary-stream:dev
+          load: true
+          cache-from: type=gha,scope=stream
+          cache-to: type=gha,scope=stream,mode=max
+      # The images were just built and loaded, so Compose is not asked to --build.
+      - name: Start Kafka, PostgreSQL, MinIO, the stream job and Trino
+        run: >-
+          docker compose --profile lakehouse up -d --wait
+          postgres kafka minio lake-init stream trino
       - run: make test-integration
+      - name: lake_maintenance under dag.test()
+        run: uv run pytest tests/warehouse -m lakehouse
       - name: Service logs
         if: failure()
-        run: docker compose logs --no-color --tail 300
+        run: docker compose --profile lakehouse logs --no-color --tail 300
       - name: Tear down
         if: always()
-        run: docker compose down -v
+        run: docker compose --profile lakehouse down -v
