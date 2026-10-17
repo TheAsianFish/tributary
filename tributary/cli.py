@@ -112,6 +112,23 @@ def sample_capture(
     )
 
 
+@sample_app.command("load")
+def sample_load(
+    limit: Annotated[int | None, typer.Option(min=0, help="Load at most N events.")] = None,
+    path: Annotated[Path | None, typer.Option(help="Sample file to load.")] = None,
+) -> None:
+    """Insert the sample straight into raw.recentchange (no Kafka, no Spark)."""
+    from tributary.ingest.sample import read_sample
+    from tributary.warehouse.load import load_events
+
+    bind_run_id("sample-load")
+    settings = get_settings()
+    offered, inserted, invalid = load_events(
+        settings.pg_conninfo, read_sample(path or settings.sample_path, limit=limit)
+    )
+    typer.echo(f"offered {offered}, inserted {inserted}, invalid {invalid}")
+
+
 @sample_app.command("stats")
 def sample_stats_command(
     path: Annotated[Path | None, typer.Option(help="Sample file to describe.")] = None,

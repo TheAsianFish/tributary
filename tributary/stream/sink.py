@@ -56,9 +56,9 @@ class SinkResult(NamedTuple):
     seconds: float
 
 
-def ensure_schema(conninfo: str) -> None:
-    """Create the ``raw`` schema and landing table if missing (idempotent)."""
-    ddl = files("tributary").joinpath("sql/raw.sql").read_bytes()
+def ensure_schema(conninfo: str, script: str = "raw.sql") -> None:
+    """Run one of the package's idempotent DDL scripts (default: the landing table)."""
+    ddl = files("tributary").joinpath("sql", script).read_bytes()
     with psycopg.connect(conninfo) as conn:
         conn.execute(ddl)
 
