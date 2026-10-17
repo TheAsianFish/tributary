@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow down logs demo-data sample-stats dbt eval-guard
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard serve
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -28,8 +28,12 @@ up-lakehouse: up ## ... plus Trino
 up-airflow: up ## ... plus the Airflow scheduler, DAG processor and UI (localhost:8080)
 	docker compose --profile airflow up -d --build --wait
 
+up-api: up-airflow ## ... plus the API on localhost:8000 (needs TRIBUTARY_API_KEYS)
+	@test -n "$$TRIBUTARY_API_KEYS" || { echo "set TRIBUTARY_API_KEYS first"; exit 1; }
+	docker compose --profile api up -d --build --wait api
+
 down: ## Stop everything and delete the volumes (topic, tables, lake, checkpoints)
-	docker compose --profile lakehouse --profile airflow down -v
+	docker compose --profile lakehouse --profile airflow --profile api --profile ollama down -v
 
 logs:
 	docker compose logs -f stream producer
@@ -56,3 +60,6 @@ PROVIDER ?= fake
 
 eval-guard: ## Guard suite: every unsafe statement blocked, no warehouse gold query blocked (offline)
 	uv run python -m eval.guard_eval
+
+serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
+	uv run tributary serve
