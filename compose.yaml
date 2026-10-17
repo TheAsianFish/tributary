@@ -89,6 +89,8 @@ services:
       POSTGRES_DB: ${TRIBUTARY_PG_DATABASE:-tributary}
       TRIBUTARY_READER_USER: ${TRIBUTARY_READER_USER:-tributary_reader}
       TRIBUTARY_READER_PASSWORD: ${TRIBUTARY_READER_PASSWORD:-tributary_reader}
+      TRIBUTARY_AGENT_USER: ${TRIBUTARY_AGENT_USER:-tributary_agent}
+      TRIBUTARY_AGENT_PASSWORD: ${TRIBUTARY_AGENT_PASSWORD:-tributary_agent}
     ports:
       - "127.0.0.1:${TRIBUTARY_PG_PORT:-5432}:5432"
     volumes:
