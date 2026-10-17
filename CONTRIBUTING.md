@@ -10,34 +10,34 @@ Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Docker with
 Compose v2, Java 17 (only for running the Spark job or its tests locally).
 
 ```bash
-uv sync --all-extras          # creates .venv with dev, spark and eval extras
-cp .env.example .env          # fill in ANTHROPIC_API_KEY only if you have one
-docker compose up -d          # PostgreSQL + Kafka + MinIO + producer + Spark job
-uv run tributary ask "Which wiki had the most edits in the last hour?"
+uv sync --all-extras          # creates .venv with the dev group and the spark extra
+cp .env.example .env          # optional; the defaults match compose.yaml
+make up                       # PostgreSQL + Kafka + the Spark stream job
+uv run tributary produce --limit 5000
+make test-integration
 ```
 
-Profiles: `docker compose --profile lakehouse up` adds Trino over the Iceberg
-and PostgreSQL catalogs; `--profile airflow` adds the scheduler and UI;
-`--profile bird` loads the benchmark databases (downloads about 300 MB on
-first use, cached under `~/.cache/tributary`).
+`docker compose up -d` additionally starts the producer, which replays the
+whole sample once. `make down` deletes the volumes (topic, table and
+checkpoints together, so they never disagree). Later milestones add MinIO,
+the `lakehouse`, `airflow` and `bird` profiles and `tributary ask`; they are
+described in PLAN.md and appear here when they exist.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `make check` | ruff format check, ruff lint, mypy strict, pytest (offline). The quality gate; CI runs exactly this. |
-| `make test` | Unit tests only (fast, offline, deterministic). |
-| `make test-integration` | Integration tests against Compose services (Kafka, Spark, Postgres). Needs Docker. |
-| `make test-live` | Tests that call the real Anthropic API. Skipped without `ANTHROPIC_API_KEY`. |
-| `make bird` | Download and load BIRD Mini-Dev into PostgreSQL. |
-| `make eval` | Execution-accuracy benchmark. `VARIANT=`, `MODEL=`, `TRACK=official|corrected`, `LIMIT=` select the run. Writes `eval/results/` and updates RESULTS.md tables. |
-| `make eval-link` | Schema-linking recall and precision (offline). |
-| `make eval-guard` | Guard suite: block rate and false-block rate (offline). |
-| `make bench` | Ingest fault-injection and latency benchmark against Compose. |
-| `make bench-scale` | Sustained throughput and p95 at 1, 3 and 6 partitions, with per-stage ceilings. |
-| `make bench-query` | Postgres vs Trino-over-Iceberg query latency and partition pruning. `SCALE=` sets the row count. |
-| `make dbt` | `dbt build` on the warehouse project. |
-| `make demo-data` | Regenerate the committed sample from the live stream (maintainers only; keeps factual fields, drops comment text). |
+| `make test` | Unit tests only (fast, offline, deterministic; the Spark tests run in local mode and need Java 17). |
+| `make test-integration` | Integration tests against the Compose services (Kafka, Spark, Postgres). Run `make up` first. |
+| `make up` / `make down` | Start Kafka, PostgreSQL and the stream job (no replay) / stop and delete the volumes. |
+| `make logs` | Follow the stream job and producer logs. |
+| `make demo-data` | Regenerate the committed sample from the live stream (maintainers only; keeps factual fields, drops comment text; about 45 minutes). |
+| `make sample-stats` | Counts, duplicates, emit delay and lateness of the committed sample. |
+
+Planned targets (`make eval`, `make bench`, `make bench-scale`,
+`make bench-query`, `make bird`, `make dbt`, `make test-live`) are specified in
+PLAN.md and land with their milestones.
 
 ## Conventions
 
