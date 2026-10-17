@@ -38,8 +38,9 @@ def build_session(settings: Settings) -> SparkSession:
     State lives in RocksDB rather than the default JVM-heap store. The dedup
     operator keeps one key per event id until the watermark (newest event time
     minus the delay) passes its event time plus the delay, so state spans about
-    twice the delay of event time, whatever the replay speed: 29,245 keys at the
-    end of the 50,000-event sample (~23 events/s) with a 10-minute delay.
+    twice the delay of event time, whatever the replay speed: 27,952 keys once
+    the 50,000-event sample (~23 events/s) has settled with a 10-minute delay,
+    up to 30,827 while batches are still arriving.
     The heap store would cope with that, but it snapshots the whole map and
     competes with the job for heap as the delay or the rate grows; RocksDB keeps
     state off-heap and changelog checkpointing writes only each batch's changes.

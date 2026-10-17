@@ -75,7 +75,7 @@ different failure:
 | A micro-batch replayed after a crash between the sink's write and Spark's commit | The sink: `COPY` into a temp table, then `INSERT ... ON CONFLICT (event_id) DO NOTHING`. Writing the same batch twice is a no-op. Spark's state cannot help here: the replay re-runs the batch from the previous state. |
 | Offsets lost or truncated in Kafka | `failOnDataLoss=true`: the job stops instead of silently skipping. |
 | Events that arrive late | The watermark delay (10 min) is chosen from the measured lateness of the real stream: p99 8 s, max 143 s over 50,000 events, 0 that a 10-minute delay would drop. Rows dropped by the watermark are logged per batch. |
-| A poison message (bad JSON, bad UUID, a timestamp past year 9999) | Counted as malformed and filtered before the sink, so one bad record cannot fail every replay of its batch. |
+| A poison message (bad JSON, bad UUID, a timestamp past year 9999, a NUL byte in a text field) | Counted as malformed and filtered before the sink, so one bad record cannot fail every replay of its batch. |
 
 Kafka transactions cannot reach PostgreSQL, so end-to-end exactly-once here
 means at-least-once delivery into an idempotent sink. The fault-injection
@@ -94,7 +94,7 @@ from `make down` (which deletes the checkpoint) to replay from scratch.
 | Event time | MediaWiki `timestamp` (when the change happened) | `meta.dt` (when EventGate emitted it) | Questions are about when edits happened. `meta.dt` trails the change (p50 1.5 s, max 144 s in the sample); it is kept as `emitted_at`. |
 | What enters Kafka | An allowlist of factual fields | The full event | Editor comments are free text under CC BY-SA; nothing downstream needs them, and an allowlist cannot leak a new field by accident. |
 | Sink write | `COPY` into a temp table, then `INSERT ... ON CONFLICT DO NOTHING`, one connection per Spark partition | Spark JDBC writer | The JDBC writer cannot express `ON CONFLICT`, so a replayed batch would fail or duplicate. Per-partition connections give P parallel writers, which the scaling benchmark needs. |
-| Dedup state store | RocksDB with changelog checkpointing | The default heap store | State spans twice the delay of event time (29,245 keys at the end of the sample replay); RocksDB keeps it off the JVM heap and checkpoints only each batch's changes. The provider cannot change without a new checkpoint, so it is chosen up front. |
+| Dedup state store | RocksDB with changelog checkpointing | The default heap store | State spans twice the delay of event time (27,952 keys once the sample replay has settled, 30,827 at peak); RocksDB keeps it off the JVM heap and checkpoints only each batch's changes. The provider cannot change without a new checkpoint, so it is chosen up front. |
 | Stream image | The official `apache/spark:4.1.3-python3` with the Kafka connector jars baked in (sha256-pinned) and a Python 3.12 venv | `--packages` at start-up | Nothing is downloaded when the job starts, so a restart works offline and the jars cannot change underneath it. |
 | One image for producer and job | Shared | Separate slim producer image | One build in CI. The API milestone adds a slim app image. |
 
@@ -107,7 +107,7 @@ output. No model calls yet, so $0 spent.
 |---|---|
 | Sample lateness (50,000 live events, stream order) | 54% out of order; p99 8 s, max 143 s; 0 dropped at a 10-min watermark |
 | `docker compose up` replay | 50,000 produced, 50,000 rows, 0 dropped, 0 malformed; last row 113 s after `up` |
-| End-to-end test (CI) | 5,000 events land once; re-sending all of them adds no row |
+| End-to-end test (CI) | 5,000 events land once; re-sending all of them changes no row and does not stall or restart the job |
 
 ## Development
 

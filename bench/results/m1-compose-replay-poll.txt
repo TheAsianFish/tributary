@@ -1,0 +1,23 @@
+# docker compose down -v && docker compose up -d --wait, then SELECT count(*) FROM raw.recentchange every 5 s
+# (seconds since `up` was started; second run on the machine in RESULTS.md, 2026-10-17)
+up exit: 0 after 22 s
+22 s: rows=0
+28 s: rows=0
+33 s: rows=4103
+38 s: rows=13453
+43 s: rows=15953
+49 s: rows=18456
+54 s: rows=20952
+59 s: rows=23452
+64 s: rows=25955
+69 s: rows=28454
+74 s: rows=30956
+79 s: rows=33455
+85 s: rows=35954
+90 s: rows=38455
+95 s: rows=40956
+100 s: rows=43454
+105 s: rows=45952
+110 s: rows=48452
+115 s: rows=50000
+50000|50000

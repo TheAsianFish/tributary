@@ -39,26 +39,31 @@ state: see the next table.
 
 `docker compose down -v && docker compose up -d --wait`, then poll
 `SELECT count(*) FROM raw.recentchange` until it reaches 50,000. The producer
-replays the whole sample at its default 500 events/s. One run; this is a
+replays the whole sample at its default 500 events/s. Two runs; this is a
 check that the spine works, not a throughput benchmark (that is `make bench`,
-M5). Raw progress and sink lines:
-[`bench/results/m1-compose-replay.jsonl`](bench/results/m1-compose-replay.jsonl).
+M5). Raw progress and sink lines of the first run:
+[`bench/results/m1-compose-replay.jsonl`](bench/results/m1-compose-replay.jsonl);
+the count poll of the second run, which is where the time to the last row is
+read from: [`bench/results/m1-compose-replay-poll.txt`](bench/results/m1-compose-replay-poll.txt).
 
 | | |
 |---|---|
 | Produced / delivered / failed | 50,000 / 50,000 / 0 in 100.0 s (500.0 events/s) |
 | Rows in `raw.recentchange` / distinct ids | 50,000 / 50,000 |
-| Time from `up` to the last row | 113 s |
+| Time from `up` to the last row | 113 s (first run); between 110 s and 115 s (second run, 5 s poll) |
 | Micro-batches with data | 20 (5 s trigger) |
 | Rows dropped by the watermark / malformed / canary | 0 / 0 / 0 |
 | Rows skipped by `ON CONFLICT` | 0 (nothing reached the sink twice) |
-| Dedup state at the end | 29,245 keys |
+| Dedup state after the last batch with data / after the closing empty batch | 29,245 / 27,952 keys (peak 30,827) |
 
 The state size follows from how `dropDuplicatesWithinWatermark` expires keys:
 a key lives until the watermark (newest event time − delay) passes its event
 time + delay, so state spans about twice the delay of event time. At 23
-events/s and a 10-minute delay that is about 28,000 keys, matching the
-29,245 measured; replaying faster does not change it.
+events/s and a 10-minute delay that is about 27,600 keys. Eviction runs once
+per micro-batch, so the count overshoots by up to a batch's worth of keys
+while data flows (27,952 to 30,827 over the last ten batches) and settles at
+27,952 once the final batch has evicted. The span is in event time, so
+replaying faster should not change it; that has not been measured.
 
 ## Verified behaviour (M1)
 
@@ -66,9 +71,9 @@ These are properties checked by tests rather than measured quantities.
 
 | Property | Where | Result |
 |---|---|---|
-| 5,000 events through Kafka and Spark land once; re-sending all 5,000 adds no row | `make up && make test-integration` (`tests/integration/test_pipeline.py`) | pass, fresh stack (11.9 s) and a stack already holding the full sample (4.1 s) |
+| 5,000 events (fresh ids per run) through Kafka and Spark land once; after re-sending all 5,000, every row still carries the Kafka offset of its first copy, the job keeps running and Compose has not restarted it | `make up && make test-integration` (`tests/integration/test_pipeline.py`) | pass: 12.7 s on a fresh stack, 18.4 s on a stack already holding the full sample (whose newer events would put unshifted replays behind the watermark); 0 restarts of the job in both |
 | A replayed or partly committed batch, and duplicates inside one batch, land once | `tests/integration/test_sink_postgres.py` against PostgreSQL 17 | pass |
-| Spark 4.1.3 `dropDuplicatesWithinWatermark`: late rows are filtered with the *previous* batch's watermark but state is evicted with the *current* one, so a row up to one batch behind still gets through; a duplicate arriving after its key expired is dropped as late, not passed on | `tests/unit/test_stream_spark.py::test_deduplicate_semantics_across_micro_batches` | pass |
+| Spark 4.1.3 `dropDuplicatesWithinWatermark`: late rows are filtered with the *previous* batch's watermark but state is evicted with the *current* one (asserted on `numRowsRemoved` and `numRowsTotal` per batch), so a row up to one batch behind still gets through; a duplicate arriving after its key expired is dropped as late if it is behind the watermark, and passes as a new key if it is not (plain `dropDuplicates` would still drop it) | `tests/unit/test_stream_spark.py::test_deduplicate_semantics_across_micro_batches` | pass |
 | Deleting the last commit-log entry makes Spark replay the same batch id with the same rows | same test | pass: only the sink's primary key keeps the replay out |
 | Spark parser and the Python parser produce identical rows | `test_parse_events_matches_the_python_parser` | pass |
 
