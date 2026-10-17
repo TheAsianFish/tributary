@@ -13,7 +13,9 @@ on:
       - "tests/warehouse/**"
       - "tests/dbt/**"
       - "tests/fixtures/**"
+      - "data/sample/**"
       - "pyproject.toml"
+      - "Makefile"
       - "uv.lock"
       - ".github/workflows/warehouse.yml"
   push:
@@ -25,7 +27,9 @@ on:
       - "tests/warehouse/**"
       - "tests/dbt/**"
       - "tests/fixtures/**"
+      - "data/sample/**"
       - "pyproject.toml"
+      - "Makefile"
       - "uv.lock"
       - ".github/workflows/warehouse.yml"
   workflow_dispatch:

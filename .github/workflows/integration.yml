@@ -15,6 +15,7 @@ on:
       - "compose.yaml"
       - "data/sample/**"
       - "pyproject.toml"
+      - "Makefile"
       - "uv.lock"
       - ".github/workflows/integration.yml"
   push:
@@ -28,6 +29,7 @@ on:
       - "compose.yaml"
       - "data/sample/**"
       - "pyproject.toml"
+      - "Makefile"
       - "uv.lock"
       - ".github/workflows/integration.yml"
   workflow_dispatch:
