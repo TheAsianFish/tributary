@@ -140,10 +140,11 @@ into `raw.recentchange`), `make dbt`, `make test-warehouse`. Raw output:
 
 | | Result |
 |---|---|
-| `make dbt` on the sample | PASS=57 WARN=0 ERROR=0: 2 seeds, 1 staging view, 1 incremental and 4 table marts, 49 data tests; dbt reports 2.25 s, the command 7.8 s |
+| `make dbt` on the sample | PASS=57 WARN=0 ERROR=0: 2 seeds, 1 staging view, 1 incremental and 4 table marts, 49 data tests; dbt reports 2.33 s, the command 6.6 s |
 | Mart sizes | `fct_edits` 25,901 · `dim_page` 20,677 · `agg_editor_activity` 2,304 · `agg_edits_hourly` 242 · `dim_wiki` 160 |
 | Custom tests against fixtures | volume: flat pass, spike fail, outage (zero-row hour) fail, short history pass (fails with `min_history=2`), constant history pass; freshness: fresh pass, stale fail, stale within a wider limit pass, empty fail |
-| `dag.test()` timings | `airflow db migrate` (SQLite) 3.0 s · `raw_recentchange` with new rows 6.9 s, with none 0.1 s (skipped, no asset event) · `warehouse_refresh` 26.5 s |
+| `dag.test()` timings | `airflow db migrate` (SQLite) 3.0 s · `raw_recentchange` with new rows 6.9 s, with none 0.1 s (skipped, no asset event) · `warehouse_refresh` 26.6 s |
+| `fct_edits` after a first build on an empty table | loads every edit once data arrives (246 of 246 for the first 500 events; 0 before the fix) |
 | `warehouse_refresh` results | 49 rows in `ops.quality_runs` for the run, all `pass`; 8 rows in `ops.refresh_runs` (2 seeds, the staging view, 5 marts); catalog published with `manifest.json`, `catalog.json`, `values.json` |
 
 ### The `airflow` profile on the Compose stack
@@ -164,9 +165,10 @@ screenshot: [`docs/airflow-warehouse-refresh.png`](docs/airflow-warehouse-refres
 | Property | Where | Result |
 |---|---|---|
 | 5,000 events (fresh ids, re-timed over three hours) reach both stores; PostgreSQL and Trino over Iceberg count the same 5,000 distinct ids, the lake has no duplicate rows, and the ids are the ones produced | `make up-lakehouse && make test-integration` (`tests/integration/test_lakehouse.py`) | pass |
+| Once a replay's batches have committed, `ops.stream_progress` (the newest event of each fully written warehouse batch, which the reconciliation closes hours on) equals the replay's newest event | same file | pass |
 | `EXPLAIN ANALYZE` of a one-hour filter reads exactly the hour's files (splits = `$files` count) and rows (= `sum(record_count)`), fewer than the table's | same file | pass |
-| `lake_maintenance` under `dag.test()`: all four tasks green, every reconciliation row `pass` | `uv run pytest tests/warehouse -m lakehouse` after the integration tests | pass: 6.7 s; three closed hours checked (468, 1,800 and 1,800 ids, equal in both stores), the open hour left out |
-| The whole integration run on a fresh stack | `bench/results/m2-integration.txt` | 6 passed in 57.3 s, stream job not restarted |
+| `lake_maintenance` under `dag.test()`: all four tasks green, every reconciliation row `pass` | `uv run pytest tests/warehouse -m lakehouse` after the integration tests | pass: 7.0 s; two closed hours checked (1,461 and 1,800 ids, equal in both stores), the open hours left out (how many hours close depends on the wall-clock minute the replay starts at) |
+| The whole integration run on a fresh stack | `bench/results/m2-integration.txt` | 7 passed in 32.9 s, stream job not restarted |
 | One failing check, of any kind, turns `warehouse_refresh` red only after every result is recorded; the catalog is then not republished | `tests/unit/test_refresh.py` | pass |
 | A catalog reader never sees a half-written version | `tests/unit/test_catalog.py` (versioned directory, atomic symlink swap, last 3 kept) | pass |
 
