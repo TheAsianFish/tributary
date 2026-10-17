@@ -385,6 +385,11 @@ class Guard:
                     f"system_catalog: a cast to {node.name.lower()}, an object-identifier type,"
                     " resolves names in the system catalog"
                 )
+            elif isinstance(node, exp.DataType) and node.this == exp.DataType.Type.XML:
+                reasons.append(
+                    "function_not_allowed: a cast to xml parses the text with libxml2,"
+                    " like the xml functions"
+                )
             elif isinstance(node, exp.DataType) and node.this == exp.DataType.Type.USERDEFINED:
                 reasons.append(
                     f"function_not_allowed: a cast to the unknown type "

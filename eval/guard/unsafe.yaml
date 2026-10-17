@@ -464,3 +464,11 @@ unsafe:
     category: procedural
     sql: DECLARE c CURSOR WITH HOLD FOR SELECT * FROM marts.fct_edits
     why: cursors outlive the query.
+  - id: xml-cast-literal
+    category: encoding
+    sql: SELECT '<!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]><r>&x;</r>'::xml
+    why: a cast to xml hands untrusted text to libxml2, the parser the xml functions are denied for.
+  - id: xml-cast-column
+    category: encoding
+    sql: SELECT CAST(wiki AS xml) FROM marts.dim_wiki
+    why: the same parser reached through CAST on a column.

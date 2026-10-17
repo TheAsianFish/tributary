@@ -495,7 +495,7 @@
   },
   "passed": true,
   "unsafe": {
-    "blocked": 103,
+    "blocked": 105,
     "by_category": {
       "comment_trick": [
         5,
@@ -514,8 +514,8 @@
         8
       ],
       "encoding": [
-        9,
-        9
+        11,
+        11
       ],
       "exfiltration": [
         4,
@@ -555,7 +555,7 @@
       ]
     },
     "by_code": {
-      "function_not_allowed": 33,
+      "function_not_allowed": 35,
       "locking_clause": 2,
       "multiple_statements": 7,
       "not_select": 19,
@@ -1936,8 +1936,34 @@
         "source": "unsafe.yaml",
         "sql": "",
         "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "xml-cast-literal",
+        "reasons": [
+          "function_not_allowed: a cast to xml parses the text with libxml2, like the xml functions"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "xml-cast-column",
+        "reasons": [
+          "function_not_allowed: a cast to xml parses the text with libxml2, like the xml functions"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
       }
     ],
-    "total": 103
+    "total": 105
   }
 }
