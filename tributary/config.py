@@ -95,9 +95,49 @@ class Settings(BaseSettings):
     # YAML/JSON mapping passed as --vars to every dbt run, e.g. '{freshness_severity: warn}'.
     dbt_vars: str = ""
     catalog_dir: Path = Path("catalog")
-    # Read-only role for Trino's postgresql catalog and, from M3, the agent.
+    # Read-only role for Trino's postgresql catalog (reads raw, staging, marts, ops).
     reader_user: str = "tributary_reader"
     reader_password: SecretStr = SecretStr("tributary_reader")
+    # The agent's role: SELECT on the marts and the ops tables provenance reads, nothing
+    # else, sessions read-only by default (tributary/sql/agent_role.sql).
+    agent_user: str = "tributary_agent"
+    agent_password: SecretStr = SecretStr("tributary_agent")
+
+    # Agent: which model writes the SQL. ANTHROPIC_API_KEY is read by the SDK itself.
+    provider: Literal["anthropic", "ollama", "fake"] = "anthropic"
+    model: str = "claude-opus-5-5"
+    anthropic_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5-coder:7b"
+    # What the fake provider replays (and `make record` appends to).
+    recordings_path: Path = REPO_ROOT / "tests/recordings/warehouse.jsonl"
+    # Relations the agent may read, as dbt schemas; everything else is blocked.
+    agent_schemas: tuple[str, ...] = ("marts",)
+    agent_max_repairs: int = Field(default=2, ge=0, le=5)
+    agent_row_cap: int = Field(default=1000, ge=1)
+    agent_statement_timeout_ms: int = Field(default=10_000, ge=100)
+    # Planner cost from EXPLAIN above which a query is refused before it runs: about
+    # 500x the costliest of the 40 warehouse gold queries on the sample (2,068); a
+    # cross join of fct_edits with itself is 10 M. Raise it with the data volume.
+    agent_cost_ceiling: float = Field(default=1_000_000.0, gt=0)
+    # A relation not rebuilt for this long is flagged as stale in answers.
+    agent_stale_after_minutes: int = Field(default=120, ge=1)
+
+    # API: comma-separated keys accepted in X-API-Key. Empty = the API refuses to start.
+    api_keys: SecretStr = SecretStr("")
+    api_host: str = "127.0.0.1"
+    api_port: int = 8000
+
+    @property
+    def agent_conninfo(self) -> str:
+        """The agent's connection, as its restricted role (password included; never log it)."""
+        return make_conninfo(
+            host=self.pg_host,
+            port=self.pg_port,
+            dbname=self.pg_database,
+            user=self.agent_user,
+            password=self.agent_password.get_secret_value(),
+        )
 
     @property
     def pg_conninfo(self) -> str:
