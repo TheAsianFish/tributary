@@ -4,9 +4,14 @@
   lookback re-reads arrivals just before the high-water mark, because the sink stamps
   ingested_at inside concurrent transactions and one stamped earlier can commit later.
 
-  merge rather than delete+insert: one atomic statement, and the rows re-read by the
-  lookback (already present, unchanged; events are immutable) are matched on the
-  unique index instead of being deleted and inserted again. MERGE needs PostgreSQL 15+.
+  The rows the lookback re-reads are mostly present already. Events are immutable, so
+  they are dropped before the merge (the not exists below): dbt's merge UPDATEs every
+  matched row, and in PostgreSQL each update writes a new tuple, so without the filter
+  every run would rewrite the whole lookback window for nothing.
+
+  merge rather than delete+insert: one atomic statement, and unique_key stays as the
+  safety net should a duplicate event_id ever get past the filter (it is matched on the
+  unique index, not inserted twice). MERGE needs PostgreSQL 15+.
 #}
 {{
     config(
@@ -24,7 +29,7 @@
 
 with edits as (
 
-    select * from {{ ref('stg_recentchange') }}
+    select * from {{ ref('stg_recentchange') }} as recent
     where event_type in ('edit', 'new')
     {% if is_incremental() %}
         -- coalesce: if the first build found no edits, max() is NULL and a bare
@@ -33,6 +38,10 @@ with edits as (
             select coalesce(max(ingested_at), '-infinity'::timestamptz)
                 - interval '{{ var("fct_edits_lookback_minutes") | int }} minutes'
             from {{ this }}
+        )
+        and not exists (
+            select 1 from {{ this }} as existing
+            where existing.event_id = recent.event_id
         )
     {% endif %}
 
