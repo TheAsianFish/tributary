@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow down logs demo-data sample-stats dbt
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow down logs demo-data sample-stats dbt eval-guard
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -51,3 +51,8 @@ demo-data: ## Re-capture the committed sample from the live stream (~45 min)
 
 sample-stats:
 	uv run tributary sample stats
+
+PROVIDER ?= fake
+
+eval-guard: ## Guard suite: every unsafe statement blocked, no warehouse gold query blocked (offline)
+	uv run python -m eval.guard_eval

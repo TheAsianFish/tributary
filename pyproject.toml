@@ -62,7 +62,7 @@ ignore = ["S101", "S608"]
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["tributary", "tests", "orchestration"]
+files = ["tributary", "tests", "orchestration", "eval"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
