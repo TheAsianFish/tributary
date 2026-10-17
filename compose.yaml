@@ -31,7 +31,7 @@ services:
       POSTGRES_PASSWORD: ${TRIBUTARY_PG_PASSWORD:-tributary}
       POSTGRES_DB: ${TRIBUTARY_PG_DATABASE:-tributary}
     ports:
-      - "${TRIBUTARY_PG_PORT:-5432}:5432"
+      - "127.0.0.1:${TRIBUTARY_PG_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -62,7 +62,8 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       KAFKA_HEAP_OPTS: -Xms512m -Xmx512m
     ports:
-      - "9094:9094"
+      # Loopback only: the broker is unauthenticated and the database uses dev credentials.
+      - "127.0.0.1:9094:9094"
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
