@@ -1,6 +1,23 @@
-with events as (
+{#
+  dim_wiki counts every event type, so it reads staging (a view over the live raw
+  table) rather than fct_edits. Read unbounded, that races fct_edits: with several
+  threads dim_wiki could build first, and a new wiki's first edit committing between
+  the two builds would land in fct_edits but not here, failing the fct_edits.wiki
+  relationship test. Referencing fct_edits makes dbt build it first, and reading only
+  arrivals up to its high-water mark means every wiki in it is seen here too
+  ('infinity' when it is empty, so a first build is not cut short).
+#}
+with loaded as (
+
+    select coalesce(max(ingested_at), 'infinity'::timestamptz) as max_ingested_at
+    from {{ ref('fct_edits') }}
+
+),
+
+events as (
 
     select * from {{ ref('stg_recentchange') }}
+    where ingested_at <= (select max_ingested_at from loaded)
 
 ),
 
