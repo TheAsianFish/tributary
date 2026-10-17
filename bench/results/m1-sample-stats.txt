@@ -1,0 +1,24 @@
+## Sample
+- events: 50000 (0 invalid)
+- distinct ids: 50000; duplicate ids: 0
+- by type: edit 24188, categorize 21614, log 2485, new 1713
+- wikis: 160; top: commonswiki 15747, wikidatawiki 9832, enwiki 8610, afwiki 1509, zhwiki 1439
+- bot share: 39.5%
+
+## Event time
+- first / last in stream order: 2026-10-16T23:45:35+00:00 / 2026-10-17T00:21:44+00:00
+- min / max: 2026-10-16T23:45:26+00:00 / 2026-10-17T00:21:44+00:00 (span 0:36:18)
+
+## Lateness in stream order (running max of event time minus event time)
+- late events: 27030 (54.060%)
+- p50 1 s, p90 2 s, p99 8 s, p99.9 36 s, max 143 s
+- dropped by a watermark of (worst case, per-event watermark):
+  - 1 min: 17 (0.034%)
+  - 2 min: 1 (0.002%)
+  - 5 min: 0 (0.000%)
+  - 10 min: 0 (0.000%)
+  - 30 min: 0 (0.000%)
+
+## Emit delay (meta.dt minus timestamp)
+- p50 1.544 s, p99 9.445 s, max 144.096 s (0 without meta.dt)
+
