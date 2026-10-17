@@ -1,38 +1,31 @@
-$ docker compose --profile lakehouse down -v && docker compose --profile lakehouse up -d --wait postgres kafka minio lake-init stream trino
+$ make down && make up-lakehouse
+healthy after 48 s (image build cached)
 $ make test-integration
-rootdir: /home/runner/work/job-finder/job-finder/work
-configfile: pyproject.toml
-plugins: anyio-4.15.1
-collected 7 items
+uv run pytest tests/integration -m integration
 tests/integration/test_lakehouse.py ...                                  [ 42%]
 tests/integration/test_pipeline.py .                                     [ 57%]
 tests/integration/test_sink_postgres.py ...                              [100%]
-============================== 7 passed in 32.94s ==============================
-real	0m33.599s
-user	0m2.045s
-sys	0m0.242s
+========================= 7 passed in 87.10s (0:01:27) =========================
+real	1m27.556s
 $ uv run pytest tests/warehouse -m lakehouse
 ================================= dag timings ==================================
+airflow db migrate (sqlite): 2.7 s
+dag.test() lake_maintenance: 7.4 s
+====================== 1 passed, 11 deselected in 12.65s =======================
+real	0m15.340s
 
-airflow db migrate (sqlite): 2.9 s
-dag.test() lake_maintenance: 7.0 s
-======================= 1 passed, 8 deselected in 11.58s =======================
-
-real	0m14.612s
-user	0m12.427s
-sys	0m0.607s
-
-$ docker compose exec postgres psql -U tributary -c "select check_name, status, failures, details->>'warehouse_distinct' as warehouse, details->>'lake_rows' as lake_rows, details->>'lake_distinct' as lake_distinct from ops.quality_runs where source = 'reconcile' order by check_name"
-          check_name          | status | failures | warehouse | lake_rows | lake_distinct 
-------------------------------+--------+----------+-----------+-----------+---------------
- lake_lag                     | pass   |        0 |           |           | 
- reconcile_hour:2026-10-17T13 | pass   |        0 | 1461      | 1461      | 1461
- reconcile_hour:2026-10-17T14 | pass   |        0 | 1800      | 1800      | 1800
-(3 rows)
+$ docker compose exec postgres psql -U tributary -c "select check_name, status, failures, details->>'warehouse_distinct', details->>'lake_rows', details->>'lake_distinct', details->>'warehouse_fingerprint', details->>'lake_fingerprint', details->>'ids_match' from ops.quality_runs where source = 'reconcile' order by check_name"
+          check_name          | status | failures | warehouse | lake_rows | lake_distinct |    wh_fp     |   lake_fp    | ids_match 
+------------------------------+--------+----------+-----------+-----------+---------------+--------------+--------------+-----------
+ lake_lag                     | pass   |        0 |           |           |               |              |              | 
+ reconcile_hour:2026-10-17T13 | pass   |        0 | 721       | 721       | 721           | 55143486433  | 55143486433  | true
+ reconcile_hour:2026-10-17T14 | pass   |        0 | 1800      | 1800      | 1800          | 111871119879 | 111871119879 | true
+ reconcile_hour:2026-10-17T15 | pass   |        0 | 1800      | 1800      | 1800          | 135228906277 | 135228906277 | true
+(4 rows)
 
 $ docker compose exec postgres psql -U tributary -c "select count(*), max(max_event_ts) from ops.stream_progress"
  count |          max           
 -------+------------------------
-     3 | 2026-10-17 16:01:54+00
+     3 | 2026-10-17 16:26:34+00
 (1 row)
 

@@ -1,21 +1,17 @@
-# M2 lake evidence on the 50,000-event sample (fresh stack, full replay by the producer)
+# M2 lake evidence on the 50,000-event sample (fresh stack, full replay by the producer; poll in m2-compose-replay-poll.txt)
 
-$ docker compose exec trino trino --execute "SELECT partition.event_ts_hour AS hour, record_count, file_count FROM iceberg.raw."recentchange$partitions" ORDER BY 1"
-  hour  | record_count | file_count 
---------+--------------+------------
- 497831 |        19271 |          2 
- 497832 |        30729 |          2 
-(2 rows)
-
+$ docker compose exec trino trino --execute "SELECT partition.event_ts_hour AS hour, record_count, file_count FROM iceberg.raw.\"recentchange$partitions\" ORDER BY 1"
+"497831","19271","2"
+"497832","30729","2"
 $ uv run tributary lake pruning 2026-10-16T23 --plan
 hour 2026-10-16 23:00 UTC: $files says 2 files, 19271 rows (table: 4 files, 50000 rows)
 scan read 2 splits, 19271 rows
 pruned: yes
 Trino version: 484
-Queued: 269.31us, Analysis: 30.15ms, Planning: 67.42ms, Execution: 589.54ms, Finishing: 0.00ns
+Queued: 1.06ms, Analysis: 23.31ms, Planning: 91.59ms, Execution: 373.42ms, Finishing: 0.00ns
 Fragment 1 [SINGLE]
-    CPU: 2.12ms, Scheduled: 5.73ms, Blocked 1.08s (Input: 720.84ms, Output: 0.00ns), Input: 2 rows (18B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (9B)
-    Peak Memory: 96B, Tasks count: 1; per task: max: 96B
+    CPU: 1.45ms, Scheduled: 2.06ms, Blocked 430.06ms (Input: 284.99ms, Output: 0.00ns), Input: 2 rows (18B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (9B)
+    Peak Memory: 0B, Tasks count: 1; per task: max: 0B
     Output layout: [count]
     Output partitioning: SINGLE []
     Aggregate[type = FINAL]
@@ -27,94 +23,104 @@ Fragment 1 [SINGLE]
     └─ LocalExchange[partitioning = SINGLE]
        │   Layout: [count_0:bigint]
        │   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}
-       │   CPU: 0.00ns (0.00%), Scheduled: 3.00ms (0.56%), Blocked: 364.00ms (17.35%), Output: 2 rows (18B)
+       │   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 141.00ms (16.55%), Output: 2 rows (18B)
        │   Input avg.: 1.00 rows, Input std.dev.: 0.00%
        └─ RemoteSource[sourceFragmentIds = [2]]
               Layout: [count_0:bigint]
-              CPU: 1.00ms (1.37%), Scheduled: 1.00ms (0.19%), Blocked: 721.00ms (34.37%), Output: 2 rows (18B)
+              CPU: 0.00ns (0.00%), Scheduled: 1.00ms (0.66%), Blocked: 285.00ms (33.45%), Output: 2 rows (18B)
               Input avg.: 1.00 rows, Input std.dev.: 0.00%
 
 Fragment 2 [HASH]
-    CPU: 31.23ms, Scheduled: 214.54ms, Blocked 1.01s (Input: 441.43ms, Output: 0.00ns), Input: 19271 rows (771.59kB); per task: avg.: 19271.00 std.dev.: 0.00, Output: 2 rows (18B)
-    Peak Memory: 192B, Tasks count: 1; per task: max: 192B
+    CPU: 28.62ms, Scheduled: 50.34ms, Blocked 463.46ms (Input: 185.80ms, Output: 0.00ns), Input: 19271 rows (771.59kB); per task: avg.: 19271.00 std.dev.: 0.00, Output: 2 rows (18B)
+    Peak Memory: 96B, Tasks count: 1; per task: max: 96B
     Output layout: [count_0]
     Output partitioning: SINGLE []
     Aggregate[type = PARTIAL]
     │   Layout: [count_0:bigint]
-    │   CPU: 4.00ms (5.48%), Scheduled: 11.00ms (2.06%), Blocked: 0.00ns (0.00%), Output: 2 rows (18B)
+    │   CPU: 1.00ms (1.16%), Scheduled: 6.00ms (3.97%), Blocked: 0.00ns (0.00%), Output: 2 rows (18B)
     │   Input avg.: 9635.50 rows, Input std.dev.: 0.89%
     │   count_0 := count(event_id)
     └─ Aggregate[type = FINAL, keys = [event_id]]
        │   Layout: [event_id:varchar]
        │   Estimates: {rows: ? (?), cpu: 1.11M, memory: ?, network: 0B}
-       │   CPU: 16.00ms (21.92%), Scheduled: 60.00ms (11.21%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
+       │   CPU: 18.00ms (20.93%), Scheduled: 25.00ms (16.56%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
        │   Input avg.: 9635.50 rows, Input std.dev.: 0.89%
        └─ LocalExchange[partitioning = HASH, arguments = [event_id::varchar]]
           │   Layout: [event_id:varchar]
           │   Estimates: {rows: 19271 (1.11MB), cpu: 1.11M, memory: 0B, network: 0B}
-          │   CPU: 10.00ms (13.70%), Scheduled: 143.00ms (26.73%), Blocked: 572.00ms (27.26%), Output: 19271 rows (771.59kB)
-          │   Input avg.: 9635.50 rows, Input std.dev.: 3.94%
+          │   CPU: 7.00ms (8.14%), Scheduled: 18.00ms (11.92%), Blocked: 240.00ms (28.17%), Output: 19271 rows (771.59kB)
+          │   Input avg.: 9635.50 rows, Input std.dev.: 60.38%
           └─ RemoteSource[sourceFragmentIds = [3]]
                  Layout: [event_id:varchar]
-                 CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 441.00ms (21.02%), Output: 19271 rows (771.59kB)
-                 Input avg.: 9635.50 rows, Input std.dev.: 3.94%
+                 CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 186.00ms (21.83%), Output: 19271 rows (771.59kB)
+                 Input avg.: 9635.50 rows, Input std.dev.: 60.38%
 
 Fragment 3 [SOURCE]
-    CPU: 42.38ms, Scheduled: 317.96ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 19271 rows (771.59kB); per task: avg.: 19271.00 std.dev.: 0.00, Output: 19271 rows (771.59kB)
-    Peak Memory: 0B, Tasks count: 1; per task: max: 0B
+    CPU: 61.17ms, Scheduled: 101.76ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 19271 rows (771.59kB); per task: avg.: 19271.00 std.dev.: 0.00, Output: 19271 rows (771.59kB)
+    Peak Memory: 1.00MB, Tasks count: 1; per task: max: 1.00MB
     Output layout: [event_id]
     Output partitioning: HASH [event_id]
     Aggregate[type = PARTIAL, keys = [event_id]]
     │   Layout: [event_id:varchar]
     │   Estimates: {rows: 19271 (1.11MB), cpu: ?, memory: ?, network: ?}
-    │   CPU: 24.00ms (32.88%), Scheduled: 179.00ms (33.46%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
-    │   Input avg.: 9635.50 rows, Input std.dev.: 3.94%
-    └─ TableScan[table = iceberg:raw.recentchange$data@6887999228531348645 constraint on [event_ts]]
+    │   CPU: 45.00ms (52.33%), Scheduled: 72.00ms (47.68%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
+    │   Input avg.: 9635.50 rows, Input std.dev.: 60.38%
+    └─ TableScan[table = iceberg:raw.recentchange$data@6697502496878085361 constraint on [event_ts]]
            Layout: [event_id:varchar]
            Estimates: {rows: 19271 (1.11MB), cpu: 1.11M, memory: 0B, network: 0B}
-           CPU: 18.00ms (24.66%), Scheduled: 138.00ms (25.79%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
-           Input avg.: 9635.50 rows, Input std.dev.: 3.94%
+           CPU: 15.00ms (17.44%), Scheduled: 29.00ms (19.21%), Blocked: 0.00ns (0.00%), Output: 19271 rows (771.59kB)
+           Input avg.: 9635.50 rows, Input std.dev.: 60.38%
            event_id := 1:event_id:varchar
            2:event_ts:timestamp(6) with time zone
                :: [[2026-10-16 23:00:00.000000 UTC, 2026-10-17 00:00:00.000000 UTC)]
-           Input: 19271 rows (771.59kB), Physical input: 995.00kB, Physical input time: 157.69us, Splits: 2, Splits generation wait time: 32.13ms
-
+           Input: 19271 rows (771.59kB), Physical input: 992.00kB, Physical input time: 130.21us, Splits: 2, Splits generation wait time: 26.47ms
 
 
 $ uv run tributary lake pruning 2026-10-17T00
 hour 2026-10-17 00:00 UTC: $files says 2 files, 30729 rows (table: 4 files, 50000 rows)
 scan read 2 splits, 30729 rows
 pruned: yes
-
 $ uv run tributary lake maintain
-2026-10-17T15:31:06.279268Z [info     ] lake.optimized                 added_data_files_count=1 before=2026-10-17T00:00:00+00:00 command=lake-maintain removed_delete_files_count=0 rewritten_data_files_count=2 run_id=7b37476c578f
-2026-10-17T15:31:06.547944Z [info     ] lake.snapshots_expired         command=lake-maintain retention=1d run_id=7b37476c578f
-2026-10-17T15:31:07.003031Z [info     ] lake.orphans_removed           active_files_count=24 command=lake-maintain deleted_bytes=0 deleted_files_count=0 processed_manifests_count=6 retention=1d run_id=7b37476c578f scanned_files_count=24
 rewrote 2 data files
-
 $ (partitions after compaction)
-  hour  | record_count | file_count 
---------+--------------+------------
- 497831 |        19271 |          1 
- 497832 |        30729 |          2 
-(2 rows)
-
+"497831","19271","1"
+"497832","30729","2"
 $ uv run tributary lake pruning 2026-10-16T23
 hour 2026-10-16 23:00 UTC: $files says 1 files, 19271 rows (table: 3 files, 50000 rows)
 scan read 1 splits, 19271 rows
 pruned: yes
-
-$ uv run tributary lake reconcile
-2026-10-17T15:31:12.084654Z [info     ] quality.recorded               checks=2 command=lake-reconcile pass=2 run_id=925540542488 source=reconcile
-2026-10-17T15:31:12.084808Z [info     ] reconcile.done                 checks=2 command=lake-reconcile failed=0 run_id=cli-925540542488
-lake_lag: pass {'warehouse_newest': '2026-10-17T00:21:44+00:00', 'lake_newest': '2026-10-17T00:21:44+00:00', 'lag_seconds': 0.0, 'max_lag_seconds': 900.0}
-reconcile_hour:2026-10-16T23: pass {'hour': '2026-10-16T23:00:00+00:00', 'warehouse_distinct': 19271, 'lake_rows': 19271, 'lake_distinct': 19271, 'missing_in_lake': 0, 'extra_in_lake': 0, 'lake_duplicates': 0}
-
-# Falsification: copy one row of the closed 23:00 hour into the lake a second time
-$ docker compose exec trino trino --execute "INSERT INTO iceberg.raw.recentchange SELECT * FROM iceberg.raw.recentchange WHERE event_ts >= TIMESTAMP '2026-10-16 23:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 00:00:00 UTC' LIMIT 1"
-INSERT: 1 row
 $ uv run tributary lake reconcile; echo "exit $?"
-2026-10-17T15:31:28.946476Z [info     ] quality.recorded               checks=2 command=lake-reconcile fail=1 pass=1 run_id=bd768a45b2b0 source=reconcile
-2026-10-17T15:31:28.946648Z [info     ] reconcile.done                 checks=2 command=lake-reconcile failed=1 run_id=cli-bd768a45b2b0
+lake_lag: pass {'warehouse_newest': '2026-10-17T00:21:44+00:00', 'lake_newest': '2026-10-17T00:21:44+00:00', 'lag_seconds': 0.0, 'max_lag_seconds': 900.0}
+reconcile_hour:2026-10-16T23: pass {'hour': '2026-10-16T23:00:00+00:00', 'warehouse_distinct': 19271, 'lake_rows': 19271, 'lake_distinct': 19271, 'missing_in_lake': 0, 'extra_in_lake': 0, 'lake_duplicates': 0, 'warehouse_fingerprint': -221607977733, 'lake_fingerprint': -221607977733, 'ids_match': True}
+exit 0
+$ psql: select check_name, status, failures, details->>'warehouse_distinct' as wh, details->>'lake_rows' as lake_rows, details->>'lake_distinct' as lake_distinct, details->>'lake_duplicates' as dups, details->>'ids_match' as ids_match from ops.quality_runs where source = 'reconcile' and check_name like 'reconcile_hour:%' order by recorded_at desc limit 1
+          check_name          | status | failures |  wh   | lake_rows | lake_distinct | dups | ids_match 
+------------------------------+--------+----------+-------+-----------+---------------+------+-----------
+ reconcile_hour:2026-10-16T23 | pass   |        0 | 19271 | 19271     | 19271         | 0    | true
+(1 row)
+
+
+# Duplicate: one row of the closed hour copied into the lake a second time
+$ trino: INSERT INTO iceberg.raw.recentchange SELECT * FROM iceberg.raw.recentchange WHERE event_id = '00003289-76d6-4da2-aed0-354e8f12a6c2'
+$ uv run tributary lake reconcile; echo "exit $?"
 1 lake check(s) failed: reconcile_hour:2026-10-16T23
 exit 1
+$ psql: select check_name, status, failures, details->>'warehouse_distinct' as wh, details->>'lake_rows' as lake_rows, details->>'lake_distinct' as lake_distinct, details->>'lake_duplicates' as dups, details->>'ids_match' as ids_match from ops.quality_runs where source = 'reconcile' and check_name like 'reconcile_hour:%' order by recorded_at desc limit 1
+          check_name          | status | failures |  wh   | lake_rows | lake_distinct | dups | ids_match 
+------------------------------+--------+----------+-------+-----------+---------------+------+-----------
+ reconcile_hour:2026-10-16T23 | fail   |        1 | 19271 | 19272     | 19271         | 1    | true
+(1 row)
+
+
+# Exchange: add a copy of that row under a fresh uuid, then delete every row with the original id; the hour's counts are equal again and there are no duplicates, but the ids differ
+$ trino: INSERT INTO iceberg.raw.recentchange SELECT <every column, with event_id := cast(uuid() AS varchar)> FROM iceberg.raw.recentchange WHERE event_id = '00003289-76d6-4da2-aed0-354e8f12a6c2' LIMIT 1
+$ trino: DELETE FROM iceberg.raw.recentchange WHERE event_id = '00003289-76d6-4da2-aed0-354e8f12a6c2'
+$ uv run tributary lake reconcile; echo "exit $?"
+1 lake check(s) failed: reconcile_hour:2026-10-16T23
+exit 1
+$ psql: select check_name, status, failures, details->>'warehouse_distinct' as wh, details->>'lake_rows' as lake_rows, details->>'lake_distinct' as lake_distinct, details->>'lake_duplicates' as dups, details->>'warehouse_fingerprint' as wh_fp, details->>'lake_fingerprint' as lake_fp, details->>'ids_match' as ids_match from ops.quality_runs where source = 'reconcile' and check_name like 'reconcile_hour:%' order by recorded_at desc limit 1
+          check_name          | status | failures |  wh   | lake_rows | lake_distinct | dups |     wh_fp     |    lake_fp    | ids_match 
+------------------------------+--------+----------+-------+-----------+---------------+------+---------------+---------------+-----------
+ reconcile_hour:2026-10-16T23 | fail   |        1 | 19271 | 19271     | 19271         | 0    | -221607977733 | -219942845227 | false
+(1 row)
+

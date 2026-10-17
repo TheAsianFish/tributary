@@ -2,27 +2,58 @@
 $ uv run tributary sample load
 offered 50000, inserted 50000, invalid 0
 $ make dbt
-[0m16:12:26  Finished running 1 incremental model, 2 seeds, 4 table models, 49 data tests, 1 view model in 0 hours 0 minutes and 2.33 seconds (2.33s).
-[0m16:12:26  Done. PASS=57 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=57
-real	0m6.571s
+[0m16:35:30  Finished running 1 incremental model, 2 seeds, 4 table models, 49 data tests, 1 view model in 0 hours 0 minutes and 5.11 seconds (5.11s).
+[0m16:35:30  Done. PASS=57 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=57
+real	0m9.971s
+$ psql: select n_tup_ins, n_tup_upd from pg_stat_user_tables where relname = 'fct_edits'
+25901|0
+$ make dbt   # second build: the 60-minute lookback covers the whole sample
+[0m16:35:43  Done. PASS=57 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=57
+$ psql: select n_tup_ins, n_tup_upd from pg_stat_user_tables where relname = 'fct_edits'
+25901|0
 $ make test-warehouse
-tests/warehouse/test_dbt_quality.py ...                                  [ 37%]
-tests/warehouse/test_warehouse_refresh.py .....                          [100%]
+uv run pytest tests/warehouse -m warehouse
+tests/warehouse/test_dbt_quality.py ...                                  [ 27%]
+tests/warehouse/test_lake_maintenance.py .                               [ 36%]
+tests/warehouse/test_warehouse_refresh.py .......                        [100%]
 ================================= dag timings ==================================
-
 airflow db migrate (sqlite): 3.0 s
-dag.test() raw_recentchange (new rows): 6.9 s
-dag.test() raw_recentchange (nothing new): 0.1 s
-dag.test() warehouse_refresh: 26.6 s
-================== 8 passed, 1 deselected in 68.92s (0:01:08) ==================
+dag.test() raw_recentchange (new rows): 7.1 s
+dag.test() raw_recentchange (nothing new): 5.8 s
+dag.test() raw_recentchange (nothing new, stale): 6.2 s
+dag.test() warehouse_refresh: 30.1 s
+================= 11 passed, 1 deselected in 90.74s (0:01:30) ==================
+real	1m33.360s
 
-real	1m11.138s
-user	1m4.271s
-sys	0m4.516s
-
-$ docker exec trib-pg-main psql -U tributary -tAc "select <mart>, count(*) ..."
+$ docker exec wh-ci psql -U tributary -tAc "select <mart>, count(*) ..."
 fct_edits|25901
 dim_page|20677
 agg_editor_activity|2304
 agg_edits_hourly|242
 dim_wiki|160
+
+$ psql: rows per run in ops.quality_runs and ops.refresh_runs (the last runs of make test-warehouse)
+                  run_id                  | source | status | count 
+------------------------------------------+--------+--------+-------
+ manual__2026-10-17T16:36:34.133331+00:00 | dbt    | pass   |     2
+ manual__2026-10-17T16:36:39.960622+00:00 | dbt    | fail   |     2
+ manual__2026-10-17T16:36:46.166678+00:00 | dbt    | pass   |    49
+(3 rows)
+
+                  run_id                  | count 
+------------------------------------------+-------
+ manual__2026-10-17T16:36:46.166678+00:00 |     8
+(1 row)
+
+
+# The same incremental build with fct_edits.sql as of c1bcf6d (before the not-exists filter), for comparison
+$ git show c1bcf6d:warehouse/models/marts/fct_edits.sql > <copy of warehouse/>/models/marts/fct_edits.sql; dbt run --select fct_edits on that copy
+$ psql: select n_tup_ins, n_tup_upd from pg_stat_user_tables where relname='fct_edits'   # before
+25901|0
+[0m16:38:59  Done. PASS=1 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=1
+$ psql: select n_tup_ins, n_tup_upd from pg_stat_user_tables where relname='fct_edits'   # after
+25901|25901
+$ make dbt   # current fct_edits.sql
+[0m16:39:12  Done. PASS=57 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=57
+$ psql: select n_tup_ins, n_tup_upd from pg_stat_user_tables where relname='fct_edits'
+25901|25901
