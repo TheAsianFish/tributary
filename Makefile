@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up down logs demo-data sample-stats dbt
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow down logs demo-data sample-stats dbt
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -19,11 +19,17 @@ typecheck:
 test: ## Unit tests (offline)
 	uv run pytest
 
-up: ## Kafka, PostgreSQL and the stream job, without the sample replay
-	docker compose up -d --build --wait postgres kafka stream
+up: ## Kafka, PostgreSQL, MinIO and the stream job, without the sample replay
+	docker compose up -d --build --wait postgres kafka minio lake-init stream
 
-down: ## Stop everything and delete the volumes (topic, table, checkpoints)
-	docker compose down -v
+up-lakehouse: up ## ... plus Trino
+	docker compose --profile lakehouse up -d --wait trino
+
+up-airflow: up ## ... plus the Airflow scheduler, DAG processor and UI (localhost:8080)
+	docker compose --profile airflow up -d --build --wait
+
+down: ## Stop everything and delete the volumes (topic, tables, lake, checkpoints)
+	docker compose --profile lakehouse --profile airflow down -v
 
 logs:
 	docker compose logs -f stream producer
