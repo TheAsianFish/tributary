@@ -50,11 +50,15 @@ def test_catalog_is_jdbc_in_postgres_with_s3_file_io(monkeypatch: pytest.MonkeyP
 class FakeQuery:
     """Enough of StreamingQuery for the supervisor: active until stopped or failed."""
 
-    def __init__(self, fail_after: int | None = None) -> None:
+    def __init__(
+        self, fail_after: int | None = None, fail_silently_after: int | None = None
+    ) -> None:
         self.active = True
         self.stopped = False
         self.polls = 0
+        self.error: StreamingQueryException | None = None
         self._fail_after = fail_after
+        self._fail_silently_after = fail_silently_after
 
     @property
     def isActive(self) -> bool:  # noqa: N802 - mirrors pyspark's name
@@ -64,8 +68,17 @@ class FakeQuery:
         self.polls += 1
         if self._fail_after is not None and self.polls > self._fail_after:
             self.active = False
-            raise StreamingQueryException(message="sink failed")
+            self.error = StreamingQueryException(message="sink failed")
+            raise self.error
+        if self._fail_silently_after is not None and self.polls > self._fail_silently_after:
+            # The wait timed out, then the query failed before anyone looked again.
+            self.active = False
+            self.error = StreamingQueryException(message="failed between polls")
+            return False
         return not self.active
+
+    def exception(self) -> StreamingQueryException | None:
+        return self.error
 
     def stop(self) -> None:
         self.active = False
@@ -78,6 +91,13 @@ def test_one_failing_query_stops_the_other_and_fails_the_process() -> None:
         job.supervise([healthy, failing], threading.Event())  # type: ignore[list-item]
     assert healthy.stopped
     assert not healthy.active
+
+
+def test_a_failure_between_polls_still_fails_the_process() -> None:
+    finished, failing = FakeQuery(), FakeQuery(fail_silently_after=1)
+    finished.active = False
+    with pytest.raises(StreamingQueryException, match="between polls"):
+        job.supervise([finished, failing], threading.Event())  # type: ignore[list-item]
 
 
 def test_a_stop_request_stops_every_query_without_error() -> None:

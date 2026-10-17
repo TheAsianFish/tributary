@@ -216,6 +216,12 @@ def supervise(queries: list[StreamingQuery], stop: threading.Event) -> None:
         for q in queries:
             with contextlib.suppress(StreamingQueryException):
                 q.awaitTermination()
+    # The last query can fail after its wait timed out and before the loop
+    # re-checks isActive; the loop then ends normally and the error is only here.
+    for q in queries:
+        error = q.exception()
+        if error is not None:
+            raise error
 
 
 def run(settings: Settings, *, available_now: bool = False) -> None:
