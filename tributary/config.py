@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     # Lakehouse: the second streaming query writes lake.raw.recentchange (Iceberg).
     lake_enabled: bool = True
     lake_checkpoint_dir: Path = Path("spark-checkpoints/lake")
+    # Every trigger commits a snapshot and at least one file per hour touched, so the
+    # lake triggers less often than the warehouse query: fewer, larger files.
+    lake_trigger_interval: str = "1 minute"
+    # Per-trigger cap for the lake query. At one trigger a minute the warehouse's cap
+    # would limit the lake to 333 events/s, below the default replay rate.
+    lake_max_offsets_per_trigger: int = Field(default=200_000, ge=1)
     s3_endpoint: str = "http://localhost:9000"
     s3_region: str = "us-east-1"
     s3_access_key: str = "tributary"
@@ -69,11 +75,20 @@ class Settings(BaseSettings):
     lake_warehouse: str = "s3://lake/warehouse"
     # PostgreSQL schema holding the Iceberg JDBC catalog's two tables.
     iceberg_catalog_schema: str = "iceberg_catalog"
+    # Snapshots and unreferenced files older than this are deleted by lake_maintenance.
+    # The streaming sink finds its last committed batch by walking snapshot ancestry,
+    # so this must stay far above any restart window; Trino's floor is set to match.
+    lake_snapshot_retention: str = "1d"
+    # Closed hours checked against the warehouse on each lake_maintenance run.
+    reconcile_lookback_hours: int = Field(default=24, ge=1)
+    # The lake may trail the warehouse by this much event time before it is flagged.
+    lake_max_lag_minutes: int = Field(default=15, ge=1)
 
     # Trino (profile lakehouse)
     trino_host: str = "localhost"
     trino_port: int = 8081
     trino_user: str = "tributary"
+    trino_lake_table: str = "iceberg.raw.recentchange"
 
     # Warehouse: dbt project and the published catalog the agent reads.
     dbt_project_dir: Path = REPO_ROOT / "warehouse"
