@@ -7,14 +7,16 @@ own metadata lives in a temporary SQLite database (see conftest.py).
 
 from __future__ import annotations
 
+import json
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import psycopg
 import pytest
 
-from tributary.config import Settings
+from tributary.config import Settings, get_settings
 from tributary.warehouse import assets
 from tributary.warehouse.catalog import load_current
 
@@ -76,6 +78,45 @@ def test_raw_asset_emits_once_then_skips(raw_runs: tuple[Any, Any], conninfo: st
         row = conn.execute("SELECT max(ingested_at) FROM raw.recentchange").fetchone()
     assert row is not None
     assert extras[0][assets.HIGH_WATER_KEY] == row[0].isoformat()
+
+
+@pytest.fixture
+def stale_limit(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """A freshness limit of 0 minutes: every arrival is too old, whenever it was loaded."""
+    monkeypatch.setenv("TRIBUTARY_DBT_VARS", json.dumps({"freshness_max_lag_minutes": 0}))
+    get_settings.cache_clear()
+    yield
+    monkeypatch.undo()  # before clearing, so the next get_settings() sees the widened limit
+    get_settings.cache_clear()
+
+
+def test_nothing_new_still_checks_freshness_and_fails_when_stale(
+    raw_runs: tuple[Any, Any], stale_limit: None, conninfo: str
+) -> None:
+    # The sink has stalled: no new rows, so no refresh, but freshness must still fail.
+    dagrun = run("raw_recentchange", "raw_recentchange (nothing new, stale)")
+    assert str(dagrun.state) == "failed"
+    assert task_states(dagrun) == {"detect_new_rows": "failed"}
+    with psycopg.connect(conninfo) as conn:
+        rows = conn.execute(
+            "SELECT check_type, status, source FROM ops.quality_runs WHERE run_id = %s",
+            (dagrun.run_id,),
+        ).fetchall()
+    assert rows, "the freshness results were not recorded"
+    assert {r[0] for r in rows} == {"freshness"}
+    assert {r[1] for r in rows} == {"fail"}
+    assert {r[2] for r in rows} == {"dbt"}
+
+
+def test_nothing_new_records_passing_freshness(raw_runs: tuple[Any, Any], conninfo: str) -> None:
+    _, second = raw_runs
+    with psycopg.connect(conninfo) as conn:
+        rows = conn.execute(
+            "SELECT check_type, status FROM ops.quality_runs WHERE run_id = %s",
+            (second.run_id,),
+        ).fetchall()
+    assert {r[0] for r in rows} == {"freshness"}
+    assert {r[1] for r in rows} == {"pass"}
 
 
 @pytest.fixture(scope="module")

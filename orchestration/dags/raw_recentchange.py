@@ -4,8 +4,16 @@
 Every five minutes, asks PostgreSQL whether `raw.recentchange` received rows
 since the last time this DAG emitted the **raw.recentchange** asset event. If
 it did, the task emits an event carrying the new high-water mark
-(`max(ingested_at)`) in its `extra`; if not, it is skipped, no event is
-emitted, and `warehouse_refresh` does not rebuild for nothing.
+(`max(ingested_at)`) in its `extra`; if not, no event is emitted and
+`warehouse_refresh` does not rebuild for nothing.
+
+Before skipping, the task runs the dbt `freshness` tests alone
+(`dbt test --select test_name:freshness`) and records them in
+`ops.quality_runs` under this run's `run_id`. Those tests otherwise run only
+inside a refresh, which only new rows trigger: a stalled sink would leave the
+last `pass` in `ops.latest_quality` forever. If every freshness check passes
+the task is skipped as before; if one fails, the task fails (no retry) and the
+run goes red.
 
 The high-water mark lives in the asset events themselves: the task lists
 `raw.recentchange` as an inlet as well as an outlet and reads the newest
@@ -21,11 +29,11 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 from airflow.sdk import Asset, dag, get_current_context, task
-from airflow.sdk.exceptions import AirflowSkipException
+from airflow.sdk.exceptions import AirflowFailException, AirflowSkipException
 
 from tributary.config import get_settings
 from tributary.warehouse import assets
-from tributary.warehouse.refresh import next_high_water_mark
+from tributary.warehouse.refresh import WarehouseError, check_freshness, next_high_water_mark
 
 RAW = Asset(name=assets.RAW_RECENTCHANGE, group=assets.GROUP)
 # Events created by hand (the UI's "materialize", the REST API) carry no mark; look
@@ -56,9 +64,17 @@ def raw_recentchange() -> None:
                 break
         # Settings come from TRIBUTARY_* like every other component, not from an
         # Airflow connection: one configuration source for the whole platform.
-        newest = next_high_water_mark(get_settings().pg_conninfo, previous)
+        settings = get_settings()
+        newest = next_high_water_mark(settings.pg_conninfo, previous)
         if newest is None:
-            raise AirflowSkipException(f"no rows ingested after {previous}")
+            # No refresh will run, so freshness is checked here or not at all.
+            try:
+                checks = check_freshness(settings, context["run_id"])
+            except WarehouseError as exc:  # recorded in ops.quality_runs before raising
+                raise AirflowFailException(f"no rows ingested after {previous}: {exc}") from exc
+            raise AirflowSkipException(
+                f"no rows ingested after {previous}; {len(checks)} freshness check(s) passed"
+            )
         context["outlet_events"][RAW].extra = {
             assets.HIGH_WATER_KEY: newest,
             "previous": previous,

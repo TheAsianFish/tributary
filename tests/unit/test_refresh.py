@@ -74,6 +74,61 @@ def test_failing_tests_are_recorded_before_the_step_fails(monkeypatch: pytest.Mo
     assert "2 check(s) did not pass" in str(excinfo.value)
 
 
+FRESHNESS = "test---select-test_name:freshness"
+
+
+def passing_results(tmp_path: Path) -> str:
+    """The test fixture with only its passing results (an absolute path wins over FIXTURES)."""
+    data = json.loads((FIXTURES / "run_results_test.json").read_text())
+    data["results"] = [r for r in data["results"] if r["status"] == "pass"]
+    path = tmp_path / "run_results_pass.json"
+    path.write_text(json.dumps(data))
+    return str(path)
+
+
+def test_freshness_runs_only_the_freshness_tests_and_records_them(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    fake = FakeWarehouse({FRESHNESS: (0, passing_results(tmp_path))})
+    install(monkeypatch, fake)
+
+    checks = refresh.check_freshness(SETTINGS, "scheduled__2")
+
+    assert fake.commands == [FRESHNESS]
+    assert fake.refreshes == []  # no build: freshness reads the tables as they are
+    assert [c for _, c in fake.checks] == checks
+    assert {run_id for run_id, _ in fake.checks} == {"scheduled__2"}
+    assert {c.status for c in checks} == {"pass"}
+
+
+def test_a_failing_freshness_check_is_recorded_then_raised(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeWarehouse({FRESHNESS: (1, "run_results_test.json")})
+    install(monkeypatch, fake)
+
+    with pytest.raises(refresh.QualityCheckError) as excinfo:
+        refresh.check_freshness(SETTINGS, "scheduled__3")
+
+    assert fake.commands == [FRESHNESS]
+    assert len(fake.checks) == 11
+    assert {run_id for run_id, _ in fake.checks} == {"scheduled__3"}
+    assert sorted(c.status for c in excinfo.value.failed) == ["error", "fail"]
+
+
+def test_check_freshness_command_exits_1_on_a_failed_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeWarehouse({FRESHNESS: (1, "run_results_test.json")})
+    install(monkeypatch, fake)
+
+    result = CliRunner().invoke(app, ["warehouse", "check-freshness"])
+
+    assert result.exit_code == 1
+    assert "check(s) did not pass" in result.output
+    assert len({run_id for run_id, _ in fake.checks}) == 1
+
+
 def test_a_dbt_crash_records_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeWarehouse({"test": (2, None)})
     install(monkeypatch, fake)

@@ -173,6 +173,27 @@ def warehouse_refresh() -> None:
     )
 
 
+@warehouse_app.command("check-freshness")
+def warehouse_check_freshness() -> None:
+    """Only the dbt freshness tests (results to ops.quality_runs); exit 1 if one fails.
+
+    What the raw_recentchange DAG runs when no rows arrived, without a rebuild.
+    """
+    from tributary.warehouse.dbt import DbtCrashError
+    from tributary.warehouse.refresh import WarehouseError, check_freshness
+
+    run_id = bind_run_id("warehouse-check-freshness")
+    try:
+        checks = check_freshness(get_settings(), run_id)
+    except WarehouseError as exc:  # failed checks: recorded, see ops.quality_runs
+        typer.echo(f"run {run_id}: {exc}", err=True)
+        raise typer.Exit(1) from None
+    except DbtCrashError as exc:
+        typer.echo(f"run {run_id}: {exc}", err=True)
+        raise typer.Exit(2) from None
+    typer.echo(f"run {run_id}: {len(checks)} freshness check(s) passed")
+
+
 @warehouse_app.command("publish-catalog")
 def warehouse_publish_catalog(
     max_distinct: Annotated[

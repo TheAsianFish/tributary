@@ -6,6 +6,10 @@ command line run the same code. Each takes the settings and the orchestrator's
 run id (the Airflow ``run_id``, or the CLI's), which becomes the ``run_id`` of
 every row in ``ops.quality_runs`` and ``ops.refresh_runs``.
 
+:func:`check_freshness` is the exception to "only on new rows": the
+``raw_recentchange`` poll runs it when nothing arrived, because a stalled sink
+is exactly when freshness has to fail, and no refresh would otherwise run it.
+
 Failing tests are recorded first and raised second: the task turns red, so the
 run is visibly not green, while ``ops.quality_runs`` holds which checks failed
 and why. Recording inside the test step (rather than in a downstream task with
@@ -97,14 +101,9 @@ def build_models(settings: Settings, run_id: str) -> list[RefreshRow]:
     return rows
 
 
-def test_models(settings: Settings, run_id: str) -> list[CheckResult]:
-    """``dbt test``; records every result, then raises if any check failed or errored.
-
-    ``warn`` does not fail the step: a warning is a signal to look, not a reason
-    to hold back the catalog.
-    """
+def _run_tests(settings: Settings, run_id: str, args: Sequence[str]) -> list[CheckResult]:
     with tempfile.TemporaryDirectory(prefix="tributary-dbt-") as work:
-        result = run_dbt(settings, ["test"], Path(work))
+        result = run_dbt(settings, args, Path(work))
         run_results = result.require_results()
         manifest = read_json(result.target_path / "manifest.json")
     checks = quality_checks(run_results, manifest)
@@ -114,8 +113,33 @@ def test_models(settings: Settings, run_id: str) -> list[CheckResult]:
         raise QualityCheckError(failed)
     if result.returncode != 0:
         # Exit code 1 with every test passing: some other node failed; do not hide it.
-        raise WarehouseError(f"dbt test exited {result.returncode} with all tests passing")
+        raise WarehouseError(
+            f"dbt {' '.join(args)} exited {result.returncode} with all tests passing"
+        )
     return checks
+
+
+def test_models(settings: Settings, run_id: str) -> list[CheckResult]:
+    """``dbt test``; records every result, then raises if any check failed or errored.
+
+    ``warn`` does not fail the step: a warning is a signal to look, not a reason
+    to hold back the catalog.
+    """
+    return _run_tests(settings, run_id, ["test"])
+
+
+FRESHNESS_SELECTOR = "test_name:freshness"
+
+
+def check_freshness(settings: Settings, run_id: str) -> list[CheckResult]:
+    """Only the ``freshness`` tests, recorded and raised like :func:`test_models`.
+
+    For the poll that found no new rows: a refresh runs only when rows arrive,
+    so without this a stalled sink would leave the last ``pass`` standing in
+    ``ops.latest_quality`` forever. No build is needed; freshness reads the
+    landing table and the incremental mart as they are.
+    """
+    return _run_tests(settings, run_id, ["test", "--select", FRESHNESS_SELECTOR])
 
 
 def publish_catalog(
