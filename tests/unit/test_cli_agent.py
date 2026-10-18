@@ -216,3 +216,21 @@ def test_catalog_missing_exits_two(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     out = CliRunner().invoke(app, ["catalog"])
     assert out.exit_code == 2
     assert "run `tributary warehouse refresh`" in out.stderr
+
+
+def test_ask_unknown_provider_exits_two() -> None:
+    out = CliRunner().invoke(app, ["ask", "How many edits?", "--provider", "bogus"])
+
+    assert out.exit_code == 2
+    assert "must be one of anthropic, ollama, fake" in out.output
+
+
+def test_ask_api_non_json_error_exits_two(monkeypatch: pytest.MonkeyPatch) -> None:
+    def posted(url: str, **kwargs: Any) -> httpx.Response:
+        return httpx.Response(502, text="Bad Gateway", request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx, "post", posted)
+    out = CliRunner().invoke(app, ["ask", "q", "--api", "http://api.test"])
+
+    assert out.exit_code == 2
+    assert "502 from http://api.test: Bad Gateway" in out.output

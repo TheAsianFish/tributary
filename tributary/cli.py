@@ -308,17 +308,27 @@ def _remote(api: str, path: str, body: dict[str, str], key: str | None) -> dict[
     except httpx.HTTPError as exc:
         typer.echo(f"cannot reach {api}: {exc}", err=True)
         raise typer.Exit(2) from None
-    document: dict[str, object] = response.json()
+    try:
+        document: dict[str, object] = response.json()
+    except ValueError:
+        typer.echo(f"{response.status_code} from {api}: {response.text[:200]}", err=True)
+        raise typer.Exit(2) from None
     if response.status_code >= 400 and "status" not in document:
         typer.echo(f"{response.status_code}: {document.get('detail')}", err=True)
         raise typer.Exit(2)
     return document
 
 
+PROVIDERS = ("anthropic", "ollama", "fake")
+
+
 def _local_agent(provider: str | None) -> Agent:
     from tributary.agent.service import build_agent
 
     settings = get_settings()
+    if provider and provider not in PROVIDERS:
+        typer.echo(f"error: --provider must be one of {', '.join(PROVIDERS)}", err=True)
+        raise typer.Exit(2)
     if provider:
         settings = settings.model_copy(update={"provider": provider})
     return build_agent(settings)
