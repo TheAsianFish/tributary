@@ -224,9 +224,9 @@ plain `postgres:17` set up like CI (`tributary sample load`, `make dbt`,
 | Outcome | Statements |
 |---|---:|
 | Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects, a backend that terminated itself | 53 |
-| Refused: permission (raw, staging, superuser-only functions, other roles) | 28 |
+| Refused: permission (raw, staging, temp tables, superuser-only functions, other roles) | 29 |
 | Cancelled by the statement timeout | 7 |
-| Refused: read-only transaction | 2 |
+| Refused: read-only transaction | 1 |
 | **Ran** | **22** |
 
 The 22 that ran are the guard's alone to stop: catalog reads

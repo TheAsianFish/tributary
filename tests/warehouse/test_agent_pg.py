@@ -85,7 +85,10 @@ def test_reads_marts_and_caps_rows(executor: PostgresExecutor) -> None:
     [
         ("SELECT count(*) FROM raw.recentchange", "permission"),
         ("SELECT count(*) FROM staging.stg_recentchange", "permission"),
-        ("CREATE TEMP TABLE t AS SELECT 1 AS x", "read_only"),
+        # TEMPORARY is revoked from the role (and PUBLIC): refused before the read-only check
+        ("CREATE TEMP TABLE t AS SELECT 1 AS x", "permission"),
+        # lo_create is open to every role but PostgreSQL forbids it in a read-only transaction
+        ("SELECT lo_create(0)", "read_only"),
         ("SELECT pg_sleep(5)", "timeout"),
         ("SELECT count(*) FROM marts.fct_edits a CROSS JOIN marts.fct_edits b", "too_expensive"),
         # search_path is empty: an unqualified name resolves to nothing.

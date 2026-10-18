@@ -1,9 +1,9 @@
 {
   "by_outcome": {
     "database": 53,
-    "permission": 28,
+    "permission": 29,
     "ran": 22,
-    "read_only": 2,
+    "read_only": 1,
     "timeout": 7
   },
   "items": [
@@ -87,9 +87,9 @@
     },
     {
       "category": "ddl",
-      "detail": "cannot execute CREATE TABLE AS in a read-only transaction",
+      "detail": "permission denied to create temporary tables in database \"tributary\"",
       "id": "create-temp-table-as",
-      "outcome": "read_only"
+      "outcome": "permission"
     },
     {
       "category": "ddl",
@@ -315,7 +315,7 @@
     },
     {
       "category": "outside_allowlist",
-      "detail": "151 row(s)",
+      "detail": "204 row(s)",
       "id": "ops-quality-runs",
       "outcome": "ran"
     },
