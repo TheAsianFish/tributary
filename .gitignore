@@ -43,3 +43,4 @@ tests/dbt/quality_fixtures/logs/
 **/.user.yml
 # Published catalog (tributary warehouse publish-catalog), default TRIBUTARY_CATALOG_DIR
 /catalog/
+eval/results/warehouse-replay.json

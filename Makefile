@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard serve
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -60,6 +60,16 @@ PROVIDER ?= fake
 
 eval-guard: ## Guard suite: every unsafe statement blocked, no warehouse gold query blocked (offline)
 	uv run python -m eval.guard_eval
+
+eval-guard-db: ## The unsafe suite with the guard off: what the agent's role alone refuses (disposable DB!)
+	uv run python -m eval.guard_db
+
+eval-warehouse: ## The 40 warehouse questions (PROVIDER=fake replays recordings); needs PostgreSQL
+	uv run python -m eval.warehouse_eval --provider $(PROVIDER)
+
+record: ## Re-record the 40 questions' model calls from a live provider (PROVIDER=anthropic|ollama)
+	@test "$(PROVIDER)" != fake || { echo "make record PROVIDER=anthropic (or ollama)"; exit 1; }
+	uv run python -m eval.warehouse_eval --provider $(PROVIDER) --record
 
 serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	uv run tributary serve

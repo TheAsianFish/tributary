@@ -1,0 +1,665 @@
+{
+  "by_outcome": {
+    "database": 51,
+    "permission": 28,
+    "ran": 18,
+    "read_only": 2,
+    "timeout": 6
+  },
+  "items": [
+    {
+      "category": "ddl",
+      "detail": "syntax error at or near \"ALTER\"",
+      "id": "alter-table-add-column",
+      "outcome": "database"
+    },
+    {
+      "category": "comment_trick",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "backslash-string-stack",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"BEGIN\"",
+      "id": "begin-transaction",
+      "outcome": "database"
+    },
+    {
+      "category": "comment_trick",
+      "detail": "syntax error at or near \"DR\"",
+      "id": "block-comment-split-keyword",
+      "outcome": "database"
+    },
+    {
+      "category": "procedural",
+      "detail": "syntax error at or near \"CALL\"",
+      "id": "call-procedure",
+      "outcome": "database"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "permission denied for table pg_authid",
+      "id": "catalog-in-exists",
+      "outcome": "permission"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "1000 row(s)",
+      "id": "catalog-qualified",
+      "outcome": "ran"
+    },
+    {
+      "category": "comment_trick",
+      "detail": "permission denied for table fct_edits",
+      "id": "comment-before-delete",
+      "outcome": "permission"
+    },
+    {
+      "category": "ddl",
+      "detail": "syntax error at or near \"COMMENT\"",
+      "id": "comment-on-table",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"COMMIT\"",
+      "id": "commit",
+      "outcome": "database"
+    },
+    {
+      "category": "file_access",
+      "detail": "syntax error at or near \"COPY\"",
+      "id": "copy-from-passwd",
+      "outcome": "database"
+    },
+    {
+      "category": "file_access",
+      "detail": "syntax error at or near \"COPY\"",
+      "id": "copy-to-program",
+      "outcome": "database"
+    },
+    {
+      "category": "ddl",
+      "detail": "syntax error at or near \"FUNCTION\"",
+      "id": "create-function",
+      "outcome": "database"
+    },
+    {
+      "category": "ddl",
+      "detail": "cannot execute CREATE TABLE AS in a read-only transaction",
+      "id": "create-temp-table-as",
+      "outcome": "read_only"
+    },
+    {
+      "category": "ddl",
+      "detail": "syntax error at or near \"VIEW\"",
+      "id": "create-view-over-raw",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "relation \"recentchange\" does not exist",
+      "id": "cte-out-of-scope",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "permission denied for schema raw",
+      "id": "cte-shadow-does-not-cover-raw",
+      "outcome": "permission"
+    },
+    {
+      "category": "session",
+      "detail": "permission denied to examine \"data_directory\"",
+      "id": "current-setting-data-directory",
+      "outcome": "permission"
+    },
+    {
+      "category": "privilege",
+      "detail": "1 row(s)",
+      "id": "current-user",
+      "outcome": "ran"
+    },
+    {
+      "category": "dml",
+      "detail": "permission denied for table fct_edits",
+      "id": "data-modifying-cte",
+      "outcome": "permission"
+    },
+    {
+      "category": "exfiltration",
+      "detail": "function dblink_exec(unknown, unknown) does not exist",
+      "id": "dblink-exec",
+      "outcome": "database"
+    },
+    {
+      "category": "exfiltration",
+      "detail": "function dblink(unknown, unknown) does not exist",
+      "id": "dblink-exfil",
+      "outcome": "database"
+    },
+    {
+      "category": "procedural",
+      "detail": "the statement returned no result set",
+      "id": "declare-cursor",
+      "outcome": "database"
+    },
+    {
+      "category": "dml",
+      "detail": "permission denied for table fct_edits",
+      "id": "delete-all-edits",
+      "outcome": "permission"
+    },
+    {
+      "category": "procedural",
+      "detail": "syntax error at or near \"DO\"",
+      "id": "do-block",
+      "outcome": "database"
+    },
+    {
+      "category": "encoding",
+      "detail": "DELETE is not allowed in a non-volatile function",
+      "id": "dollar-quoted-function-name",
+      "outcome": "database"
+    },
+    {
+      "category": "ddl",
+      "detail": "syntax error at or near \"DROP\"",
+      "id": "drop-fact-table",
+      "outcome": "database"
+    },
+    {
+      "category": "procedural",
+      "detail": "prepared statement \"p\" does not exist",
+      "id": "execute-prepared",
+      "outcome": "database"
+    },
+    {
+      "category": "procedural",
+      "detail": "syntax error at or near \"EXPLAIN\"",
+      "id": "explain-analyze-delete",
+      "outcome": "database"
+    },
+    {
+      "category": "locking",
+      "detail": "permission denied for table dim_wiki",
+      "id": "for-share-in-subquery",
+      "outcome": "permission"
+    },
+    {
+      "category": "privilege",
+      "detail": "syntax error at or near \"GRANT\"",
+      "id": "grant-all-public",
+      "outcome": "database"
+    },
+    {
+      "category": "privilege",
+      "detail": "permission denied for schema raw",
+      "id": "has-table-privilege",
+      "outcome": "permission"
+    },
+    {
+      "category": "exfiltration",
+      "detail": "1 row(s)",
+      "id": "inet-server-addr",
+      "outcome": "ran"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "1000 row(s)",
+      "id": "information-schema-columns",
+      "outcome": "ran"
+    },
+    {
+      "category": "dml",
+      "detail": "invalid input syntax for type uuid: \"x\"",
+      "id": "insert-fake-edit",
+      "outcome": "database"
+    },
+    {
+      "category": "stacked",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "legit-query-drop-tail",
+      "outcome": "database"
+    },
+    {
+      "category": "comment_trick",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "line-comment-hides-newline",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"LISTEN\"",
+      "id": "listen-channel",
+      "outcome": "database"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function lo_export",
+      "id": "lo-export",
+      "outcome": "permission"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function lo_import",
+      "id": "lo-import",
+      "outcome": "permission"
+    },
+    {
+      "category": "locking",
+      "detail": "syntax error at or near \"LOCK\"",
+      "id": "lock-table",
+      "outcome": "database"
+    },
+    {
+      "category": "dml",
+      "detail": "permission denied for table dim_wiki",
+      "id": "merge-into-dim-wiki",
+      "outcome": "permission"
+    },
+    {
+      "category": "comment_trick",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "nested-comment-close",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "relation \"marts.some_seq\" does not exist",
+      "id": "nextval-sequence",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "49 row(s)",
+      "id": "ops-quality-runs",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "pg-advisory-lock",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "pg-cancel-backend",
+      "outcome": "ran"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "17 row(s)",
+      "id": "pg-catalog-roles",
+      "outcome": "ran"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function pg_ls_dir",
+      "id": "pg-ls-dir-from",
+      "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "pg-notify",
+      "outcome": "ran"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function pg_read_binary_file",
+      "id": "pg-read-binary-file",
+      "outcome": "permission"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function pg_read_file",
+      "id": "pg-read-file",
+      "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "permission denied for function pg_reload_conf",
+      "id": "pg-reload-conf",
+      "outcome": "permission"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "permission denied for view pg_shadow",
+      "id": "pg-shadow",
+      "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "pg-sleep",
+      "outcome": "timeout"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "pg-sleep-for-in-cast",
+      "outcome": "timeout"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "could not identify an ordering operator for type void",
+      "id": "pg-sleep-in-order-by",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "pg-sleep-mixed-case-in-where",
+      "outcome": "timeout"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "function PG_SLEEP(integer) does not exist",
+      "id": "pg-sleep-quoted-upper",
+      "outcome": "database"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "6 row(s)",
+      "id": "pg-stat-activity",
+      "outcome": "ran"
+    },
+    {
+      "category": "file_access",
+      "detail": "permission denied for function pg_stat_file",
+      "id": "pg-stat-file",
+      "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "terminating connection due to administrator command",
+      "id": "pg-terminate-backend",
+      "outcome": "database"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "2 row(s)",
+      "id": "pg-user",
+      "outcome": "ran"
+    },
+    {
+      "category": "encoding",
+      "detail": "bind message supplies 0 parameters, but prepared statement \"_pg3_0\" requires 1",
+      "id": "placeholder-dollar",
+      "outcome": "database"
+    },
+    {
+      "category": "encoding",
+      "detail": "syntax error at or near \"%\"",
+      "id": "placeholder-pyformat",
+      "outcome": "database"
+    },
+    {
+      "category": "procedural",
+      "detail": "syntax error at or near \"PREPARE\"",
+      "id": "prepare-statement",
+      "outcome": "database"
+    },
+    {
+      "category": "encoding",
+      "detail": "canceling statement due to statement timeout",
+      "id": "qualified-function-pg-catalog",
+      "outcome": "timeout"
+    },
+    {
+      "category": "encoding",
+      "detail": "function public.lower(text) does not exist",
+      "id": "qualified-function-public",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "DELETE is not allowed in a non-volatile function",
+      "id": "query-to-xml-delete",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "relation \"MARTS.FCT_EDITS\" does not exist",
+      "id": "quoted-case-mismatch",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "permission denied for schema raw",
+      "id": "raw-in-array-subquery",
+      "outcome": "permission"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "permission denied for schema raw",
+      "id": "raw-in-join-lateral",
+      "outcome": "permission"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "permission denied for schema raw",
+      "id": "raw-recentchange",
+      "outcome": "permission"
+    },
+    {
+      "category": "procedural",
+      "detail": "canceling statement due to statement timeout",
+      "id": "recursive-cte",
+      "outcome": "timeout"
+    },
+    {
+      "category": "ddl",
+      "detail": "EXPLAIN did not return a plan",
+      "id": "refresh-matview",
+      "outcome": "database"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "permission denied for schema raw",
+      "id": "regclass-cast",
+      "outcome": "permission"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"RESET\"",
+      "id": "reset-all",
+      "outcome": "database"
+    },
+    {
+      "category": "privilege",
+      "detail": "syntax error at or near \"REVOKE\"",
+      "id": "revoke-select",
+      "outcome": "database"
+    },
+    {
+      "category": "locking",
+      "detail": "permission denied for table fct_edits",
+      "id": "select-for-update",
+      "outcome": "permission"
+    },
+    {
+      "category": "dml",
+      "detail": "cannot execute SELECT INTO in a read-only transaction",
+      "id": "select-into-new-table",
+      "outcome": "read_only"
+    },
+    {
+      "category": "stacked",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "select-then-raw-read",
+      "outcome": "database"
+    },
+    {
+      "category": "stacked",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "select-then-set-timeout",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "1 row(s)",
+      "id": "set-config-timeout",
+      "outcome": "ran"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"SET\"",
+      "id": "set-role",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"SET\"",
+      "id": "set-statement-timeout",
+      "outcome": "database"
+    },
+    {
+      "category": "session",
+      "detail": "syntax error at or near \"SHOW\"",
+      "id": "show-search-path",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "sleep-in-scalar-subquery",
+      "outcome": "timeout"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "permission denied for schema staging",
+      "id": "staging-recentchange",
+      "outcome": "permission"
+    },
+    {
+      "category": "encoding",
+      "detail": "permission denied for schema raw",
+      "id": "table-command",
+      "outcome": "permission"
+    },
+    {
+      "category": "dml",
+      "detail": "syntax error at or near \"TRUNCATE\"",
+      "id": "truncate-hourly",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "DELETE is not allowed in a non-volatile function",
+      "id": "ts-stat-delete",
+      "outcome": "database"
+    },
+    {
+      "category": "stacked",
+      "detail": "cannot insert multiple commands into a prepared statement",
+      "id": "two-selects",
+      "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "txid-current",
+      "outcome": "ran"
+    },
+    {
+      "category": "encoding",
+      "detail": "permission denied for view pg_shadow",
+      "id": "unicode-escape-identifier",
+      "outcome": "permission"
+    },
+    {
+      "category": "encoding",
+      "detail": "permission denied for schema raw",
+      "id": "unicode-escape-schema",
+      "outcome": "permission"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "162 row(s)",
+      "id": "union-appends-catalog",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "function my_helper(text) does not exist",
+      "id": "unknown-function",
+      "outcome": "database"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "relation \"recentchange\" does not exist",
+      "id": "unqualified-recentchange",
+      "outcome": "database"
+    },
+    {
+      "category": "dml",
+      "detail": "permission denied for table fct_edits",
+      "id": "update-bot-flag",
+      "outcome": "permission"
+    },
+    {
+      "category": "dml",
+      "detail": "permission denied for table dim_wiki",
+      "id": "update-in-cte-legit-tail",
+      "outcome": "permission"
+    },
+    {
+      "category": "locking",
+      "detail": "syntax error at or near \"VACUUM\"",
+      "id": "vacuum-full",
+      "outcome": "database"
+    },
+    {
+      "category": "encoding",
+      "detail": "2 row(s)",
+      "id": "values-root",
+      "outcome": "ran"
+    },
+    {
+      "category": "exfiltration",
+      "detail": "1 row(s)",
+      "id": "version-banner",
+      "outcome": "ran"
+    },
+    {
+      "category": "encoding",
+      "detail": "160 row(s)",
+      "id": "xml-cast-column",
+      "outcome": "ran"
+    },
+    {
+      "category": "encoding",
+      "detail": "1 row(s)",
+      "id": "xml-cast-literal",
+      "outcome": "ran"
+    }
+  ],
+  "ran": [
+    "catalog-qualified",
+    "current-user",
+    "inet-server-addr",
+    "information-schema-columns",
+    "ops-quality-runs",
+    "pg-advisory-lock",
+    "pg-cancel-backend",
+    "pg-catalog-roles",
+    "pg-notify",
+    "pg-stat-activity",
+    "pg-user",
+    "set-config-timeout",
+    "txid-current",
+    "union-appends-catalog",
+    "values-root",
+    "version-banner",
+    "xml-cast-column",
+    "xml-cast-literal"
+  ],
+  "refused": 87,
+  "role": "tributary_agent",
+  "statement_timeout_ms": 1000,
+  "total": 105
+}
