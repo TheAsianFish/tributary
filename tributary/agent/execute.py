@@ -6,6 +6,9 @@ guard wrongly lets through cannot do much. Every query
 - connects as the agent's role, which can read the marts (and the ``ops``
   tables provenance needs) and nothing else, and whose sessions default to
   read-only transactions,
+- is sent as a prepared statement (PostgreSQL's extended protocol), which
+  refuses a string holding more than one statement, so a stacked
+  ``SELECT 1; COMMIT; ...`` never runs past its first statement,
 - runs inside a ``READ ONLY`` transaction with ``statement_timeout``,
   ``lock_timeout`` and an empty ``search_path`` (so an unqualified function
   name can only resolve to ``pg_catalog``, never to a look-alike in another
@@ -28,6 +31,7 @@ lists every such case.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from collections.abc import Sequence
@@ -122,7 +126,10 @@ def plan_cost(explain_json: Any) -> float:
     Any: the plan document, a list holding one ``{"Plan": {...}}`` object.
     """
     document = json.loads(explain_json) if isinstance(explain_json, str) else explain_json
-    return float(document[0]["Plan"]["Total Cost"])
+    try:
+        return float(document[0]["Plan"]["Total Cost"])
+    except (KeyError, IndexError, TypeError, ValueError):
+        raise ExecutionError("database", "EXPLAIN did not return a plan") from None
 
 
 class PostgresExecutor:
@@ -165,7 +172,7 @@ class PostgresExecutor:
                     cur.execute(statement)
                 cost = None
                 if self.cost_ceiling is not None:
-                    cur.execute(sql.SQL("EXPLAIN (FORMAT JSON) ") + sql.SQL(query))
+                    cur.execute(sql.SQL("EXPLAIN (FORMAT JSON) ") + sql.SQL(query), prepare=True)
                     row = cur.fetchone()
                     cost = plan_cost(row[0]) if row else None
                     if cost is not None and cost > self.cost_ceiling:
@@ -174,7 +181,7 @@ class PostgresExecutor:
                             f"estimated cost {cost:,.0f} is above the ceiling "
                             f"{self.cost_ceiling:,.0f}; filter or aggregate earlier",
                         )
-                cur.execute(sql.SQL(query))
+                cur.execute(sql.SQL(query), prepare=True)
                 if cur.description is None:
                     raise ExecutionError("database", "the statement returned no result set")
                 columns = tuple(d.name for d in cur.description)
@@ -182,7 +189,10 @@ class PostgresExecutor:
         except psycopg.Error as exc:
             raise _classify(exc) from None
         finally:
-            conn.rollback()
+            # The query may have killed its own connection (pg_terminate_backend is open to
+            # a role for its own sessions); a failed rollback must not mask the error.
+            with contextlib.suppress(psycopg.Error):
+                conn.rollback()
             conn.close()
         elapsed = (time.perf_counter() - started) * 1000
         truncated = len(fetched) > self.row_cap

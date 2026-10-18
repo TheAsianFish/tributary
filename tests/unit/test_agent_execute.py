@@ -174,3 +174,10 @@ def test_render_answer() -> None:
 
 def test_render_answer_minimal() -> None:
     assert render_answer({"answer": "blocked", "sql": None, "rows": []}) == "blocked"
+
+
+@pytest.mark.parametrize("document", [[], [{"QUERY PLAN": "x"}], "[1]", [{"Plan": {}}]])
+def test_plan_cost_without_a_plan_is_an_execution_error(document: object) -> None:
+    with pytest.raises(ExecutionError) as caught:
+        plan_cost(document)
+    assert caught.value.kind == "database"
