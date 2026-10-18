@@ -23,25 +23,27 @@ from tributary.agent.providers.fake import FakeProvider
 from tributary.agent.roles import ensure_agent_role
 from tributary.agent.service import Agent, build_agent
 from tributary.api.app import create_app
-from tributary.config import REPO_ROOT, Settings
+from tributary.config import REPO_ROOT, Settings, get_settings
 from tributary.warehouse.refresh import refresh
 
 pytestmark = pytest.mark.warehouse
 
 RECORDINGS = REPO_ROOT / "tests" / "recordings" / "warehouse.jsonl"
+ALL_RECORDINGS = sorted(RECORDINGS.parent.glob("warehouse*.jsonl"))
 
 
-def recorded_run() -> Path:
-    """The live run's report for the committed recordings (named by their provider and model)."""
-    first = json.loads(RECORDINGS.read_text(encoding="utf-8").splitlines()[0])
+def recorded_run(recordings: Path = RECORDINGS) -> Path:
+    """The live run's report for a recordings file (named by its provider and model)."""
+    first = json.loads(recordings.read_text(encoding="utf-8").splitlines()[0])
     model = str(first["model"]).replace("/", "-").replace(":", "-")
     return RESULTS / f"warehouse-{first['provider']}-{model}.json"
 
 
 @pytest.fixture(scope="module")
-def agent_settings(
-    conninfo: str, settings: Settings, tmp_path_factory: pytest.TempPathFactory
-) -> Settings:
+def agent_settings(conninfo: str, tmp_path_factory: pytest.TempPathFactory) -> Settings:
+    # get_settings() after `conninfo`: that fixture widens the freshness limit by the
+    # sample's age through the environment, which a Settings built earlier never saw.
+    settings = get_settings()
     ensure_agent_role(conninfo, settings.agent_user, settings.agent_password.get_secret_value())
     agent = settings.model_copy(
         update={
@@ -140,9 +142,11 @@ def test_every_gold_query_passes_the_guard_and_runs(agent: Agent) -> None:
         assert same_result(result.rows, result.rows)
 
 
-def test_replay_reproduces_the_recorded_run(agent: Agent) -> None:
+@pytest.mark.parametrize("recordings", ALL_RECORDINGS, ids=lambda p: p.stem)
+def test_replay_reproduces_the_recorded_run(agent_settings: Settings, recordings: Path) -> None:
     """The fake provider replays every recorded call, and each verdict is the live run's."""
-    recorded = json.loads(recorded_run().read_text())
+    agent = build_agent(agent_settings, provider=FakeProvider(recordings))
+    recorded = json.loads(recorded_run(recordings).read_text())
     expected = {v["id"]: v for v in recorded["verdicts"]}
     questions = load_questions()
     assert set(expected) == {q.id for q in questions}
