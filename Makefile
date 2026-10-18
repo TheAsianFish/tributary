@@ -28,8 +28,9 @@ up-lakehouse: up ## ... plus Trino
 up-airflow: up ## ... plus the Airflow scheduler, DAG processor and UI (localhost:8080)
 	docker compose --profile airflow up -d --build --wait
 
-up-api: up-airflow ## ... plus the API on localhost:8000 (needs TRIBUTARY_API_KEYS)
+up-api: ## ... plus the API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	@test -n "$$TRIBUTARY_API_KEYS" || { echo "set TRIBUTARY_API_KEYS first"; exit 1; }
+	$(MAKE) up-airflow
 	docker compose --profile api up -d --build --wait api
 
 down: ## Stop everything and delete the volumes (topic, tables, lake, checkpoints)

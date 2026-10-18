@@ -126,7 +126,10 @@ uv run tributary ask --api http://localhost:8000 --api-key "$TRIBUTARY_API_KEYS"
 ```
 
 `/query` (question → answer), `/sql` (guarded SQL), `/catalog` and
-`/freshness` need the key; `/health` does not.
+`/freshness` need the key; `/health` does not. `make up-api` starts the
+Airflow profile as well, because the API reads the catalog that
+`warehouse_refresh` publishes: until that DAG has run once (or `uv run
+tributary warehouse refresh` has), `/query` answers 503.
 
 Demo: *screenshot placeholder.* To capture one, run the commands above and
 record `docker compose logs -f stream` next to the `psql` query (for example
