@@ -33,6 +33,8 @@ CREATE ROLE :"agent" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE CONNECTION LIMIT 
 ALTER ROLE :"agent" SET default_transaction_read_only = on;
 ALTER ROLE :"agent" SET statement_timeout = '30s';
 GRANT CONNECT ON DATABASE :"DBNAME" TO :"agent";
+-- PUBLIC has TEMPORARY by default and privileges add up: no temp tables for the agent.
+REVOKE TEMPORARY ON DATABASE :"DBNAME" FROM PUBLIC, :"agent";
 GRANT USAGE ON SCHEMA marts, ops TO :"agent";
 GRANT SELECT ON ALL TABLES IN SCHEMA marts, ops TO :"agent";
 ALTER DEFAULT PRIVILEGES IN SCHEMA marts, ops GRANT SELECT ON TABLES TO :"agent";

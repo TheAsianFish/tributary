@@ -103,6 +103,7 @@ def test_agent_role_statements() -> None:
         'ALTER ROLE "agent" SET default_transaction_read_only = on',
         "ALTER ROLE \"agent\" SET statement_timeout = '30s'",
         'GRANT CONNECT ON DATABASE "tributary" TO "agent"',
+        'REVOKE TEMPORARY ON DATABASE "tributary" FROM PUBLIC, "agent"',
         'CREATE SCHEMA IF NOT EXISTS "marts"',
         'CREATE SCHEMA IF NOT EXISTS "ops"',
         'GRANT USAGE ON SCHEMA "marts", "ops" TO "agent"',

@@ -3,10 +3,14 @@
 The guard is the first line; this role is the one that holds if the guard is
 wrong. It owns nothing, has ``SELECT`` on the marts (the only relations the
 agent answers from) and on ``ops`` (refresh and quality results, for
-provenance), and no privileges on ``raw`` or ``staging``, where editor names
-are. Its sessions start read-only and carry their own statement timeout, so
-even a connection that skips the executor's settings cannot write or run
-for long.
+provenance), no privileges on ``raw`` or ``staging``, where editor names
+are, and no ``TEMPORARY`` on the database (revoked from ``PUBLIC`` too, since
+privileges add up), so it cannot stage data in temp tables either. Its
+sessions start read-only and carry a 30 s statement timeout; those two are
+role *defaults*, which any session may ``SET`` away, so the hard limits
+remain the executor's: ``SET TRANSACTION READ ONLY`` holds for the
+transaction, ``SET LOCAL statement_timeout`` is armed before the query, and
+the guard denies the ``SET`` that would change either.
 
 Compose creates the role when the database is first initialised
 (``docker/postgres/init.sh``); :func:`ensure_agent_role` does the same for any
@@ -47,6 +51,10 @@ def agent_role_statements(
             role, sql.Literal(SESSION_TIMEOUT)
         ),
         sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(database), role),
+        # PUBLIC has TEMPORARY by default and privileges add up: revoke it from both.
+        sql.SQL("REVOKE TEMPORARY ON DATABASE {} FROM PUBLIC, {}").format(
+            sql.Identifier(database), role
+        ),
         *(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(s)) for s in schemas),
         sql.SQL("GRANT USAGE ON SCHEMA {} TO {}").format(names, role),
         sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA {} TO {}").format(names, role),
