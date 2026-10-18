@@ -87,6 +87,8 @@ class Usage:
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
     cost_usd: float = 0.0
+    # Calls whose model has no price: their cost is missing from cost_usd, not zero.
+    unpriced_calls: int = 0
 
     def __add__(self, other: Usage) -> Usage:
         return Usage(
@@ -95,6 +97,7 @@ class Usage:
             self.cache_read_tokens + other.cache_read_tokens,
             self.cache_write_tokens + other.cache_write_tokens,
             self.cost_usd + other.cost_usd,
+            self.unpriced_calls + other.unpriced_calls,
         )
 
 

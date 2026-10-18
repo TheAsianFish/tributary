@@ -60,6 +60,7 @@ class Verdict:
     input_tokens: int
     output_tokens: int
     cost_usd: float
+    unpriced_calls: int
     latency_ms: float
     predicted_rows: int | None
     gold_rows: int
@@ -82,10 +83,14 @@ def load_questions(path: Path = QUESTIONS) -> list[Question]:
 
 def _normal(value: object) -> object:
     plain = jsonable(value)
+    if isinstance(plain, bool):
+        return ("bool", plain)  # True == 1 in Python; a boolean must not match a count
     if isinstance(plain, float):
         return round(plain, 6)
     if isinstance(plain, list):
         return tuple(_normal(v) for v in plain)
+    if isinstance(plain, dict):
+        return json.dumps(plain, sort_keys=True)
     return plain
 
 
@@ -114,6 +119,7 @@ def evaluate_question(agent: Agent, executor: Executor, q: Question) -> Verdict:
         input_tokens=outcome.usage.input_tokens,
         output_tokens=outcome.usage.output_tokens,
         cost_usd=outcome.usage.cost_usd,
+        unpriced_calls=outcome.usage.unpriced_calls,
         latency_ms=outcome.latency_ms,
         predicted_rows=len(result.rows) if result else None,
         gold_rows=len(gold.rows),
@@ -146,6 +152,8 @@ def summarise(verdicts: Sequence[Verdict]) -> dict[str, Any]:
         "input_tokens": sum(v.input_tokens for v in verdicts),
         "output_tokens": sum(v.output_tokens for v in verdicts),
         "cost_usd": round(sum(v.cost_usd for v in verdicts), 6),
+        # Calls with no known price: cost_usd leaves them out, and the report says so.
+        "unpriced_calls": sum(v.unpriced_calls for v in verdicts),
         "latency_ms_p50": round(statistics.median(latencies), 1) if latencies else 0.0,
         "latency_ms_p95": round(_percentile(latencies, 0.95), 1),
     }
@@ -205,9 +213,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"({summary['repaired']} after a repair), {summary['model_calls']} model calls, "
         f"{summary['input_tokens']} in / {summary['output_tokens']} out tokens, "
         f"${summary['cost_usd']}, p50 {summary['latency_ms_p50']} ms, "
-        f"p95 {summary['latency_ms_p95']} ms → {out.relative_to(REPO_ROOT)}"
+        f"p95 {summary['latency_ms_p95']} ms → {_display(out)}"
     )
     return 0
+
+
+def _display(path: Path) -> str:
+    return str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
 
 
 if __name__ == "__main__":

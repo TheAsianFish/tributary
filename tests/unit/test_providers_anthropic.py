@@ -158,7 +158,9 @@ def test_fallback_served_model_is_priced_at_its_own_rate() -> None:
 
 def test_unknown_model_is_unpriced_not_guessed() -> None:
     provider, _ = provider_for(ok(message_json(model="claude-future-9")))
-    assert provider.complete(REQUEST).usage.cost_usd == 0.0
+    usage = provider.complete(REQUEST).usage
+    assert usage.cost_usd == 0.0
+    assert usage.unpriced_calls == 1
     assert pricing.cost("claude-future-9", input_tokens=1, output_tokens=1) is None
 
 

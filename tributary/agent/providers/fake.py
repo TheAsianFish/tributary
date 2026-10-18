@@ -80,6 +80,8 @@ def to_recording(request: ModelRequest, response: ModelResponse, provider: str) 
                 "cache_read_tokens": u.cache_read_tokens,
                 "cache_write_tokens": u.cache_write_tokens,
                 "cost_usd": u.cost_usd,
+                # Only when set, so recordings from priced models keep their bytes.
+                **({"unpriced_calls": u.unpriced_calls} if u.unpriced_calls else {}),
             },
         },
     }

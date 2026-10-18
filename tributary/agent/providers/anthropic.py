@@ -129,7 +129,7 @@ def _usage(message: BetaMessage) -> Usage:
     usd = pricing.cost(message.model, **counts)
     if usd is None:
         log.warning("model.unpriced", model=message.model, hint="add it to pricing.PRICES")
-        usd = 0.0
+        return Usage(**counts, cost_usd=0.0, unpriced_calls=1)
     return Usage(**counts, cost_usd=usd)
 
 
