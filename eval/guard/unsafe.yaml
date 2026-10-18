@@ -472,3 +472,36 @@ unsafe:
     category: encoding
     sql: SELECT CAST(wiki AS xml) FROM marts.dim_wiki
     why: the same parser reached through CAST on a column.
+  # -- field notation: PostgreSQL reads (x).f as f(x), so a denied function can be
+  # written as a field access, which parses as a plain dotted expression ---------------
+  - id: field-notation-sleep
+    category: dangerous_function
+    sql: SELECT (10).pg_sleep
+    why: pg_sleep(10) written as a field access; it never looks like a function call.
+  - id: field-notation-stat-activity
+    category: dangerous_function
+    sql: SELECT ((NULL::int).pg_stat_get_activity).*
+    why: pg_stat_get_activity(NULL) as a field; lists every backend, superuser sessions included.
+  - id: field-notation-terminate-siblings
+    category: dangerous_function
+    sql: |
+      SELECT s.pid, (s.pid).pg_terminate_backend
+      FROM (SELECT ((NULL::int).pg_stat_get_activity).*) AS s
+      WHERE s.usename = current_user
+    why: kills every other session of the agent's own role, and a role may always signal itself.
+  - id: niladic-user
+    category: session
+    sql: SELECT user
+    why: the SQL-standard keyword for current_user, parsed as a column, not a function.
+  - id: niladic-current-role
+    category: session
+    sql: SELECT current_role
+    why: the keyword form of the session-identity function.
+  - id: niladic-system-user
+    category: session
+    sql: SELECT system_user
+    why: leaks the authentication method and the role name.
+  - id: four-part-name
+    category: outside_allowlist
+    sql: SELECT * FROM tributary.marts.fct_edits.wiki
+    why: a name with too many parts is not a relation the allowlist checked; the database must not be the one to refuse it.

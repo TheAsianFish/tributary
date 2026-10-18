@@ -503,3 +503,38 @@ def test_anonymous_allowlist_is_really_anonymous() -> None:
             call = tree.expressions[0]
             break
         assert isinstance(call, exp.Anonymous), name
+
+
+# -- field notation and keyword functions ------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        # PostgreSQL reads (x).f as f(x): the denied function never looks like a call
+        "SELECT (10).pg_sleep",
+        "SELECT ((NULL::int).pg_stat_get_activity).*",
+        "SELECT (pid).pg_terminate_backend FROM (SELECT ((NULL::int).pg_stat_get_activity).*) s",
+        "SELECT ('statement_timeout').current_setting",
+        "SELECT ('/etc/hostname').pg_read_file",
+        # harmless-looking field access: no mart has a composite column, so fail closed
+        "SELECT (w).wiki FROM marts.dim_wiki w",
+        # a name with too many parts is not a relation the allowlist checked
+        "SELECT * FROM tributary.marts.fct_edits.wiki",
+    ],
+)
+def test_field_notation_is_blocked(guard: Guard, sql: str) -> None:
+    assert "field_notation" in _blocked(guard, sql).codes
+
+
+@pytest.mark.parametrize("sql", ["SELECT user", "SELECT current_role", "SELECT system_user"])
+def test_keyword_identity_functions_are_denied(guard: Guard, sql: str) -> None:
+    """The SQL-standard niladic functions parse as columns, not calls."""
+    result = _blocked(guard, sql)
+    assert result.codes == ("function_not_allowed",)
+
+
+def test_quoted_or_qualified_user_is_a_column(guard: Guard) -> None:
+    assert guard.check('SELECT w."user" FROM marts.dim_wiki w').allowed
+    assert guard.check('SELECT "user" FROM marts.dim_wiki').allowed
+    assert guard.check("SELECT current_date, localtime FROM marts.dim_wiki").allowed

@@ -495,15 +495,15 @@
   },
   "passed": true,
   "unsafe": {
-    "blocked": 105,
+    "blocked": 112,
     "by_category": {
       "comment_trick": [
         5,
         5
       ],
       "dangerous_function": [
-        16,
-        16
+        19,
+        19
       ],
       "ddl": [
         7,
@@ -530,8 +530,8 @@
         4
       ],
       "outside_allowlist": [
-        10,
-        10
+        11,
+        11
       ],
       "privilege": [
         4,
@@ -542,8 +542,8 @@
         7
       ],
       "session": [
-        9,
-        9
+        12,
+        12
       ],
       "stacked": [
         4,
@@ -555,7 +555,8 @@
       ]
     },
     "by_code": {
-      "function_not_allowed": 35,
+      "field_notation": 5,
+      "function_not_allowed": 39,
       "locking_clause": 2,
       "multiple_statements": 7,
       "not_select": 19,
@@ -1189,6 +1190,7 @@
         "correct": true,
         "id": "pg-stat-file",
         "reasons": [
+          "field_notation: (PG_STAT_FILE('pg_hba.conf')).size is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
           "function_not_allowed: pg_stat_file() is denied"
         ],
         "source": "unsafe.yaml",
@@ -1962,8 +1964,96 @@
         "tables": [
           "marts.dim_wiki"
         ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-sleep",
+        "reasons": [
+          "field_notation: (10).pg_sleep is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-stat-activity",
+        "reasons": [
+          "field_notation: ((CAST(NULL AS INT)).pg_stat_get_activity).* is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "field_notation: (CAST(NULL AS INT)).pg_stat_get_activity is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-terminate-siblings",
+        "reasons": [
+          "field_notation: (s.pid).pg_terminate_backend is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "function_not_allowed: current_user() is denied",
+          "field_notation: ((CAST(NULL AS INT)).pg_stat_get_activity).* is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "field_notation: (CAST(NULL AS INT)).pg_stat_get_activity is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-user",
+        "reasons": [
+          "function_not_allowed: user is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-current-role",
+        "reasons": [
+          "function_not_allowed: current_role is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-system-user",
+        "reasons": [
+          "function_not_allowed: system_user is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "four-part-name",
+        "reasons": [
+          "field_notation: fct_edits.wiki is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
       }
     ],
-    "total": 105
+    "total": 112
   }
 }

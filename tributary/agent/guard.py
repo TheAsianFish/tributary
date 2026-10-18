@@ -38,7 +38,12 @@ knows to typed expression classes and everything else to ``exp.Anonymous``:
   effects. ``random()`` is allowed: nondeterministic but harmless.
   ``generate_series`` is allowed: the executor's cost ceiling and timeout
   bound its size. A schema-qualified call (``pg_catalog.pg_sleep``,
-  ``public.f``) is always blocked, whatever the function.
+  ``public.f``) is always blocked, whatever the function, and so is every
+  other dotted expression that is not a column: PostgreSQL's field notation
+  ``(expr).name`` is the call ``name(expr)`` in disguise (``(0.01).pg_sleep``
+  sleeps), and it parses as a plain ``exp.Dot``, not a function. The
+  SQL-standard niladic functions that are bare keywords (``user``,
+  ``current_role``, ``system_user``) parse as columns and are denied by name.
 
 A cast to a type sqlglot does not know runs that type's input function, so
 it is blocked as a function; casts to the ``reg*`` object-identifier types
@@ -64,8 +69,8 @@ _DENIED_FUNCTION = re.compile(
     r"|nextval|setval|currval|lastval|setseed"
     r"|txid_\w*|inet_\w*|has_\w*_privilege"
     r"|(?:current_)?version"
-    r"|current_user|current_role|session_user|current_schemas?|current_database"
-    r"|current_catalog|current_query"
+    r"|user|system_user|current_user|current_role|session_user|current_schemas?"
+    r"|current_database|current_catalog|current_query"
     r"|xml\w*|xpath\w*"
     r")$"
 )
@@ -376,10 +381,8 @@ class Guard:
                 self._check_table(node, reasons, tables)
             elif isinstance(node, exp.Column):
                 self._check_column(node, reasons)
-            elif isinstance(node, exp.Dot) and isinstance(node.expression, exp.Func):
-                reasons.append(
-                    f"qualified_function: {node.sql(dialect=DIALECT)} is schema-qualified"
-                )
+            elif isinstance(node, exp.Dot):
+                self._check_dot(node, reasons)
             elif isinstance(node, exp.ObjectIdentifier):
                 reasons.append(
                     f"system_catalog: a cast to {node.name.lower()}, an object-identifier type,"
@@ -451,6 +454,38 @@ class Guard:
                 reasons.append(
                     f"system_catalog: {column.sql(dialect=DIALECT)} names a system schema"
                 )
+        # SQL-standard niladic functions are bare keywords: `user` is current_user, and
+        # sqlglot parses them as columns. An unquoted bare name is the function; a quoted
+        # or table-qualified one is a column, which the database resolves or refuses.
+        this = column.this
+        if (
+            isinstance(this, exp.Identifier)
+            and not this.quoted
+            and column.args.get("table") is None
+            and _DENIED_FUNCTION.match(str(this.this).lower())
+        ):
+            reasons.append(f"function_not_allowed: {str(this.this).lower()} is denied")
+
+    def _check_dot(self, dot: exp.Dot, reasons: list[str]) -> None:
+        """Reject every dotted expression that is not a column reference.
+
+        sqlglot resolves ``schema.table.column`` to ``exp.Column`` and
+        ``schema.table`` to ``exp.Table``; what is left as ``exp.Dot`` is a
+        schema-qualified call (``pg_catalog.pg_sleep(1)``), a name with too
+        many parts, or PostgreSQL's field notation ``(expr).name``, which the
+        server treats as the function call ``name(expr)``: ``(0.01).pg_sleep``
+        is ``pg_sleep(0.01)`` and never reached the function policy. No mart
+        has a composite column, so nothing analytic is lost by refusing all
+        of them.
+        """
+        shown = dot.sql(dialect=DIALECT)
+        if isinstance(dot.expression, exp.Func):
+            reasons.append(f"qualified_function: {shown} is schema-qualified")
+        else:
+            reasons.append(
+                f"field_notation: {shown} is a function call written as a field "
+                "(PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+            )
 
     # -- functions -----------------------------------------------------------------------
 

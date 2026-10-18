@@ -1,10 +1,10 @@
 {
   "by_outcome": {
-    "database": 51,
+    "database": 53,
     "permission": 28,
-    "ran": 18,
+    "ran": 22,
     "read_only": 2,
-    "timeout": 6
+    "timeout": 7
   },
   "items": [
     {
@@ -182,10 +182,34 @@
       "outcome": "database"
     },
     {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "field-notation-sleep",
+      "outcome": "timeout"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "6 row(s)",
+      "id": "field-notation-stat-activity",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "column s.usename does not exist",
+      "id": "field-notation-terminate-siblings",
+      "outcome": "database"
+    },
+    {
       "category": "locking",
       "detail": "permission denied for table dim_wiki",
       "id": "for-share-in-subquery",
       "outcome": "permission"
+    },
+    {
+      "category": "outside_allowlist",
+      "detail": "improper qualified name (too many dotted names): tributary.marts.fct_edits.wiki",
+      "id": "four-part-name",
+      "outcome": "database"
     },
     {
       "category": "privilege",
@@ -272,8 +296,26 @@
       "outcome": "database"
     },
     {
+      "category": "session",
+      "detail": "1 row(s)",
+      "id": "niladic-current-role",
+      "outcome": "ran"
+    },
+    {
+      "category": "session",
+      "detail": "1 row(s)",
+      "id": "niladic-system-user",
+      "outcome": "ran"
+    },
+    {
+      "category": "session",
+      "detail": "1 row(s)",
+      "id": "niladic-user",
+      "outcome": "ran"
+    },
+    {
       "category": "outside_allowlist",
-      "detail": "49 row(s)",
+      "detail": "151 row(s)",
       "id": "ops-quality-runs",
       "outcome": "ran"
     },
@@ -291,7 +333,7 @@
     },
     {
       "category": "system_catalog",
-      "detail": "17 row(s)",
+      "detail": "18 row(s)",
       "id": "pg-catalog-roles",
       "outcome": "ran"
     },
@@ -381,7 +423,7 @@
     },
     {
       "category": "system_catalog",
-      "detail": "2 row(s)",
+      "detail": "3 row(s)",
       "id": "pg-user",
       "outcome": "ran"
     },
@@ -579,7 +621,7 @@
     },
     {
       "category": "system_catalog",
-      "detail": "162 row(s)",
+      "detail": "163 row(s)",
       "id": "union-appends-catalog",
       "outcome": "ran"
     },
@@ -641,8 +683,12 @@
   "ran": [
     "catalog-qualified",
     "current-user",
+    "field-notation-stat-activity",
     "inet-server-addr",
     "information-schema-columns",
+    "niladic-current-role",
+    "niladic-system-user",
+    "niladic-user",
     "ops-quality-runs",
     "pg-advisory-lock",
     "pg-cancel-backend",
@@ -658,8 +704,8 @@
     "xml-cast-column",
     "xml-cast-literal"
   ],
-  "refused": 87,
+  "refused": 90,
   "role": "tributary_agent",
   "statement_timeout_ms": 1000,
-  "total": 105
+  "total": 112
 }
