@@ -251,3 +251,14 @@ def test_schema_matches_the_model() -> None:
 def test_draft_json_round_trips() -> None:
     d = SQLDraft.model_validate(draft(GOOD))
     assert SQLDraft.model_validate_json(draft_json(d)) == d
+
+
+def test_a_schema_invalid_last_reply_fails(the_catalog: Catalog) -> None:
+    """The last attempt decides the status: a block followed by an unusable reply is a failure."""
+    provider = ScriptedProvider([draft("DELETE FROM marts.fct_edits"), {"garbage": 1}])
+
+    outcome = planner(the_catalog, provider, FakeExecutor(), max_repairs=1).run("How many?")
+
+    assert outcome.status == "failed"
+    assert outcome.error is not None
+    assert outcome.error.startswith("The reply did not match the JSON schema")

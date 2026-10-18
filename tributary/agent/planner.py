@@ -206,6 +206,7 @@ class Planner:
             except ValidationError as exc:
                 error = f"The reply did not match the JSON schema: {exc.errors()[0]['msg']}"
                 attempts.append(Attempt(None, None, error))
+                status = "failed"
                 messages += [
                     Message("assistant", response.text),
                     Message("user", repair_message(error)),
