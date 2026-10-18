@@ -38,6 +38,10 @@ log = structlog.get_logger(__name__)
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+NO_CREDENTIALS = (
+    "no Anthropic credentials: set ANTHROPIC_API_KEY "
+    "(or use TRIBUTARY_PROVIDER=fake to replay recordings)"
+)
 
 
 class AnthropicProvider:
@@ -55,7 +59,12 @@ class AnthropicProvider:
         self.model = model
         self.effort: Effort = effort
         # The key comes from ANTHROPIC_API_KEY, read by the SDK; it never passes through here.
-        self._client = client or anthropic.Anthropic(timeout=timeout, max_retries=max_retries)
+        try:
+            self._client = client or anthropic.Anthropic(timeout=timeout, max_retries=max_retries)
+        except anthropic.CredentialsError as exc:
+            # The SDK also looks for an `ant auth login` profile on disk and fails here when
+            # the configured profile is missing.
+            raise ProviderError(f"{NO_CREDENTIALS}: {exc}") from None
 
     def complete(self, request: ModelRequest) -> ModelResponse:
         system: list[BetaTextBlockParam] = [
@@ -80,13 +89,12 @@ class AnthropicProvider:
             )
         except anthropic.APIError as exc:
             raise _api_error(exc, self.model) from None
+        except anthropic.CredentialsError as exc:
+            raise ProviderError(f"{NO_CREDENTIALS}: {exc}") from None
         except TypeError as exc:
             # The SDK raises a bare TypeError when no credential is configured at all.
             if "authentication method" in str(exc):
-                raise ProviderError(
-                    "no Anthropic credentials: set ANTHROPIC_API_KEY "
-                    "(or use TRIBUTARY_PROVIDER=fake to replay recordings)"
-                ) from None
+                raise ProviderError(NO_CREDENTIALS) from None
             raise
         latency_ms = (time.perf_counter() - started) * 1000
         return self._response(message, request, latency_ms)
@@ -101,6 +109,10 @@ class AnthropicProvider:
         if message.stop_reason == "max_tokens":
             raise InvalidOutput(
                 f"reply truncated at max_tokens={request.max_tokens} ({message.model})"
+            )
+        if message.stop_reason == "model_context_window_exceeded":
+            raise InvalidOutput(
+                f"reply cut at the context window of {message.model}: the prompt is too long"
             )
         text = "".join(block.text for block in message.content if block.type == "text")
         data = parse_object(text)

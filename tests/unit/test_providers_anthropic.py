@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import anthropic
@@ -216,14 +217,38 @@ def test_connection_error_maps_to_provider_error() -> None:
         provider.complete(REQUEST)
 
 
-def test_missing_credentials_is_a_provider_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_credentials_is_a_provider_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """With no key, no token and no `ant auth login` profile, the error names the fix."""
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
-    client = anthropic.Anthropic(
-        max_retries=0,
-        http_client=anthropic.DefaultHttpxClient(
-            transport=httpx2.MockTransport(ok(message_json()))
-        ),
-    )
+    monkeypatch.delenv("ANTHROPIC_PROFILE", raising=False)
+    # The SDK reads profiles from this directory; empty, so the chain ends with nothing.
+    monkeypatch.setenv("ANTHROPIC_CONFIG_DIR", str(tmp_path))
+    with pytest.raises(ProviderError, match="ANTHROPIC_API_KEY") as caught:
+        AnthropicProvider("claude-opus-5-5", max_retries=0).complete(REQUEST)
+    assert "sk-" not in str(caught.value)
+
+
+def test_credential_type_error_at_call_time_is_a_provider_error() -> None:
+    """Older SDK paths raise a bare TypeError from the call itself; it maps the same way."""
+
+    class NoAuth:
+        class beta:  # noqa: N801 - mirrors the SDK's attribute path
+            class messages:  # noqa: N801
+                @staticmethod
+                def create(**kwargs: object) -> None:
+                    raise TypeError("Could not resolve authentication method. Expected ...")
+
+    provider = AnthropicProvider("claude-opus-5-5", client=NoAuth())  # type: ignore[arg-type]
     with pytest.raises(ProviderError, match="ANTHROPIC_API_KEY"):
-        AnthropicProvider("claude-opus-5-5", client=client).complete(REQUEST)
+        provider.complete(REQUEST)
+
+
+def test_context_window_exceeded_is_invalid_output() -> None:
+    provider, _ = provider_for(
+        ok(message_json(text='{"sql": "sel', stop_reason="model_context_window_exceeded"))
+    )
+    with pytest.raises(InvalidOutput, match="context window"):
+        provider.complete(REQUEST)

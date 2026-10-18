@@ -172,7 +172,10 @@ class Planner:
         *,
         max_repairs: int = 2,
         row_cap: int = 1000,
-        max_tokens: int = 4096,
+        # A draft is a few hundred tokens, but on current Claude models thinking counts
+        # against max_tokens and cannot be switched off, so the budget leaves room for
+        # it; a reply cut short is an InvalidOutput, not a repair. Ollama ignores this.
+        max_tokens: int = 16_000,
     ) -> None:
         self.provider = provider
         self.guard = guard
