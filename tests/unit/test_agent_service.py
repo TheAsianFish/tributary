@@ -210,3 +210,23 @@ def test_ask_raises_without_catalog(tmp_path: Path) -> None:
     agent.catalogs = CatalogSource(tmp_path, ("marts",))
     with pytest.raises(FileNotFoundError):
         agent.ask("q")
+
+
+def test_concurrent_first_requests_build_one_provider() -> None:
+    import threading
+    import time
+
+    built: list[int] = []
+
+    def factory() -> ScriptedProvider:
+        time.sleep(0.05)  # widen the race window
+        built.append(1)
+        return ScriptedProvider([])
+
+    agent = make_agent(factory)
+    threads = [threading.Thread(target=lambda: agent.provider) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert len(built) == 1

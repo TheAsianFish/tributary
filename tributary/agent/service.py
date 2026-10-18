@@ -76,6 +76,7 @@ class Agent:
     ) -> None:
         self.catalogs = catalogs
         self._provider = provider
+        self._provider_lock = threading.Lock()
         self.executor = executor
         self.provenance = provenance
         self.limits = limits or Limits()
@@ -87,7 +88,9 @@ class Agent:
         # A factory defers building the provider (and importing its SDK) until a question
         # needs it: /sql and /catalog never do.
         if callable(self._provider) and not hasattr(self._provider, "complete"):
-            self._provider = self._provider()
+            with self._provider_lock:  # concurrent first requests build one provider
+                if callable(self._provider) and not hasattr(self._provider, "complete"):
+                    self._provider = self._provider()
         return self._provider  # type: ignore[return-value]
 
     def catalog(self) -> Catalog:

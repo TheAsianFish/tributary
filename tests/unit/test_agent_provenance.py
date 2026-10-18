@@ -4,11 +4,18 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import psycopg
 import pytest
 
-from tests.unit.agent_doubles import NOW
+from tests.unit.agent_doubles import NOW, catalog
 from tributary.agent.catalog import Table
-from tributary.agent.provenance import CheckResult, Refresh, TableProvenance, summarise
+from tributary.agent.provenance import (
+    CheckResult,
+    PostgresProvenance,
+    Refresh,
+    TableProvenance,
+    summarise,
+)
 
 STALE_AFTER = timedelta(minutes=120)
 MART = Table(
@@ -160,3 +167,26 @@ def test_stale_warning_in_minutes() -> None:
     assert p.warnings(timedelta(minutes=30), NOW) == [
         "marts.agg_edits_hourly was last rebuilt 45 min ago (limit 30 min)"
     ]
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        psycopg.errors.UndefinedTable,
+        psycopg.errors.InvalidSchemaName,
+        psycopg.errors.InsufficientPrivilege,
+    ],
+)
+def test_unreadable_ops_reports_unknown(
+    monkeypatch: pytest.MonkeyPatch, error: type[psycopg.Error]
+) -> None:
+    source = PostgresProvenance("host=unused", stale_after=timedelta(hours=2), clock=lambda: NOW)
+
+    def unreadable(*args: object) -> None:
+        raise error("ops is not readable")
+
+    monkeypatch.setattr(source, "_read", unreadable)
+    (fct,) = source.lookup([catalog().table("marts.fct_edits")])
+    assert fct.quality == "unknown"
+    assert fct.last_refreshed_at is None
+    assert fct.stale

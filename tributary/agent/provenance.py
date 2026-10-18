@@ -25,8 +25,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal, Protocol
 
 import psycopg
+import structlog
 
 from tributary.agent.catalog import Table
+
+log = structlog.get_logger(__name__)
 
 Quality = Literal["pass", "warn", "fail", "unknown"]
 _RANK: dict[str, int] = {"pass": 0, "warn": 1, "fail": 2, "error": 2}
@@ -169,9 +172,14 @@ class PostgresProvenance:
         targets = sorted({r for t in tables for r in (t.relation, *t.upstream)})
         try:
             refreshes, checks = self._read(relations, targets)
-        except psycopg.errors.UndefinedTable:
-            # No warehouse refresh has run here yet (ops.* missing): nothing is known,
-            # and every table reports exactly that.
+        except (
+            psycopg.errors.UndefinedTable,
+            psycopg.errors.InvalidSchemaName,
+            psycopg.errors.InsufficientPrivilege,
+        ) as exc:
+            # No warehouse refresh has run here yet, or the role cannot see ops: nothing
+            # is known, and every table reports exactly that.
+            log.warning("provenance.unavailable", error=str(exc).strip())
             refreshes, checks = {}, []
         now = self._clock()
         return [
