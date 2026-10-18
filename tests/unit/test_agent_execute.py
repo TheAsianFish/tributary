@@ -181,3 +181,18 @@ def test_plan_cost_without_a_plan_is_an_execution_error(document: object) -> Non
     with pytest.raises(ExecutionError) as caught:
         plan_cost(document)
     assert caught.value.kind == "database"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (Decimal("Infinity"), "Infinity"),
+        (Decimal("-Infinity"), "-Infinity"),
+        (Decimal("NaN"), "NaN"),
+        (float("inf"), "inf"),
+        (float("nan"), "nan"),
+    ],
+)
+def test_non_finite_numbers_are_json_strings(value: object, expected: str) -> None:
+    assert jsonable(value) == expected
+    json.dumps(jsonable(value), allow_nan=False)

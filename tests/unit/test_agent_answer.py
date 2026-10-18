@@ -214,3 +214,9 @@ def test_to_dict_is_json() -> None:
     assert document["provenance"][0]["last_refreshed_at"] == "2026-10-17T11:50:00+00:00"
     assert document["provenance"][0]["relation"] == "marts.fct_edits"
     assert isinstance(document["rows"][0][0], int)
+
+
+def test_large_floats_keep_their_digits() -> None:
+    assert format_value(1234567.891) == "1,234,567.891"
+    assert format_value(0.5) == "0.5"
+    assert format_value(2.0) == "2"

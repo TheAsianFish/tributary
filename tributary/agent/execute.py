@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -84,10 +85,18 @@ class Executor(Protocol):
 
 
 def jsonable(value: object) -> object:
-    """A database value as JSON: exact integers stay integers, everything else is plain."""
-    if value is None or isinstance(value, bool | int | float | str):
+    """A database value as JSON: exact integers stay integers, everything else is plain.
+
+    JSON has no Infinity or NaN, and PostgreSQL's numeric and float types have
+    both, so those become the strings PostgreSQL prints for them.
+    """
+    if value is None or isinstance(value, bool | int | str):
         return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else str(value)
     if isinstance(value, Decimal):
+        if not value.is_finite():
+            return str(value)
         return int(value) if value == value.to_integral_value() else float(value)
     if isinstance(value, datetime | date | dtime):
         return value.isoformat()

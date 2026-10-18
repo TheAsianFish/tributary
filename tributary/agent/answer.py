@@ -92,7 +92,9 @@ def format_value(value: object) -> str:
     if isinstance(plain, int):
         return f"{plain:,}"
     if isinstance(plain, float):
-        return f"{plain:,.6g}" if abs(plain) < 1e15 else str(plain)
+        if abs(plain) >= 1e15:
+            return str(plain)
+        return f"{plain:,.6f}".rstrip("0").rstrip(".")
     return str(plain)
 
 
