@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -130,17 +131,26 @@ class FakeProvider:
 
 
 class RecordingProvider:
-    """Wraps a real provider and upserts every reply into the recordings file."""
+    """Wraps a real provider and upserts every reply into the recordings file.
+
+    Upsert, not append: a re-record replaces the reply under the same
+    fingerprint and keeps every other line, so recordings of questions that
+    no longer exist stay until the file is deleted. The read-modify-write of
+    the file is serialised within the process; two processes recording into
+    one file would still lose each other's lines.
+    """
 
     def __init__(self, inner: Provider, path: Path) -> None:
         self.inner = inner
         self.path = path
         self.name = inner.name
         self.model = inner.model
+        self._writing = threading.Lock()
 
     def complete(self, request: ModelRequest) -> ModelResponse:
         response = self.inner.complete(request)
-        recordings = load_recordings(self.path) if self.path.exists() else {}
-        recordings[request.fingerprint()] = to_recording(request, response, self.inner.name)
-        write_recordings(self.path, recordings)
+        with self._writing:
+            recordings = load_recordings(self.path) if self.path.exists() else {}
+            recordings[request.fingerprint()] = to_recording(request, response, self.inner.name)
+            write_recordings(self.path, recordings)
         return response

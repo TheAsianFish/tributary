@@ -197,7 +197,7 @@ build.
 
 ### The guard suite
 
-`make eval-guard` (offline, also in CI): 105 unsafe statements in
+`make eval-guard` (offline, also in CI): 112 unsafe statements in
 [`eval/guard/unsafe.yaml`](eval/guard/unsafe.yaml) and, as the benign set, the
 40 gold queries of the warehouse question set, through the guard with the
 catalog's allowlist (the five marts). Raw verdicts:
@@ -205,7 +205,7 @@ catalog's allowlist (the five marts). Raw verdicts:
 
 | | |
 |---|---|
-| Unsafe statements blocked | **105 / 105 (100%)**: dangerous functions 16, encoding tricks 11, outside the allowlist 10, session 9, DML 8, file access 8, system catalog 8, DDL 7, procedural 7, comment tricks 5, stacked 4, locking 4, privilege 4, exfiltration 4 |
+| Unsafe statements blocked | **112 / 112 (100%)**: dangerous functions 19, session 12, encoding tricks 11, outside the allowlist 11, DML 8, file access 8, system catalog 8, DDL 7, procedural 7, comment tricks 5, stacked 4, locking 4, privilege 4, exfiltration 4 |
 | Gold queries blocked (false blocks) | **0 / 40** |
 | Queries the 7B model wrote (46, repairs included) blocked | 0 / 46 |
 
@@ -215,7 +215,7 @@ through (counted by re-checking `tests/recordings/warehouse.jsonl`).
 
 ### What the database layer alone stops
 
-`make eval-guard-db`: the same 105 statements sent straight to
+`make eval-guard-db`: the same 112 statements sent straight to
 `PostgresExecutor` as the agent's role, **with the guard switched off**, on a
 plain `postgres:17` set up like CI (`tributary sample load`, `make dbt`,
 `tributary warehouse grant-agent`), statement timeout 1 s. Raw:
@@ -223,27 +223,44 @@ plain `postgres:17` set up like CI (`tributary sample load`, `make dbt`,
 
 | Outcome | Statements |
 |---|---:|
-| Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects | 51 |
+| Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects, a backend that terminated itself | 53 |
 | Refused: permission (raw, staging, superuser-only functions, other roles) | 28 |
-| Cancelled by the statement timeout | 6 |
+| Cancelled by the statement timeout | 7 |
 | Refused: read-only transaction | 2 |
-| **Ran** | **18** |
+| **Ran** | **22** |
 
-The 18 that ran are the guard's alone to stop: catalog reads
+The 22 that ran are the guard's alone to stop: catalog reads
 (`information_schema.columns`, `pg_roles`, `pg_user`, `pg_stat_activity`, a
-`UNION` appending one), `ops.quality_runs` (the role may read `ops` for
-provenance), `version()`, `inet_server_addr()`, `current_user`,
-`txid_current()`, `pg_advisory_lock`, `pg_notify` (rolled back, so never
-delivered), `pg_cancel_backend` (on the suite's made-up pid it returned
-false), `set_config` (which can lift the statement timeout inside the
-query), a three-part name for a mart (`tributary.marts.fct_edits`, which
-PostgreSQL accepts for the current database), a top-level `VALUES`, and
-both `xml` casts. None of them writes, but two are worth knowing:
+`UNION` appending one, and `pg_stat_get_activity` reached through field
+notation), `ops.quality_runs` (the role may read `ops` for provenance),
+`version()`, `inet_server_addr()`, `current_user` and its keyword forms
+`user`, `current_role` and `system_user`, `txid_current()`,
+`pg_advisory_lock`, `pg_notify` (rolled back, so never delivered),
+`pg_cancel_backend` (on the suite's made-up pid it returned false),
+`set_config` (which can lift the statement timeout inside the query), a
+three-part name for a mart (`tributary.marts.fct_edits`, which PostgreSQL
+accepts for the current database), a top-level `VALUES`, and both `xml`
+casts. None of them writes, but two are worth knowing:
 `set_config('statement_timeout', '0', true)` makes the timeout only as
 strong as the guard's ban on it, and PostgreSQL lets a role signal its own
 sessions: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity` (counted
 under "refused" above, because the first backend it killed was its own)
 would end every concurrent agent query. The guard blocks all of these.
+
+**Field notation.** The seven statements added by the review are the
+ones a reader of the guard's source would not think to try: PostgreSQL
+reads `(x).f` as the call `f(x)`, so `SELECT (10).pg_sleep` sleeps,
+`((NULL::int).pg_stat_get_activity).*` lists every backend, and
+`(pid).pg_terminate_backend` over that list kills the agent's other
+sessions, none of which contains a function call as far as sqlglot is
+concerned (they parse as a plain dotted expression). The first version of
+the guard let all three through, and the role stops none of them (sleeping,
+reading `pg_stat_activity` and signalling one's own sessions need no
+privilege). The guard now refuses every dotted expression that is not a
+column, and denies the SQL-standard keyword functions (`user` is
+`current_user`) that parse as columns. A name with four parts
+(`tributary.marts.fct_edits.wiki`) is refused by the guard too, rather than
+left for the database to reject.
 
 Two executor defects came out of this run and were fixed before the numbers
 above: a parameterless query went over the simple protocol, so a stacked
@@ -258,7 +275,9 @@ returning an error.
 (Ollama 0.40.6 on the CPU of the machine above, temperature 0, seed 0,
 16k context): every question goes through the planner, the guard and the
 agent's role, and its rows are compared with the gold query's as a multiset
-of tuples (BIRD execution accuracy). Every model call was recorded
+of tuples with numerics rounded to six decimals (execution accuracy as BIRD
+defines it, but stricter: BIRD compares sets, so duplicate rows would not
+count there). Every model call was recorded
 (`tests/recordings/warehouse.jsonl`); `make eval-warehouse` replays them.
 Raw: [`eval/results/warehouse-ollama-qwen2.5-coder-7b.json`](eval/results/warehouse-ollama-qwen2.5-coder-7b.json)
 and, for the same run on the 14B model (recordings in
@@ -266,7 +285,7 @@ and, for the same run on the 14B model (recordings in
 [`eval/results/warehouse-ollama-qwen2.5-coder-14b.json`](eval/results/warehouse-ollama-qwen2.5-coder-14b.json).
 Cost $0 (local models).
 
-| Model | Correct | Simple | Moderate | Challenging | Model calls | Repaired into a correct answer | Tokens in / out | Latency p50 / p95 |
+| Model | Correct | Simple | Moderate | Challenging | Model calls | Repaired into a correct answer | Tokens in / out | Latency per question, p50 / p95 (nearest rank, n = 40) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | qwen2.5-coder:7b (Ollama, CPU) | **25 / 40** | 9 / 12 | 13 / 20 | 3 / 8 | 46 | 1 | 122,191 / 6,987 | 37.9 s / 112.8 s |
 | qwen2.5-coder:14b (Ollama, CPU) | **31 / 40** | 9 / 12 | 18 / 20 | 4 / 8 | 42 | 1 | 110,576 / 6,764 | 80.8 s / 203.6 s |
@@ -308,8 +327,13 @@ none needed a change.
 
 The replay, which is what the tests run, reproduces the recorded run exactly:
 `make eval-warehouse` gives the same 40 verdicts and the same SQL in 2.1 s,
-against about 31 minutes live (the 14B run took 68 minutes; its recordings
-replay to the same 40 verdicts too).
+against about 31 minutes live for the 7B model (the sum of the per-question
+latencies). The 14B run took 68 minutes, and
+`TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-qwen2.5-coder-14b.jsonl
+make eval-warehouse` replays it to the same 40 verdicts too. A latency is one
+question end to end, repairs included, not one model call. The difficulty
+labels in the question file are the author's judgement, not a rubric: both
+models miss a "simple" question and answer a "challenging" one.
 
 ## Verified behaviour (M3)
 

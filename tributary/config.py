@@ -109,7 +109,7 @@ class Settings(BaseSettings):
     anthropic_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5-coder:7b"
-    # What the fake provider replays (and `make record` appends to).
+    # What the fake provider replays (and `make record` upserts into, by request fingerprint).
     recordings_path: Path = REPO_ROOT / "tests/recordings/warehouse.jsonl"
     # Relations the agent may read, as dbt schemas; everything else is blocked.
     agent_schemas: tuple[str, ...] = ("marts",)

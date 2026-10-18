@@ -4,9 +4,10 @@
 
 Each question goes through the same :class:`~tributary.agent.service.Agent`
 path as ``/query``. The predicted query's rows are compared with the gold
-query's rows as a multiset of tuples (BIRD execution accuracy: column order
-counts, row order does not, duplicates count), numbers rounded to six
-decimals; both run as the agent's role on the same database.
+query's rows as a multiset of tuples (execution accuracy as BIRD defines it,
+but stricter: column order counts, row order does not, and duplicate rows
+count, where BIRD compares sets), numbers rounded to six decimals; both run
+as the agent's role on the same database.
 
 ``--record`` wraps the live provider so every model call (repairs included)
 is stored under its request fingerprint in ``TRIBUTARY_RECORDINGS_PATH``; the

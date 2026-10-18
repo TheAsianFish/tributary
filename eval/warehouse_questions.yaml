@@ -4,10 +4,10 @@
 # check and demo script for the text-to-SQL agent, which gets the question and the
 # schema descriptions in warehouse/models/marts/_marts.yml.
 #
-# Comparison: execution accuracy as in BIRD. The candidate's result and the gold
-# result are compared as multisets of row tuples: column order matters, row order
-# does not, duplicate rows count, numerics are compared after rounding to 6
-# decimal places. Each question therefore says exactly which columns to return.
+# Comparison: execution accuracy, as BIRD defines it but stricter. The candidate's
+# result and the gold result are compared as multisets of row tuples: column order
+# matters, row order does not, duplicate rows count (BIRD compares sets, so they
+# would not there), numerics are compared after rounding to 6 decimal places. Each question therefore says exactly which columns to return.
 #
 # Checked: every gold query was run on the committed 50,000-event sample
 # (25,901 edits on 153 wikis, event_ts from 2026-10-16 23:45 to 2026-10-17 00:21

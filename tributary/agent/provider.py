@@ -69,7 +69,12 @@ class ModelRequest:
     max_tokens: int = 4096
 
     def fingerprint(self) -> str:
-        """sha256 over what the model sees; the key a recording is stored under."""
+        """sha256 over what the model sees; the key a recording is stored under.
+
+        ``max_tokens`` is left out on purpose: it changes when a reply is cut,
+        not what the model is asked, so a recording replays unchanged under a
+        different budget (a smaller one would have truncated live).
+        """
         document = {
             "system": self.system,
             "messages": [[m.role, m.content] for m in self.messages],

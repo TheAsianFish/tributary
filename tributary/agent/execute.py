@@ -14,7 +14,9 @@ guard wrongly lets through cannot do much. Every query
   name can only resolve to ``pg_catalog``, never to a look-alike in another
   schema),
 - is priced with ``EXPLAIN`` first and refused above a planner-cost ceiling,
-  so a cross join of the fact table is stopped before it starts,
+  so a cross join of the fact table is stopped before it starts (the ceiling
+  sees rows, not work: ``md5(repeat('x', 10^8))`` costs 0.01 to the planner,
+  and only the statement timeout bounds it),
 - returns at most ``row_cap`` rows; the cursor stops fetching there, and the
   result says it was cut.
 
