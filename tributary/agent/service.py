@@ -138,6 +138,8 @@ class Agent:
         try:
             result = self.executor.run(guard.sql)
         except ExecutionError as exc:
+            if not exc.repairable:
+                raise  # the deployment's fault, not the query's: reported as such
             return _sql_answer(query, "failed", exc.feedback(), request_id, sql=guard.sql)
         provenance = self.lookup(guard.tables)
         warnings = provenance_warnings(

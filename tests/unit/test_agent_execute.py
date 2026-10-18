@@ -83,7 +83,11 @@ def test_classify(exc: psycopg.Error, kind: str, sqlstate: str | None) -> None:
             ExecutionError("database", 'column "x" does not exist', "42703"),
             'PostgreSQL error (SQLSTATE 42703): column "x" does not exist',
         ),
-        (ExecutionError("connection", "cannot connect"), "PostgreSQL error: cannot connect"),
+        (
+            ExecutionError("connection", "cannot connect"),
+            "The warehouse is unreachable: cannot connect",
+        ),
+        (ExecutionError("permission", "denied"), "The agent's role lacks a privilege: denied"),
     ],
 )
 def test_feedback(error: ExecutionError, feedback: str) -> None:

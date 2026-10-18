@@ -230,3 +230,12 @@ def test_concurrent_first_requests_build_one_provider() -> None:
     for t in threads:
         t.join()
     assert len(built) == 1
+
+
+def test_sql_deployment_failure_propagates() -> None:
+    """A warehouse outage is the server's fault, never reported as a failed query."""
+    down = ExecutionError("connection", "cannot connect to the warehouse: connection refused")
+    executor = FakeExecutor(errors={GOOD_RAN: down})
+    with pytest.raises(ExecutionError) as caught:
+        make_agent(executor=executor).sql(GOOD)
+    assert caught.value is down

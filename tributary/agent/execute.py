@@ -61,8 +61,24 @@ class ExecutionError(Exception):
         self.message = message
         self.sqlstate = sqlstate
 
+    @property
+    def repairable(self) -> bool:
+        """Whether a different query could succeed where this one failed.
+
+        A syntax or column error, a timeout, a refused cost or a write in a
+        read-only transaction is the query's fault. An unreachable warehouse
+        or a missing privilege is the deployment's: the planner stops rather
+        than spend model calls on repairs, and the API reports it as its own
+        failure, not the caller's.
+        """
+        return self.kind not in ("connection", "permission")
+
     def feedback(self) -> str:
         """The error as the planner shows it to the model for a repair."""
+        if self.kind == "connection":
+            return f"The warehouse is unreachable: {self.message}"
+        if self.kind == "permission":
+            return f"The agent's role lacks a privilege: {self.message}"
         if self.kind == "timeout":
             return f"The query was cancelled by the statement timeout: {self.message}"
         if self.kind == "too_expensive":

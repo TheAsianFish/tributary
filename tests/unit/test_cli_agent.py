@@ -234,3 +234,25 @@ def test_ask_api_non_json_error_exits_two(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert out.exit_code == 2
     assert "502 from http://api.test: Bad Gateway" in out.output
+
+
+def test_catalog_unknown_relation_exits_two(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRIBUTARY_CATALOG_DIR", str(CATALOG_DIR))
+    out = CliRunner().invoke(app, ["catalog", "--relation", "marts.nope"])
+    assert out.exit_code == 2, out.output
+    assert "unknown relation 'marts.nope'" in out.stderr
+    assert "Traceback" not in out.stderr
+
+
+def test_ask_and_sql_report_an_unreachable_warehouse(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tributary.agent.execute import ExecutionError
+
+    down = ExecutionError("connection", "cannot connect to the warehouse: connection refused")
+    agent = make_agent(
+        ScriptedProvider([draft(GOOD)]), executor=FakeExecutor(errors={GOOD_RAN: down})
+    )
+    monkeypatch.setattr(cli, "_local_agent", lambda provider: agent)
+    for args in (["ask", "How many edits?"], ["sql", GOOD]):
+        out = CliRunner().invoke(app, args)
+        assert out.exit_code == 2, out.output
+        assert "error: The warehouse is unreachable: cannot connect" in out.stderr

@@ -262,3 +262,24 @@ def test_a_schema_invalid_last_reply_fails(the_catalog: Catalog) -> None:
     assert outcome.status == "failed"
     assert outcome.error is not None
     assert outcome.error.startswith("The reply did not match the JSON schema")
+
+
+@pytest.mark.parametrize("kind", ["connection", "permission"])
+def test_a_deployment_failure_is_not_repaired(the_catalog: Catalog, kind: str) -> None:
+    """An unreachable warehouse or a missing privilege stops the loop: no draft fixes it."""
+    provider = ScriptedProvider([draft(GOOD)] * 3)
+    down = ExecutionError(kind, "cannot connect to the warehouse: connection refused")  # type: ignore[arg-type]
+    executor = FakeExecutor(errors={GOOD_RAN: down})
+
+    with pytest.raises(ExecutionError) as caught:
+        planner(the_catalog, provider, executor, max_repairs=2).run("How many edits?")
+
+    assert caught.value is down
+    assert not down.repairable
+    assert len(provider.requests) == 1, "no model call was spent on a repair"
+    assert executor.ran == [GOOD_RAN]
+
+
+def test_query_errors_are_repairable() -> None:
+    for kind in ("database", "timeout", "too_expensive", "read_only"):
+        assert ExecutionError(kind, "x").repairable

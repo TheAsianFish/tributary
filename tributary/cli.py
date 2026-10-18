@@ -356,6 +356,7 @@ def ask(
     as_json: AsJson = False,
 ) -> None:
     """Answer a question with guarded SQL; prints the answer, the SQL and its provenance."""
+    from tributary.agent.execute import ExecutionError
     from tributary.agent.provider import ProviderError
 
     request_id = bind_run_id("ask")
@@ -368,6 +369,9 @@ def ask(
         except (ProviderError, FileNotFoundError) as exc:
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(2) from None
+        except ExecutionError as exc:  # unreachable warehouse or a missing privilege
+            typer.echo(f"error: {exc.feedback()}", err=True)
+            raise typer.Exit(2) from None
     _print_answer(document, as_json)
 
 
@@ -379,6 +383,8 @@ def sql_command(
     as_json: AsJson = False,
 ) -> None:
     """Run SQL through the agent's guard, role and limits (no model)."""
+    from tributary.agent.execute import ExecutionError
+
     request_id = bind_run_id("sql")
     if api:
         document = _remote(api, "/sql", {"sql": query}, api_key)
@@ -388,6 +394,9 @@ def sql_command(
             document = agent.sql(query, request_id=request_id).to_dict()
         except FileNotFoundError as exc:
             typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(2) from None
+        except ExecutionError as exc:  # unreachable warehouse or a missing privilege
+            typer.echo(f"error: {exc.feedback()}", err=True)
             raise typer.Exit(2) from None
     _print_answer(document, as_json)
 
@@ -413,8 +422,12 @@ def catalog_command(
         raise typer.Exit(2) from None
     if as_json:
         typer.echo(json.dumps(catalog.to_dict(), indent=2, ensure_ascii=False))
-    else:
+        return
+    try:
         typer.echo(catalog.render(relation or None))
+    except KeyError as exc:
+        typer.echo(f"error: {exc.args[0]}", err=True)
+        raise typer.Exit(2) from None
 
 
 @app.command()

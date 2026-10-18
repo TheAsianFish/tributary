@@ -11,9 +11,11 @@ question cannot be answered from these tables, or after ``max_repairs``
 repairs.
 
 A repair is only offered for errors the model can act on (a guard block, a
-PostgreSQL error, a timeout or a cost refusal). Provider failures are not
-repaired here: they propagate, because a retry belongs to the provider's own
-policy and a refusal should reach the caller as a refusal.
+PostgreSQL error, a timeout or a cost refusal). An unreachable warehouse or a
+privilege the agent's role lacks (``ExecutionError.repairable`` is false)
+stops the loop and propagates: no draft fixes a deployment. Provider failures
+are not repaired here either: they propagate, because a retry belongs to the
+provider's own policy and a refusal should reach the caller as a refusal.
 """
 
 from __future__ import annotations
@@ -225,6 +227,16 @@ class Planner:
                 try:
                     result = self.executor.run(guard.sql)
                 except ExecutionError as exc:
+                    if not exc.repairable:
+                        # The warehouse is down or the role is misconfigured: no draft
+                        # fixes that, and each repair would be a model call for nothing.
+                        log.warning(
+                            "planner.aborted",
+                            kind=exc.kind,
+                            attempts=len(attempts) + 1,
+                            cost_usd=round(usage.cost_usd, 6),
+                        )
+                        raise
                     error = exc.feedback()
                     attempts.append(Attempt(draft, guard, error))
                     status = "failed"

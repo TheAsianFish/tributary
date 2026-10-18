@@ -15,7 +15,9 @@ HTTP status follows who is at fault. ``/query`` answers 200 whenever the
 agent ran, with ``status`` saying whether it found an allowed query
 (``answered``, ``unanswerable``, ``blocked``, ``failed``); ``/sql`` answers
 422 when the caller's SQL is blocked or fails. A model refusal is 422, a
-provider failure 502, and no published catalog 503.
+provider failure 502, no published catalog 503, an unreachable warehouse 503
+and a privilege the agent's role lacks 500: the last two are the
+deployment's fault, so they are never reported as a failed query.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import re
+import threading
 import time
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
@@ -34,6 +37,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from tributary import __version__
+from tributary.agent.execute import ExecutionError
 from tributary.agent.provider import ProviderError, ProviderRefusal
 from tributary.agent.service import Agent
 
@@ -97,10 +101,15 @@ def create_app(agent: Agent | Callable[[], Agent], api_keys: Sequence[str]) -> F
         summary="Questions over the warehouse, answered with guarded SQL and provenance.",
     )
     holder: dict[str, Agent] = {}
+    building = threading.Lock()
 
     def get_agent() -> Agent:
+        # Handlers run in worker threads: the first concurrent requests must share one
+        # agent (and so one provider, one SDK client), not build one each.
         if "agent" not in holder:
-            holder["agent"] = agent if isinstance(agent, Agent) else agent()
+            with building:
+                if "agent" not in holder:
+                    holder["agent"] = agent if isinstance(agent, Agent) else agent()
         return holder["agent"]
 
     @app.middleware("http")
@@ -148,6 +157,19 @@ def create_app(agent: Agent | Callable[[], Agent], api_keys: Sequence[str]) -> F
     async def provider_failed(request: Request, exc: ProviderError) -> JSONResponse:
         log.warning("provider.failed", error=str(exc))
         return failure(502, f"model provider failed: {exc}", request)
+
+    @app.exception_handler(ExecutionError)
+    async def warehouse_failed(request: Request, exc: ExecutionError) -> JSONResponse:
+        # Only the errors no query can repair reach here (the agent answers the others).
+        log.warning("warehouse.failed", kind=exc.kind, error=exc.message)
+        if exc.kind == "connection":
+            return failure(503, f"warehouse unavailable: {exc.message}", request)
+        return failure(
+            500,
+            f"the agent's role is misconfigured ({exc.kind}): {exc.message}; "
+            "run `tributary warehouse grant-agent`",
+            request,
+        )
 
     @app.get("/health")
     def health() -> dict[str, str]:

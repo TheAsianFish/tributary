@@ -19,6 +19,7 @@ from tests.unit.agent_doubles import (
     result,
 )
 from tributary import __version__
+from tributary.agent.execute import ExecutionError
 from tributary.agent.provider import ProviderError, ProviderRefusal
 from tributary.agent.service import Agent, CatalogSource
 from tributary.api.app import create_app, parse_keys, request_id_for
@@ -257,4 +258,54 @@ def test_agent_factory_is_called_once() -> None:
     assert built == []
     c.get("/catalog", headers=auth())
     c.get("/freshness", headers=auth())
+    assert len(built) == 1
+
+
+@pytest.mark.parametrize(
+    ("kind", "status", "start"),
+    [
+        ("connection", 503, "warehouse unavailable: "),
+        ("permission", 500, "the agent's role is misconfigured (permission): "),
+    ],
+)
+def test_deployment_failures_are_the_servers_fault(kind: str, status: int, start: str) -> None:
+    error = ExecutionError(kind, "boom")  # type: ignore[arg-type]
+    provider = ScriptedProvider([draft(GOOD)] * 3)
+    agent = make_agent(provider, executor=FakeExecutor(errors={GOOD_RAN: error}))
+    c = client(agent)
+
+    for path, body in (("/query", {"question": "q"}), ("/sql", {"sql": GOOD})):
+        response = c.post(path, json=body, headers=auth(**{"X-Request-ID": "d1"}))
+        assert response.status_code == status, response.text
+        assert response.json()["detail"].startswith(start)
+        assert response.json()["request_id"] == "d1"
+        assert response.headers["X-Request-ID"] == "d1"
+    assert len(provider.requests) == 1, "the outage was not repaired with more model calls"
+
+
+def test_concurrent_first_requests_build_one_agent() -> None:
+    import threading
+    import time
+
+    built: list[Agent] = []
+    lock = threading.Lock()
+
+    def factory() -> Agent:
+        time.sleep(0.05)  # long enough for every thread to arrive before the first returns
+        with lock:
+            built.append(make_agent())
+        return built[-1]
+
+    c = TestClient(create_app(factory, [KEY]))
+    statuses: list[int] = []
+
+    def hit() -> None:
+        statuses.append(c.get("/catalog", headers=auth()).status_code)
+
+    threads = [threading.Thread(target=hit) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert statuses == [200] * 8
     assert len(built) == 1
