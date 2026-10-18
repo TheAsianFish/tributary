@@ -34,7 +34,18 @@ from tributary.agent.roles import agent_role_statements
         (UUID(int=1), "00000000-0000-0000-0000-000000000001"),
         ([Decimal("1"), (2, None)], [1, [2, None]]),
         ({1: Decimal("2.5")}, {"1": 2.5}),
-        (b"ab", "b'ab'"),
+        # bytea as PostgreSQL prints it; infinities and NaN as PostgreSQL spells them
+        (b"ab", "\\x6162"),
+        (memoryview(b"\x00\xff"), "\\x00ff"),
+        (float("inf"), "Infinity"),
+        (float("-inf"), "-Infinity"),
+        (float("nan"), "NaN"),
+        (Decimal("Infinity"), "Infinity"),
+        (Decimal("-Infinity"), "-Infinity"),
+        (Decimal("NaN"), "NaN"),
+        # a non-integral numeric is a float, digits a double cannot hold included
+        (Decimal("502.5192849696922899"), 502.5192849696923),
+        (Decimal("1.10"), 1.1),
     ],
 )
 def test_jsonable(value: object, plain: object) -> None:
@@ -194,8 +205,9 @@ def test_plan_cost_without_a_plan_is_an_execution_error(document: object) -> Non
         (Decimal("Infinity"), "Infinity"),
         (Decimal("-Infinity"), "-Infinity"),
         (Decimal("NaN"), "NaN"),
-        (float("inf"), "inf"),
-        (float("nan"), "nan"),
+        (float("inf"), "Infinity"),
+        (float("-inf"), "-Infinity"),
+        (float("nan"), "NaN"),
     ],
 )
 def test_non_finite_numbers_are_json_strings(value: object, expected: str) -> None:

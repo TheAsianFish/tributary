@@ -104,16 +104,28 @@ def jsonable(value: object) -> object:
     """A database value as JSON: exact integers stay integers, everything else is plain.
 
     JSON has no Infinity or NaN, and PostgreSQL's numeric and float types have
-    both, so those become the strings PostgreSQL prints for them.
+    both, so those become the strings PostgreSQL prints for them (``Infinity``,
+    ``-Infinity``, ``NaN``). A ``bytea`` is printed as PostgreSQL does, hex
+    with a ``\\x`` prefix. A non-integral numeric becomes a float: ``avg()`` of
+    an integer column is a 16-digit numeric, and a client expects a number,
+    not a string, so the digits a double cannot hold are given up.
     """
     if value is None or isinstance(value, bool | int | str):
         return value
     if isinstance(value, float):
-        return value if math.isfinite(value) else str(value)
+        if math.isnan(value):
+            return "NaN"
+        if math.isinf(value):
+            return "Infinity" if value > 0 else "-Infinity"
+        return value
     if isinstance(value, Decimal):
-        if not value.is_finite():
-            return str(value)
+        if value.is_nan():
+            return "NaN"
+        if value.is_infinite():
+            return "Infinity" if value > 0 else "-Infinity"
         return int(value) if value == value.to_integral_value() else float(value)
+    if isinstance(value, bytes | bytearray | memoryview):
+        return "\\x" + bytes(value).hex()
     if isinstance(value, datetime | date | dtime):
         return value.isoformat()
     if isinstance(value, timedelta):
