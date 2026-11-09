@@ -157,6 +157,18 @@ def test_fallback_served_model_is_priced_at_its_own_rate() -> None:
     assert response.usage.cost_usd == pytest.approx(2.00)
 
 
+@pytest.mark.parametrize(
+    ("model", "cache_read_usd"),
+    [("claude-opus-5-5", 0.20), ("claude-sonnet-5-5", 0.10), ("claude-haiku-5-5", 0.01)],
+)
+def test_cache_reads_are_priced_at_each_models_rate(model: str, cache_read_usd: float) -> None:
+    # A fallback can be served by a cheaper model, and the cached schema prefix is most of
+    # every call's input, so a wrong cache-read rate skews every reported cost.
+    usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 1_000_000}
+    provider, _ = provider_for(ok(message_json(model=model, usage=usage)))
+    assert provider.complete(REQUEST).usage.cost_usd == pytest.approx(cache_read_usd)
+
+
 def test_unknown_model_is_unpriced_not_guessed() -> None:
     provider, _ = provider_for(ok(message_json(model="claude-future-9")))
     usage = provider.complete(REQUEST).usage
