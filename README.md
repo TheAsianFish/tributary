@@ -308,8 +308,8 @@ PostgreSQL; `make test-integration` runs against Compose.
 ## Roadmap
 
 M3 the guarded agent and API (done on local-model recordings; the Claude
-run of the 40 questions waits for a key); M4 BIRD harness and schema linking; M5 fault-injection and
-scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
+run of the 40 questions waits for a key); M4 BIRD harness and schema
+linking; M5 fault-injection and scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
 over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.
