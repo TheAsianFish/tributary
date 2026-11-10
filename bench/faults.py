@@ -9,15 +9,31 @@ each kill the service stays down for ``downtime`` seconds and is then started
 again on the same volumes.
 
 A kill between two micro-batches tests little: the restarted job finds every
-batch committed and replays nothing. So a stream kill waits (up to 75 s, more
-than the lake's one-minute trigger) for a batch to be *in flight*: the query's
-checkpoint has an entry in ``offsets/`` (the batch's planned offsets, written
-before it runs) with no matching entry in ``commits/`` (written after the
-sink returns). The first and third kills
-target the warehouse query, the second the lake query, whose commits are
-rarer (one a minute). On restart Spark re-runs that batch: the warehouse's
-primary key absorbs rows written before the kill, and Iceberg's sink skips
-the append if the snapshot for that batch id was already committed.
+batch committed and replays nothing. Before batch N runs, Spark writes its
+planned offsets to ``offsets/N``; after the sink returns it writes
+``commits/N``; a restart re-runs any N without a commit. So each stream kill
+is aimed at a point inside that window (:data:`KILL_MODES`):
+
+``warehouse-written``
+    Right after the warehouse sink has written batch N: its row in
+    ``ops.stream_progress`` appears once every partition has committed, and
+    the sink returns to Spark only after that. The rows are in PostgreSQL,
+    the commit is not, so the restarted job writes them again and the primary
+    key must absorb every one.
+``lake-committed``
+    Right after the Iceberg table's metadata pointer moves in the JDBC
+    catalog: the lake batch's snapshot is committed, Spark's commit is not.
+    The replay must find the snapshot carrying its batch id and skip the
+    append; afterwards exactly one snapshot may carry that id.
+``warehouse``
+    Anywhere inside a warehouse batch (``offsets/N`` without ``commits/N``),
+    usually before the write.
+
+The detections poll PostgreSQL every 2 ms and the kill is a write to the
+container's ``cgroup.kill`` (:class:`bench.stack.CgroupKiller`; ``docker
+kill`` where sudo is not available, which is slow enough to lose the race).
+Each fault records whether its window was hit: the checkpoint read right
+after the kill shows the batch planned but not committed.
 
 Afterwards every acknowledged id must be in ``raw.recentchange`` and in the
 Iceberg table exactly once, and no Iceberg snapshot may share a streaming
@@ -56,7 +72,8 @@ class FaultConfig:
     in_flight_timeout_s: float = 75.0
     """Longer than the lake's one-minute trigger, so a lake batch is always caught."""
     land_timeout_s: float = 600.0
-    targets: tuple[str, ...] = ("warehouse", "lake", "warehouse")
+    targets: tuple[str, ...] = ("warehouse-written", "lake-committed", "warehouse")
+    """Where each stream kill lands; see :data:`KILL_MODES`."""
 
 
 def checkpoint_state(cid: str, query: str) -> tuple[int | None, int | None]:
@@ -90,6 +107,34 @@ def wait_in_flight(cid: str, query: str, timeout: float) -> tuple[bool, int | No
         if in_flight(offsets, commits):
             return True, offsets
         time.sleep(0.05)
+    return False, None
+
+
+KILL_MODES = ("warehouse-written", "lake-committed", "warehouse", "lake")
+
+PROGRESS_SQL = (
+    "SELECT coalesce(max(batch_id), -1) FROM ops.stream_progress WHERE query = 'warehouse'"
+)
+METADATA_SQL = (
+    "SELECT metadata_location FROM iceberg_catalog.iceberg_tables"
+    " WHERE table_namespace = 'raw' AND table_name = 'recentchange'"
+)
+
+
+def wait_for_change(conninfo: str, sql: str, timeout: float) -> tuple[bool, object]:
+    """Poll ``sql`` (one value) every 2 ms until it differs from its first value."""
+    import psycopg
+
+    deadline = time.monotonic() + timeout
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        row = conn.execute(sql).fetchone()
+        first = row[0] if row else None
+        while time.monotonic() < deadline:
+            row = conn.execute(sql).fetchone()
+            value = row[0] if row else None
+            if value != first:
+                return True, value
+            time.sleep(0.002)
     return False, None
 
 
@@ -129,7 +174,7 @@ def run_scenario(
             target = int(point * config.events)
             while gen.sent < target:
                 time.sleep(0.05)
-            faults.append(_inject(config, scenario, i, gen.sent))
+            faults.append(_inject(config, settings, scenario, i, gen.sent))
     result = gen.join()
     produced_s = time.time() - gen.started_at
     pg_rows, pg_wait = verify.wait_until(
@@ -149,6 +194,11 @@ def run_scenario(
     pg = verify.compare(prefix, result.delivered, verify.pg_ids(settings.pg_conninfo, prefix))
     lake = verify.compare(prefix, result.delivered, verify.lake_ids(settings, prefix))
     logs = observe.read_log(stack.container_id("stream"), since, until)
+    for fault in faults:
+        if fault.get("target") == "lake-committed" and fault.get("batch_id") is not None:
+            fault["snapshots_with_batch_id"] = lake_epoch_snapshots(
+                settings, int(fault["batch_id"]), since
+            )
     return {
         "scenario": scenario,
         "rep": rep,
@@ -169,32 +219,97 @@ def run_scenario(
             "batches_committed_twice": iceberg_double_commits(settings, since),
         },
         "latency": verify.latency(settings.pg_conninfo, prefix).__dict__,
+        "latency_after_30s": verify.steady_latency(settings.pg_conninfo, prefix).__dict__,
         "lake_latency": lake_latency(settings, prefix),
         "stream_log": summarise_log(logs),
         "stream_restarts_by_docker": _restart_count(stack.container_id("stream")) - restarts_before,
     }
 
 
-def _inject(config: FaultConfig, scenario: str, index: int, sent: int) -> dict[str, Any]:
+def _inject(
+    config: FaultConfig, settings: Settings, scenario: str, index: int, sent: int
+) -> dict[str, Any]:
     service = "stream" if scenario == "stream" else "kafka"
     fault: dict[str, Any] = {"service": service, "point": config.points[index], "sent": sent}
     if service == "stream":
         stack.wait_healthy("stream")
         cid = stack.container_id("stream")
-        query = config.targets[index % len(config.targets)]
-        found, batch = wait_in_flight(cid, query, config.in_flight_timeout_s)
-        fault.update(target=query, in_flight=found, batch_id=batch)
+        mode = config.targets[index % len(config.targets)]
+        timeout = config.in_flight_timeout_s
+        killer = stack.CgroupKiller(cid) if stack.CgroupKiller.available(cid) else None
+        fault["kill_method"] = "cgroup.kill" if killer is not None else "docker kill"
+        if mode == "warehouse-written":
+            found, value = wait_for_change(settings.pg_conninfo, PROGRESS_SQL, timeout)
+            fault.update(target=mode, in_flight=found, batch_id=value)
+        elif mode == "lake-committed":
+            # The snapshot's batch id is read from the offsets log just after the kill.
+            found, _ = wait_for_change(settings.pg_conninfo, METADATA_SQL, timeout)
+            fault.update(target=mode, in_flight=found)
+        else:
+            found, batch = wait_in_flight(cid, mode, timeout)
+            fault.update(target=mode, in_flight=found, batch_id=batch)
     else:
+        killer = None
         stack.wait_healthy("kafka")
-    fault["killed_at"] = stack.kill(service)
+    fault["killed_at"] = killer.kill() if killer is not None else stack.kill(service)
+    if fault.get("target") in ("warehouse-written", "lake-committed"):
+        query = "warehouse" if fault["target"] == "warehouse-written" else "lake"
+        offsets, commits = _checkpoint_after_kill(stack.container_id("stream"), query)
+        fault.update(offsets_after_kill=offsets, commits_after_kill=commits)
+        if query == "lake":
+            fault["batch_id"] = offsets
     time.sleep(config.downtime_s)
     started = stack.start(service, wait=False)
+    if killer is not None:
+        killer.restore()
     healthy_s = stack.wait_healthy(service, timeout=300)
     fault.update(
         started_at=started, healthy_after_s=round(time.time() - started, 1), waited_s=healthy_s
     )
     log.info("bench.fault", **{k: v for k, v in fault.items() if k != "killed_at"})
     return fault
+
+
+def _checkpoint_after_kill(cid: str, query: str) -> tuple[int | None, int | None]:
+    """The query's newest offsets and commits entries, read from the stopped container.
+
+    ``docker exec`` needs a running container, so the volume is read through
+    a throwaway one: offsets ahead of commits means the restart will re-run
+    that batch.
+    """
+    image = stack.subprocess_run(["docker", "inspect", "-f", "{{.Config.Image}}", cid]).strip()
+    base = f"{CHECKPOINTS}/{query}"
+    out = stack.subprocess_run(
+        [
+            "docker",
+            "run",
+            "--rm",
+            "--volumes-from",
+            cid,
+            "--entrypoint",
+            "sh",
+            image,
+            "-c",
+            f"ls {base}/offsets; echo --; ls {base}/commits",
+        ]
+    )
+    offsets_part, _, commits_part = out.partition("--")
+    return _max_id(offsets_part), _max_id(commits_part)
+
+
+def lake_epoch_snapshots(settings: Settings, epoch: int, since: float) -> int:
+    """How many Iceberg append snapshots since ``since`` carry streaming batch ``epoch``."""
+    from tributary.lake.trino_client import fetch
+
+    table = settings.trino_lake_table.rsplit(".", 1)
+    snapshots = f'{table[0]}."{table[1]}$snapshots"'
+    rows = fetch(
+        settings,
+        f"SELECT count(*) FROM {snapshots} WHERE operation = 'append'"
+        " AND summary['spark.sql.streaming.epochId'] = ? AND committed_at >= from_unixtime(?)",
+        [str(epoch), since - 600],
+    )
+    return int(str(rows[0][0])) if rows else 0
 
 
 def iceberg_double_commits(settings: Settings, since: float) -> list[dict[str, Any]]:

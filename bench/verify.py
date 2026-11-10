@@ -203,3 +203,21 @@ def truncate_landing(conninfo: str) -> None:
     """Empty ``raw.recentchange`` and ``ops.stream_progress`` (benchmark stacks only)."""
     with psycopg.connect(conninfo) as conn:
         conn.execute("TRUNCATE raw.recentchange, ops.stream_progress")
+
+
+def steady_latency(conninfo: str, prefix: str, skip_s: float = 30.0) -> Latency:
+    """:func:`latency` of the run's rows produced ``skip_s`` or more after its first event.
+
+    A run that begins right after the job (re)started includes its warm-up
+    (JIT, first micro-batches, the lake's first trigger); this leaves it out.
+    """
+    low, high = id_range(prefix)
+    with psycopg.connect(conninfo) as conn:
+        row = conn.execute(
+            "SELECT extract(epoch FROM min(kafka_ts)) FROM raw.recentchange"
+            " WHERE event_id BETWEEN %s AND %s",
+            (low, high),
+        ).fetchone()
+    if row is None or row[0] is None:
+        return Latency(0, None, None, None, None, None, None)
+    return latency(conninfo, prefix, float(row[0]) + skip_s)

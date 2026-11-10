@@ -176,3 +176,67 @@ def subprocess_run(argv: Sequence[str], timeout: float = 60) -> str:
     return subprocess.run(
         list(argv), capture_output=True, text=True, check=True, timeout=timeout
     ).stdout
+
+
+class CgroupKiller:
+    """SIGKILL every process of a container within a millisecond of :meth:`kill`.
+
+    ``docker kill`` goes through the CLI and the daemon, tens of milliseconds:
+    long enough for Spark to write the commit the benchmark is trying to beat.
+    Writing ``1`` to the container's cgroup v2 ``cgroup.kill`` kills all of its
+    processes at once; it needs root, so a ``sudo -n tee`` is opened in advance
+    and the kill is a single write to its stdin. :meth:`available` says whether
+    this machine allows it (passwordless sudo and cgroup v2); otherwise the
+    benchmark falls back to ``docker kill`` and records that it did.
+
+    Docker sees the container's processes die and would restart it at once under
+    ``restart: unless-stopped``, so the policy is suspended until :meth:`restore`.
+    """
+
+    def __init__(self, container: str) -> None:
+        from bench.observe import CGROUP_ROOT
+
+        self.container = container
+        self.path = CGROUP_ROOT / f"docker-{container}.scope" / "cgroup.kill"
+        self._policy = subprocess_run(
+            ["docker", "inspect", "-f", "{{.HostConfig.RestartPolicy.Name}}", container]
+        ).strip()
+        subprocess_run(["docker", "update", "--restart", "no", container])
+        self._tee = subprocess.Popen(
+            ["sudo", "-n", "tee", str(self.path)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    @staticmethod
+    def available(container: str) -> bool:
+        from bench.observe import CGROUP_ROOT
+
+        if not (CGROUP_ROOT / f"docker-{container}.scope" / "cgroup.kill").exists():
+            return False
+        return (
+            subprocess.run(["sudo", "-n", "true"], capture_output=True, check=False).returncode == 0
+        )
+
+    def kill(self) -> float:
+        """Kill now; returns ``time.time()`` of the write."""
+        assert self._tee.stdin is not None
+        at = time.time()
+        self._tee.stdin.write(b"1\n")
+        self._tee.stdin.flush()
+        self._tee.stdin.close()
+        self._tee.wait(10)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            state = subprocess_run(
+                ["docker", "inspect", "-f", "{{.State.Running}}", self.container]
+            )
+            if state.strip() == "false":
+                break
+            time.sleep(0.1)
+        return at
+
+    def restore(self) -> None:
+        if self._policy:
+            subprocess_run(["docker", "update", "--restart", self._policy, self.container])

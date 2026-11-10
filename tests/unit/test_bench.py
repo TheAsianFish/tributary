@@ -710,3 +710,19 @@ class TestLogTail:
         tail.feed('{"event": "a"}', received=1.0)
         tail.get("a").clear()
         assert len(tail.get("a")) == 1
+
+
+class TestCheckpointWindow:
+    def test_in_flight_needs_offsets_ahead_of_commits(self) -> None:
+        from bench.faults import in_flight
+
+        assert in_flight(5, 4)
+        assert in_flight(0, None)
+        assert not in_flight(5, 5)
+        assert not in_flight(None, None)
+
+    def test_max_id_ignores_crc_and_temporary_files(self) -> None:
+        from bench.faults import _max_id
+
+        assert _max_id("0\n1\n12\n.12.crc\n12.tmp\n") == 12
+        assert _max_id("") is None
