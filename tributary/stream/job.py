@@ -109,13 +109,22 @@ def parsed_events(
 def start_warehouse_query(
     spark: SparkSession, settings: Settings, *, available_now: bool = False
 ) -> StreamingQuery:
-    """Start Kafka, parse, dedup, PostgreSQL as the ``warehouse`` query."""
+    """Start Kafka, parse, dedup, PostgreSQL as the ``warehouse`` query.
+
+    ``settings.stream_sink`` swaps the write for the benchmark's stage ceilings:
+    ``python`` hands every row to the Python workers and drops it, ``noop`` is
+    Spark's own sink (the rows never leave the JVM). Neither lands anything.
+    """
     events = parsed_events(spark, settings)
-    writer = (
-        events.writeStream.queryName(QUERY_NAME)
-        .foreachBatch(PostgresSink(settings.pg_conninfo, QUERY_NAME))
-        .option("checkpointLocation", str(settings.checkpoint_dir))
-    )
+    stream = events.writeStream.queryName(QUERY_NAME)
+    if settings.stream_sink == "noop":
+        stream = stream.format("noop")
+    else:
+        discard = settings.stream_sink == "python"
+        stream = stream.foreachBatch(
+            PostgresSink(settings.pg_conninfo, QUERY_NAME, discard=discard)
+        )
+    writer = stream.option("checkpointLocation", str(settings.checkpoint_dir))
     if available_now:
         writer = writer.trigger(availableNow=True)
     else:

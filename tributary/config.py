@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     watermark_delay: str = "10 minutes"
     trigger_interval: str = "5 seconds"
     max_offsets_per_trigger: int = Field(default=20_000, ge=1)
+    # Where the warehouse query writes: postgres (the product), or, for the scaling
+    # benchmark's stage ceilings, python (rows handed to the Python workers and
+    # discarded) and noop (Spark's noop sink: Kafka read, parse, dedup, no write).
+    stream_sink: Literal["postgres", "python", "noop"] = "postgres"
     spark_master: str = "local[3]"
     # Maven coordinates resolved at start-up; empty when the jars are already on the
     # classpath (the stream image bakes them into /opt/spark/jars).
