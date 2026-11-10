@@ -4,7 +4,11 @@ Two sets go through :class:`tributary.agent.guard.Guard`: the adversarial suite
 in ``eval/guard/unsafe.yaml`` and a benign set, the gold SQL of the warehouse
 question set (``eval/warehouse_questions.yaml``, or any ``--benign`` files).
 A guard that blocks everything would pass the first half, so the second half
-is the check that it still lets the agent answer questions.
+is the check that it still lets the agent answer questions. A second benign
+set is BIRD Mini-Dev's gold SQL (the 500 official queries and the verified
+corrected ones), each judged with its own database's tables as the allowlist,
+as the benchmark harness runs them; its verdicts go to
+``eval/results/guard-bird.json``.
 
 The run is pure and offline (no database); the verdicts are written to
 ``eval/results/guard.json`` with sorted keys and no timestamps, so a rerun on
@@ -33,6 +37,7 @@ ROOT = Path(__file__).resolve().parent.parent
 UNSAFE_PATH = ROOT / "eval" / "guard" / "unsafe.yaml"
 BENIGN_PATH = ROOT / "eval" / "warehouse_questions.yaml"
 RESULT_PATH = ROOT / "eval" / "results" / "guard.json"
+BIRD_RESULT_PATH = ROOT / "eval" / "results" / "guard-bird.json"
 
 # The agent's allowlist is the catalog's relations; the committed fixture is the
 # published catalog of the sample, so the eval needs no database.
@@ -192,6 +197,25 @@ def _check_unique(items: Sequence[Item], path: Path) -> None:
         raise ValueError(f"{path}: duplicate ids: {', '.join(duplicates)}")
 
 
+def evaluate_bird(max_rows: int = 100_000) -> dict[str, dict[str, object]]:
+    """BIRD gold SQL through the guard, per track, each with its database's allowlist."""
+    from eval.bird import data
+    from eval.bird.load import load_catalogs
+
+    catalogs = load_catalogs()
+    guards = {db: Guard(c.relations(), max_rows=max_rows) for db, c in catalogs.items()}
+    out: dict[str, dict[str, object]] = {}
+    for track in data.TRACKS:
+        blocked = []
+        questions = data.questions(track)
+        for q in questions:
+            result = guards[q.db_id].check(q.sql)
+            if not result.allowed:
+                blocked.append({"id": q.id, "db_id": q.db_id, "reasons": list(result.reasons)})
+        out[track] = {"total": len(questions), "blocked": len(blocked), "items": blocked}
+    return out
+
+
 def render(report: GuardReport) -> str:
     lines: list[str] = []
     total = len(report.unsafe)
@@ -222,6 +246,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--max-rows", type=int, default=1000)
     parser.add_argument("--output", type=Path, default=RESULT_PATH)
+    parser.add_argument("--no-bird", action="store_true", help="skip the BIRD gold benign set")
     args = parser.parse_args(argv)
 
     # sqlglot warns on every statement it falls back to exp.Command for; those are the
@@ -251,7 +276,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report.to_json(), indent=2, sort_keys=True) + "\n")
     print(f"wrote {_display(args.output)}")
-    return 0 if report.passed else 1
+    bird_passed = True
+    if not args.no_bird:
+        bird = evaluate_bird()
+        for track, entry in bird.items():
+            print(f"BIRD {track} gold false blocks {entry['blocked']}/{entry['total']}")
+            for item in entry["items"]:  # type: ignore[attr-defined]
+                print(f"  {item['db_id']}:{item['id']}: {'; '.join(item['reasons'])}")
+        bird_passed = all(entry["blocked"] == 0 for entry in bird.values())
+        # Beside --output, so a run writing elsewhere never touches the committed file.
+        bird_output = args.output.with_name(BIRD_RESULT_PATH.name)
+        bird_output.write_text(json.dumps(bird, indent=2, sort_keys=True) + "\n")
+        print(f"wrote {_display(bird_output)}")
+    return 0 if report.passed and bird_passed else 1
 
 
 def _display(path: Path) -> str:
