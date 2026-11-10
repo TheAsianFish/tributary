@@ -2,8 +2,8 @@
   "corrected": {
     "by_status": {
       "mismatch": 15,
-      "postgres_error": 36,
-      "verified": 447
+      "postgres_error": 34,
+      "verified": 449
     },
     "differs_from_official": 117,
     "items": [
@@ -63,11 +63,12 @@
       },
       {
         "db_id": "california_schools",
-        "error": "PostgreSQL error (SQLSTATE 42703): column sc.District does not exist",
+        "differs_from_official": false,
         "id": 25,
-        "postgres": "SELECT s.sname, sc.fundingtype FROM satscores AS s JOIN schools AS sc ON s.cds = sc.cdscode WHERE sc.\"District\" ILIKE 'Riverside%' AND s.rtype = 'S' GROUP BY s.sname, sc.fundingtype HAVING AVG(s.avgscrmath) > 400",
+        "postgres": "SELECT s.sname, sc.fundingtype FROM satscores AS s JOIN schools AS sc ON s.cds = sc.cdscode WHERE sc.district ILIKE 'Riverside%' AND s.rtype = 'S' GROUP BY s.sname, sc.fundingtype HAVING AVG(s.avgscrmath) > 400",
+        "rows": 6,
         "sqlite": "SELECT s.`sname`,\n       sc.`FundingType`\nFROM satscores AS s\nJOIN schools  AS sc\n  ON s.`cds` = sc.`CDSCode`\nWHERE sc.`District` LIKE 'Riverside%'   AND s.rtype = 'S'\nGROUP BY s.`sname`, sc.`FundingType`\nHAVING AVG(s.`AvgScrMath`) > 400;",
-        "status": "postgres_error"
+        "status": "verified"
       },
       {
         "db_id": "california_schools",
@@ -424,7 +425,7 @@
         "db_id": "financial",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 129,
-        "postgres": "SELECT t1.a2 FROM district AS t1 INNER JOIN account AS t2 ON t1.district_id = t2.district_id INNER JOIN trans AS t3 ON t2.account_id = t3.account_id WHERE t3.type = 'VYDAJ' AND T3.date ILIKE '1996-01%' ORDER BY t3.amount DESC NULLS LAST LIMIT 10",
+        "postgres": "SELECT t1.a2 FROM district AS t1 INNER JOIN account AS t2 ON t1.district_id = t2.district_id INNER JOIN trans AS t3 ON t2.account_id = t3.account_id WHERE t3.type = 'VYDAJ' AND t3.date ILIKE '1996-01%' ORDER BY t3.amount DESC NULLS LAST LIMIT 10",
         "sqlite": "SELECT T1.A2 FROM district AS T1 INNER JOIN account AS T2 ON T1.district_id = T2.district_id INNER JOIN trans AS T3 ON T2.account_id = T3.account_id WHERE T3.type = 'VYDAJ' AND T3.date LIKE '1996-01%' ORDER BY T3.amount DESC LIMIT 10",
         "status": "postgres_error"
       },
@@ -511,11 +512,12 @@
       },
       {
         "db_id": "financial",
-        "error": "PostgreSQL error (SQLSTATE 42601): syntax error at or near \"order\"",
+        "differs_from_official": false,
         "id": 173,
-        "postgres": "SELECT t1.frequency, t2.k_symbol FROM account AS t1 INNER JOIN (SELECT account_id, k_symbol, SUM(amount) AS total_amount FROM order GROUP BY account_id, k_symbol) AS t2 ON t1.account_id = t2.account_id WHERE t1.account_id = 3 AND t2.total_amount = 3539",
+        "postgres": "SELECT t1.frequency, t2.k_symbol FROM account AS t1 INNER JOIN (SELECT account_id, k_symbol, SUM(amount) AS total_amount FROM \"order\" GROUP BY account_id, k_symbol) AS t2 ON t1.account_id = t2.account_id WHERE t1.account_id = 3 AND t2.total_amount = 3539",
+        "rows": 1,
         "sqlite": "SELECT T1.frequency, T2.k_symbol FROM account AS T1 INNER JOIN (SELECT account_id, k_symbol, SUM(amount) AS total_amount FROM \"order\" GROUP BY account_id, k_symbol) AS T2 ON T1.account_id = T2.account_id WHERE T1.account_id = 3 AND T2.total_amount = 3539",
-        "status": "postgres_error"
+        "status": "verified"
       },
       {
         "db_id": "financial",
@@ -1124,7 +1126,7 @@
         "db_id": "card_games",
         "differs_from_official": false,
         "id": 408,
-        "postgres": "SELECT COUNT(DISTINCT t1.id) FROM cards AS t1 INNER JOIN rulings AS t2 ON t1.uuid = t2.uuid WHERE (t1.power IS NULL OR t1.power = '*') AND T2.text ILIKE '%triggered ability%'",
+        "postgres": "SELECT COUNT(DISTINCT t1.id) FROM cards AS t1 INNER JOIN rulings AS t2 ON t1.uuid = t2.uuid WHERE (t1.power IS NULL OR t1.power = '*') AND t2.text ILIKE '%triggered ability%'",
         "rows": 1,
         "sqlite": "SELECT Count(DISTINCT T1.id) FROM cards AS T1 INNER JOIN rulings AS T2 ON T1.uuid = T2.uuid WHERE (T1.power IS NULL OR T1.power = '*') AND T2.text LIKE '%triggered ability%'",
         "status": "verified"
@@ -1616,7 +1618,7 @@
         "db_id": "codebase_community",
         "differs_from_official": true,
         "id": 586,
-        "postgres": "SELECT t3.displayname FROM posts AS t1 INNER JOIN votes AS t2 ON t1.id = t2.postid INNER JOIN users AS t3 ON t3.id = t2.userid WHERE t2.bountyamount = 50 AND T1.Title ILIKE '%variance%'",
+        "postgres": "SELECT t3.displayname FROM posts AS t1 INNER JOIN votes AS t2 ON t1.id = t2.postid INNER JOIN users AS t3 ON t3.id = t2.userid WHERE t2.bountyamount = 50 AND t1.title ILIKE '%variance%'",
         "rows": 2,
         "sqlite": "SELECT T3.DisplayName FROM posts AS T1 INNER JOIN votes AS T2 ON T1.Id = T2.PostId INNER JOIN users AS T3 ON T3.Id = T2.UserId WHERE T2.BountyAmount = 50 AND T1.Title LIKE '%variance%'",
         "status": "verified"
@@ -2395,7 +2397,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 861,
-        "postgres": "SELECT t2.number FROM qualifying AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 903 AND T1.q3 ILIKE '1:54%'",
+        "postgres": "SELECT t2.number FROM qualifying AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 903 AND t1.q3 ILIKE '1:54%'",
         "rows": 2,
         "sqlite": "SELECT T2.number FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 903 AND T1.q3 LIKE '1:54%'",
         "status": "verified"
@@ -2422,7 +2424,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 866,
-        "postgres": "SELECT DISTINCT t2.forename, t2.surname, t2.url FROM laptimes AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 161 AND T1.time ILIKE '1:27%'",
+        "postgres": "SELECT DISTINCT t2.forename, t2.surname, t2.url FROM laptimes AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 161 AND t1.time ILIKE '1:27%'",
         "rows": 9,
         "sqlite": "SELECT DISTINCT T2.forename, T2.surname, T2.url FROM lapTimes AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 161 AND T1.time LIKE '1:27%'",
         "status": "verified"
@@ -2449,7 +2451,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 872,
-        "postgres": "SELECT t2.code FROM qualifying AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 45 AND T1.q3 ILIKE '1:33%'",
+        "postgres": "SELECT t2.code FROM qualifying AS t1 INNER JOIN drivers AS t2 ON t2.driverid = t1.driverid WHERE t1.raceid = 45 AND t1.q3 ILIKE '1:33%'",
         "rows": 1,
         "sqlite": "SELECT T2.code FROM qualifying AS T1 INNER JOIN drivers AS T2 ON T2.driverId = T1.driverId WHERE T1.raceId = 45 AND T1.q3 LIKE '1:33%'",
         "status": "verified"
@@ -2763,7 +2765,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 959,
-        "postgres": "SELECT t1.fastestlap FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid WHERE t2.year = 2009 AND T1.time ILIKE '_:%:__.___'",
+        "postgres": "SELECT t1.fastestlap FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid WHERE t2.year = 2009 AND t1.time ILIKE '_:%:__.___'",
         "rows": 16,
         "sqlite": "SELECT T1.fastestLap FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId WHERE T2.year = 2009 AND T1.time LIKE '_:%:__.___'",
         "status": "verified"
@@ -2787,7 +2789,7 @@
       },
       {
         "db_id": "formula_1",
-        "error": "PostgreSQL error (SQLSTATE 22P02): invalid input syntax for type integer: \":0\"",
+        "error": "PostgreSQL error (SQLSTATE 22P02): invalid input syntax for type integer: \":2\"",
         "id": 963,
         "postgres": "SELECT COUNT(DISTINCT t1.driverid) FROM drivers AS t1 INNER JOIN laptimes AS t2 ON t1.driverid = t2.driverid WHERE t1.nationality = 'French' AND (CAST(SUBSTRING(t2.time FROM 1 FOR 1) AS INT) * 60 + CAST(SUBSTRING(t2.time FROM 3 FOR 2) AS INT) + CAST(SUBSTRING(t2.time FROM 6 FOR 3) AS DOUBLE PRECISION) / NULLIF(1000, 0)) < 120",
         "sqlite": "SELECT COUNT(DISTINCT T1.driverId) FROM drivers AS T1 INNER JOIN lapTimes AS T2 on T1.driverId = T2.driverId WHERE T1.nationality = 'French' AND (CAST(SUBSTR(T2.time, 1, 1) AS INTEGER) * 60 + CAST(SUBSTR(T2.time, 3, 2) AS INTEGER) + CAST(SUBSTR(T2.time, 6, 3) AS REAL) / 1000) < 120",
@@ -2866,7 +2868,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 989,
-        "postgres": "SELECT t1.time FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid WHERE t2.name = 'Canadian Grand Prix' AND t2.year = 2008 AND T1.time ILIKE '_:%:__.___'",
+        "postgres": "SELECT t1.time FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid WHERE t2.name = 'Canadian Grand Prix' AND t2.year = 2008 AND t1.time ILIKE '_:%:__.___'",
         "rows": 1,
         "sqlite": "SELECT T1.time FROM results AS T1 INNER JOIN races AS T2 ON T1.raceId = T2.raceId WHERE T2.name = 'Canadian Grand Prix' AND T2.year = 2008 AND T1.time LIKE '_:%:__.___'",
         "status": "verified"
@@ -2875,7 +2877,7 @@
         "db_id": "formula_1",
         "differs_from_official": false,
         "id": 990,
-        "postgres": "SELECT t3.constructorref, t3.url FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid INNER JOIN constructors AS t3 ON t1.constructorid = t3.constructorid WHERE t2.name = 'Singapore Grand Prix' AND t2.year = 2009 AND T1.time ILIKE '_:%:__.___'",
+        "postgres": "SELECT t3.constructorref, t3.url FROM results AS t1 INNER JOIN races AS t2 ON t1.raceid = t2.raceid INNER JOIN constructors AS t3 ON t1.constructorid = t3.constructorid WHERE t2.name = 'Singapore Grand Prix' AND t2.year = 2009 AND t1.time ILIKE '_:%:__.___'",
         "rows": 1,
         "sqlite": "SELECT T3.constructorRef, T3.url FROM results AS T1 INNER JOIN races AS T2 on T1.raceId = T2.raceId INNER JOIN constructors AS T3 on T1.constructorId = T3.constructorId WHERE T2.name = 'Singapore Grand Prix' AND T2.year = 2009 AND T1.time LIKE '_:%:__.___'",
         "status": "verified"
@@ -3205,7 +3207,7 @@
         "db_id": "european_football_2",
         "differs_from_official": false,
         "id": 1105,
-        "postgres": "SELECT t2.attacking_work_rate FROM player AS t1 INNER JOIN player_attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.\"date\" ILIKE '2015-05-01%' AND t1.player_name = 'Francesco Migliore'",
+        "postgres": "SELECT t2.attacking_work_rate FROM player AS t1 INNER JOIN player_attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.date ILIKE '2015-05-01%' AND t1.player_name = 'Francesco Migliore'",
         "rows": 1,
         "sqlite": "SELECT t2.attacking_work_rate FROM Player AS t1 INNER JOIN Player_Attributes AS t2 ON t1.player_api_id = t2.player_api_id WHERE t2.\"date\" LIKE '2015-05-01%' AND t1.player_name = 'Francesco Migliore'",
         "status": "verified"
@@ -3223,7 +3225,7 @@
         "db_id": "european_football_2",
         "differs_from_official": false,
         "id": 1110,
-        "postgres": "SELECT t2.buildupplaypassingclass FROM team AS t1 INNER JOIN team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.\"date\" ILIKE '2010-02-22%'",
+        "postgres": "SELECT t2.buildupplaypassingclass FROM team AS t1 INNER JOIN team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.date ILIKE '2010-02-22%'",
         "rows": 1,
         "sqlite": "SELECT t2.buildUpPlayPassingClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'FC Lorient' AND t2.\"date\" LIKE '2010-02-22%'",
         "status": "verified"
@@ -3232,7 +3234,7 @@
         "db_id": "european_football_2",
         "differs_from_official": false,
         "id": 1113,
-        "postgres": "SELECT t2.defenceaggressionclass FROM team AS t1 INNER JOIN team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.\"date\" ILIKE '2015-09-10%'",
+        "postgres": "SELECT t2.defenceaggressionclass FROM team AS t1 INNER JOIN team_attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.date ILIKE '2015-09-10%'",
         "rows": 1,
         "sqlite": "SELECT t2.defenceAggressionClass FROM Team AS t1 INNER JOIN Team_Attributes AS t2 ON t1.team_api_id = t2.team_api_id WHERE t1.team_long_name = 'Hannover 96' AND t2.\"date\" LIKE '2015-09-10%'",
         "status": "verified"
@@ -3331,7 +3333,7 @@
         "db_id": "european_football_2",
         "differs_from_official": false,
         "id": 1139,
-        "postgres": "SELECT t2.home_team_goal, t2.away_team_goal FROM league AS t1 INNER JOIN match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.\"date\" ILIKE '2008-09-24%'",
+        "postgres": "SELECT t2.home_team_goal, t2.away_team_goal FROM league AS t1 INNER JOIN match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.date ILIKE '2008-09-24%'",
         "rows": 1,
         "sqlite": "SELECT t2.home_team_goal, t2.away_team_goal FROM League AS t1 INNER JOIN Match AS t2 ON t1.id = t2.league_id WHERE t1.name = 'Belgium Jupiler League' AND t2.\"date\" LIKE '2008-09-24%'",
         "status": "verified"
@@ -3525,7 +3527,7 @@
         "db_id": "thrombosis_prediction",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 1185,
-        "postgres": "SELECT CAST((SUM(CASE WHEN T2.Date ILIKE '1981-11-%' THEN t2.\"T-CHO\" ELSE 0 END) - SUM(CASE WHEN T2.Date ILIKE '1981-12-%' THEN t2.\"T-CHO\" ELSE 0 END)) AS DOUBLE PRECISION) / NULLIF(SUM(CASE WHEN T2.Date ILIKE '1981-11-%' THEN t2.\"T-CHO\" ELSE 0 END), 0) FROM patient AS t1 INNER JOIN laboratory AS t2 ON t1.id = t2.id WHERE t1.birthday = '1959-02-18'",
+        "postgres": "SELECT CAST((SUM(CASE WHEN t2.date ILIKE '1981-11-%' THEN t2.\"T-CHO\" ELSE 0 END) - SUM(CASE WHEN t2.date ILIKE '1981-12-%' THEN t2.\"T-CHO\" ELSE 0 END)) AS DOUBLE PRECISION) / NULLIF(SUM(CASE WHEN t2.date ILIKE '1981-11-%' THEN t2.\"T-CHO\" ELSE 0 END), 0) FROM patient AS t1 INNER JOIN laboratory AS t2 ON t1.id = t2.id WHERE t1.birthday = '1959-02-18'",
         "sqlite": "SELECT CAST((SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2.\"T-CHO\" ELSE 0 END) - SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2.\"T-CHO\" ELSE 0 END)) AS REAL) / SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2.\"T-CHO\" ELSE 0 END) FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Birthday = '1959-02-18'",
         "status": "postgres_error"
       },
@@ -3551,7 +3553,7 @@
         "db_id": "thrombosis_prediction",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 1192,
-        "postgres": "SELECT DISTINCT t1.id FROM patient AS t1 INNER JOIN laboratory AS t2 ON t1.id = t2.id WHERE t1.admission = '-' AND t2.\"T-BIL\" < 2.0 AND T2.Date ILIKE '1991-10-%'",
+        "postgres": "SELECT DISTINCT t1.id FROM patient AS t1 INNER JOIN laboratory AS t2 ON t1.id = t2.id WHERE t1.admission = '-' AND t2.\"T-BIL\" < 2.0 AND t2.date ILIKE '1991-10-%'",
         "sqlite": "SELECT DISTINCT T1.ID FROM Patient AS T1 INNER JOIN Laboratory AS T2 ON T1.ID = T2.ID WHERE T1.Admission = '-' AND T2.\"T-BIL\" < 2.0 AND T2.Date LIKE '1991-10-%'",
         "status": "postgres_error"
       },
@@ -3882,7 +3884,7 @@
         "db_id": "student_club",
         "differs_from_official": false,
         "id": 1338,
-        "postgres": "SELECT t3.approved FROM event AS t1 INNER JOIN budget AS t2 ON t1.event_id = t2.link_to_event INNER JOIN expense AS t3 ON t2.budget_id = t3.link_to_budget WHERE t1.event_name = 'October Meeting' AND T1.event_date ILIKE '2019-10-08%'",
+        "postgres": "SELECT t3.approved FROM event AS t1 INNER JOIN budget AS t2 ON t1.event_id = t2.link_to_event INNER JOIN expense AS t3 ON t2.budget_id = t3.link_to_budget WHERE t1.event_name = 'October Meeting' AND t1.event_date ILIKE '2019-10-08%'",
         "rows": 3,
         "sqlite": "SELECT T3.approved FROM event AS T1 INNER JOIN budget AS T2 ON T1.event_id = T2.link_to_event INNER JOIN expense AS T3 ON T2.budget_id = T3.link_to_budget WHERE T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'",
         "status": "verified"
@@ -4326,7 +4328,7 @@
       {
         "db_id": "debit_card_specializing",
         "id": 1482,
-        "postgres": "SELECT CAST((SUM(CASE WHEN t1.segment = 'SME' AND T2.Date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'SME' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END)) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'SME' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0), CAST(SUM(CASE WHEN t1.segment = 'LAM' AND T2.Date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'LAM' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'LAM' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0), CAST(SUM(CASE WHEN t1.segment = 'KAM' AND T2.Date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'KAM' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'KAM' AND T2.Date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0) FROM customers AS t1 INNER JOIN yearmonth AS t2 ON t1.customerid = t2.customerid WHERE t1.currency = 'EUR'",
+        "postgres": "SELECT CAST((SUM(CASE WHEN t1.segment = 'SME' AND t2.date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'SME' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END)) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'SME' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0), CAST(SUM(CASE WHEN t1.segment = 'LAM' AND t2.date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'LAM' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'LAM' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0), CAST(SUM(CASE WHEN t1.segment = 'KAM' AND t2.date ILIKE '2013%' THEN t2.consumption ELSE 0 END) - SUM(CASE WHEN t1.segment = 'KAM' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END) AS DOUBLE PRECISION) * 100 / NULLIF(SUM(CASE WHEN t1.segment = 'KAM' AND t2.date ILIKE '2012%' THEN t2.consumption ELSE 0 END), 0) FROM customers AS t1 INNER JOIN yearmonth AS t2 ON t1.customerid = t2.customerid WHERE t1.currency = 'EUR'",
         "postgres_sample": [
           "(734.71712011344, 539.828116352349, 553.2055994357188)"
         ],
@@ -4402,7 +4404,7 @@
         "db_id": "debit_card_specializing",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 1500,
-        "postgres": "SELECT DISTINCT t3.description FROM transactions_1k AS t1 INNER JOIN products AS t3 ON t1.productid = t3.productid WHERE T1.Date ILIKE '2012-08-%'",
+        "postgres": "SELECT DISTINCT t3.description FROM transactions_1k AS t1 INNER JOIN products AS t3 ON t1.productid = t3.productid WHERE t1.date ILIKE '2012-08-%'",
         "sqlite": "SELECT DISTINCT T3.Description FROM transactions_1k AS T1 INNER JOIN products AS T3 ON T1.ProductID = T3.ProductID WHERE T1.Date LIKE '2012-08-%'",
         "status": "postgres_error"
       },
@@ -4410,7 +4412,7 @@
         "db_id": "debit_card_specializing",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 1501,
-        "postgres": "SELECT DISTINCT t2.country FROM transactions_1k AS t1 INNER JOIN gasstations AS t2 ON t1.gasstationid = t2.gasstationid WHERE T1.Date ILIKE '2012-08-%'",
+        "postgres": "SELECT DISTINCT t2.country FROM transactions_1k AS t1 INNER JOIN gasstations AS t2 ON t1.gasstationid = t2.gasstationid WHERE t1.date ILIKE '2012-08-%'",
         "sqlite": "SELECT DISTINCT T2.Country FROM transactions_1k AS T1 INNER JOIN gasstations AS T2 ON T1.GasStationID = T2.GasStationID WHERE T1.Date LIKE '2012-08-%'",
         "status": "postgres_error"
       },
@@ -4527,7 +4529,7 @@
         "db_id": "debit_card_specializing",
         "error": "PostgreSQL error (SQLSTATE 42883): operator does not exist: date ~~* unknown",
         "id": 1529,
-        "postgres": "SELECT SUM(amount * price) AS total_spent, SUM(CASE WHEN Date ILIKE '2012-08%' THEN amount * price ELSE 0 END) AS august_2012_spent FROM transactions_1k WHERE customerid = 38508",
+        "postgres": "SELECT SUM(amount * price) AS total_spent, SUM(CASE WHEN date ILIKE '2012-08%' THEN amount * price ELSE 0 END) AS august_2012_spent FROM transactions_1k WHERE customerid = 38508",
         "sqlite": "SELECT SUM(Amount * Price) AS total_spent, SUM(CASE WHEN Date LIKE '2012-08%' THEN Amount * Price ELSE 0 END) AS august_2012_spent FROM transactions_1k WHERE CustomerID = 38508",
         "status": "postgres_error"
       },
@@ -4551,22 +4553,22 @@
       }
     ],
     "official_gold_missing": 0,
-    "same_as_official": 330,
-    "seconds": 9.5,
+    "same_as_official": 332,
+    "seconds": 5.4,
     "total": 498,
-    "verified": 447
+    "verified": 449
   },
   "cross_check": {
-    "agree": 447,
+    "agree": 449,
     "disagreements": [],
-    "pairs": 447,
+    "pairs": 449,
     "type_decided": [
       "corrected/1039"
     ]
   },
   "load": {
     "rows_copied": 0,
-    "seconds": 0.2,
+    "seconds": 0.1,
     "source": "dump",
     "tables": {
       "california_schools": 3,
@@ -5088,8 +5090,8 @@
     "empty": 2,
     "executed": 500,
     "failed": [],
-    "seconds": 9.1,
-    "slowest_ms": 762,
+    "seconds": 4.9,
+    "slowest_ms": 440,
     "total": 500,
     "truncated": 0
   }

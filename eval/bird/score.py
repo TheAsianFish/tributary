@@ -29,6 +29,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import math
+import os
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -134,8 +135,16 @@ def official_calculate_ex(cache: Path, *, download: bool = True) -> Callable[[An
             raise ScorerUnavailable(f"cannot download the official scorer: {exc}") from None
         if reply.status_code != 200:
             raise ScorerUnavailable(f"GET {OFFICIAL_SCORER_URL}: HTTP {reply.status_code}")
+        digest = hashlib.sha256(reply.content).hexdigest()
+        if digest != OFFICIAL_SCORER_SHA256:
+            raise ScorerUnavailable(
+                f"{OFFICIAL_SCORER_URL} has sha256 {digest}, expected {OFFICIAL_SCORER_SHA256}"
+            )
         cache.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(reply.content)
+        # Only a file that matched its checksum is ever cached.
+        partial = path.with_suffix(".part")
+        partial.write_bytes(reply.content)
+        os.replace(partial, path)
     source = path.read_bytes()
     digest = hashlib.sha256(source).hexdigest()
     if digest != OFFICIAL_SCORER_SHA256:

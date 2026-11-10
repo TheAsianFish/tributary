@@ -133,3 +133,32 @@ def test_same_rows_approx_accepts_a_query_result_and_leaves_text_exact() -> None
 
 def test_same_rows_approx_treats_nan_as_equal_to_nan() -> None:
     assert same_rows_approx([(float("nan"),)], [(float("nan"),)])
+
+
+def test_not_like_keeps_its_negation() -> None:
+    out = transpile("SELECT 1 FROM t WHERE x NOT LIKE 'z' AND NOT (y LIKE 'w')")
+    assert "x NOT ILIKE 'z'" in out
+    assert "NOT (y ILIKE 'w')" in out
+
+
+def test_like_nested_inside_like_is_rewritten_with_its_identifiers() -> None:
+    out = transpile(
+        "SELECT 1 FROM t AS T1 WHERE T1.`District` LIKE '%' || "
+        "(SELECT c FROM u AS U WHERE U.D LIKE 'y')"
+    )
+    assert "t1.district ILIKE" in out
+    assert "u.d ILIKE 'y'" in out
+    assert " LIKE " not in out
+
+
+def test_reserved_words_stay_quoted() -> None:
+    assert 'FROM "order"' in transpile("SELECT COUNT(*) FROM `order`")
+    assert '"user"' in transpile("SELECT `User` FROM t")
+
+
+def test_numbers_become_text_the_way_sqlite_renders_them() -> None:
+    types = {"a2": "text"}
+    out = transpile("SELECT a FROM t WHERE a2 = 05 OR a2 = 1e3 OR a2 = -1.50", types)
+    assert "a2 = '5'" in out
+    assert "a2 = '1000.0'" in out
+    assert "a2 = '-1.5'" in out

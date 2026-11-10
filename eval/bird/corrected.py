@@ -16,7 +16,8 @@ the corrected SQL relies on and sqlglot does not carry over:
 - identifiers: SQLite matches names ignoring case, and the PostgreSQL copy
   of BIRD lowercased every plain name, so a plain identifier is written in
   lowercase and unquoted (``T2.`CDSCode``` becomes ``t2.cdscode``); names
-  that need quoting (``"Free Meal Count (K-12)"``) keep their spelling;
+  that need quoting (``"Free Meal Count (K-12)"``) keep their spelling, and a
+  reserved word stays quoted (the ``financial.order`` table);
 - ``REAL`` and ``FLOAT`` are 8-byte in SQLite and 4-byte in PostgreSQL, so a
   ``CAST(x AS REAL)`` ratio would lose digits; they become ``DOUBLE PRECISION``;
 - SQLite's ``LIKE`` ignores ASCII case; PostgreSQL's does not, so ``LIKE``
@@ -40,8 +41,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
+import os
 import sqlite3
+import threading
 import time
 from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -67,7 +69,7 @@ from eval.bird.score import (
     official_calculate_ex,
     rows_digest,
 )
-from tributary.agent.catalog import Catalog
+from tributary.agent.catalog import Catalog, quote_ident
 from tributary.agent.execute import ExecutionError, PostgresExecutor, QueryResult
 from tributary.config import Settings
 
@@ -78,7 +80,6 @@ TIMEOUT_S = 30  # BIRD's evaluation_ex.py default meta_time_out
 # columns and take minutes there; each result is cached by (database file, query), so the
 # limit is paid once and a rerun cannot flip a verdict by finishing just in or out of time.
 SQLITE_TIMEOUT_S = 900
-_PLAIN_LOWER = re.compile(r"^[a-z_][a-z0-9_]*$")
 ROW_CAP = 100_000
 
 
@@ -107,27 +108,46 @@ def _is_number(node: exp.Expr) -> bool:
 
 
 def _as_text(node: exp.Expr) -> exp.Expr:
+    """A number as SQLite renders it when it compares it with text: ``05`` → ``'5'``,
+    ``1e3`` → ``'1000.0'`` (integers in decimal, reals with a fractional part)."""
+    sign = ""
     if isinstance(node, exp.Neg):
-        return exp.Literal.string("-" + str(node.this.this))
-    return exp.Literal.string(str(node.this))
+        sign, node = "-", node.this
+    text = str(node.this)
+    try:
+        rendered = str(int(text)) if text.isdigit() else repr(float(text))
+    except ValueError:
+        rendered = text
+    return exp.Literal.string(sign + rendered)
 
 
 def _is_text_column(node: exp.Expr, types: Mapping[str, str]) -> bool:
     return isinstance(node, exp.Column) and types.get(node.name.lower(), "") in _TEXT_TYPES
 
 
+def _identifier(name: str) -> exp.Identifier:
+    """``name`` as the PostgreSQL copy of BIRD spells it, quoted only where it must be."""
+    spelled = pg_name(name)
+    return exp.Identifier(this=spelled, quoted=quote_ident(spelled) != spelled)
+
+
+def _ilike(tree: exp.Expr) -> exp.Expr:
+    """Every ``LIKE`` as ``ILIKE``, nested ones included (replaced in place, children kept)."""
+    for like in list(tree.find_all(exp.Like)):
+        # Every argument carries over: NOT LIKE is a Like with negate=True in sqlglot.
+        like.replace(exp.ILike(**like.args))
+    return tree
+
+
 def _sqlite_semantics(types: Mapping[str, str]) -> Callable[[exp.Expr], exp.Expr]:
     def rewrite(node: exp.Expr) -> exp.Expr:
         if isinstance(node, exp.Identifier):
-            name = pg_name(str(node.this)) if node.this else node.this
-            return exp.Identifier(this=name, quoted=not _PLAIN_LOWER.match(name or ""))
+            return _identifier(str(node.this)) if node.this else node
         if isinstance(node, exp.DataType) and node.this in (
             exp.DataType.Type.FLOAT,
             exp.DataType.Type.DOUBLE,
         ):
             return exp.DataType.build("double precision")
-        if isinstance(node, exp.Like):
-            return exp.ILike(this=node.this, expression=node.expression)
         if isinstance(node, _COMPARISONS):
             left, right = node.this, node.expression
             if _is_text_column(left, types) and _is_number(right):
@@ -160,7 +180,10 @@ def transpile(sqlite_sql: str, types: Mapping[str, str] | None = None) -> str:
     if len(trees) != 1:
         raise TranspileError(f"expected one statement, got {len(trees)}")
     try:
-        return trees[0].transform(_sqlite_semantics(types or {})).sql(dialect="postgres")
+        # The LIKE swap runs after the other rewrites: a node returned by transform is not
+        # visited again, so swapping first would leave the identifiers under it untouched.
+        tree = _ilike(trees[0].transform(_sqlite_semantics(types or {})))
+        return tree.sql(dialect="postgres")
     except SqlglotError as exc:
         raise TranspileError(str(exc).splitlines()[0]) from None
 
@@ -212,10 +235,17 @@ def cached_sqlite(path: Path, query: str, cache: Path) -> list[tuple[object, ...
     try:
         rows = run_sqlite(path, query)
     except sqlite3.Error as exc:
-        entry.write_text(json.dumps({"error": f"{exc} (limit {SQLITE_TIMEOUT_S} s)"}))
+        _write_atomic(entry, {"error": f"{exc} (limit {SQLITE_TIMEOUT_S} s)"})
         raise sqlite3.OperationalError(f"{exc} (limit {SQLITE_TIMEOUT_S} s)") from None
-    entry.write_text(json.dumps({"rows": [[encode(v) for v in row] for row in rows]}))
+    _write_atomic(entry, {"rows": [[encode(v) for v in row] for row in rows]})
     return rows
+
+
+def _write_atomic(path: Path, document: object) -> None:
+    """A killed run leaves the old entry or none, never half a JSON file."""
+    partial = path.with_name(f".{path.name}.{threading.get_ident()}.part")
+    partial.write_text(json.dumps(document))
+    os.replace(partial, path)
 
 
 _DIGESTS: dict[Path, str] = {}
