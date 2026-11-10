@@ -9,9 +9,15 @@ from uuid import UUID
 
 import psycopg
 import pytest
-from psycopg import errors
+from psycopg import errors, sql
 
-from tributary.agent.execute import ExecutionError, _classify, jsonable, plan_cost
+from tributary.agent.execute import (
+    ExecutionError,
+    PostgresExecutor,
+    _classify,
+    jsonable,
+    plan_cost,
+)
 from tributary.agent.render import MAX_ROWS, MAX_WIDTH, render_answer, table
 from tributary.agent.roles import agent_role_statements
 
@@ -213,3 +219,21 @@ def test_plan_cost_without_a_plan_is_an_execution_error(document: object) -> Non
 def test_non_finite_numbers_are_json_strings(value: object, expected: str) -> None:
     assert jsonable(value) == expected
     json.dumps(jsonable(value), allow_nan=False)
+
+
+def _rendered(statement: sql.Composable) -> str:
+    # Identifiers and string literals render without a connection.
+    return statement.as_string(None)
+
+
+def test_the_agent_runs_with_an_empty_search_path() -> None:
+    executor = PostgresExecutor("dbname=x")
+    rendered = [_rendered(s) for s in executor._settings()]
+    assert "SET LOCAL search_path = ''" in rendered
+
+
+def test_a_benchmark_executor_resolves_unqualified_names_in_one_schema() -> None:
+    executor = PostgresExecutor("dbname=x", search_path="card_games")
+    rendered = [_rendered(s) for s in executor._settings()]
+    assert 'SET LOCAL search_path = "card_games"' in rendered
+    assert "SET TRANSACTION READ ONLY" in rendered

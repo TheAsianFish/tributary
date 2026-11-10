@@ -182,12 +182,16 @@ class PostgresExecutor:
         row_cap: int = 1000,
         cost_ceiling: float | None = 1_000_000.0,
         connect_timeout: int = 5,
+        search_path: str = "",
     ) -> None:
         self._conninfo = conninfo
         self.statement_timeout_ms = statement_timeout_ms
         self.row_cap = row_cap
         self.cost_ceiling = cost_ceiling
         self._connect_timeout = connect_timeout
+        # Empty for the agent (the guard qualifies every relation); one schema for
+        # benchmark gold queries, which BIRD writes unqualified.
+        self.search_path = search_path
 
     def _settings(self) -> Sequence[sql.SQL | sql.Composed]:
         timeout = sql.Literal(f"{self.statement_timeout_ms}ms")
@@ -196,7 +200,9 @@ class PostgresExecutor:
             sql.SQL("SET LOCAL statement_timeout = {}").format(timeout),
             sql.SQL("SET LOCAL lock_timeout = '1s'"),
             sql.SQL("SET LOCAL idle_in_transaction_session_timeout = {}").format(timeout),
-            sql.SQL("SET LOCAL search_path = ''"),
+            sql.SQL("SET LOCAL search_path = {}").format(
+                sql.Identifier(self.search_path) if self.search_path else sql.Literal("")
+            ),
         )
 
     def run(self, query: str) -> QueryResult:
