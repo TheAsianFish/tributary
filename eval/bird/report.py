@@ -71,6 +71,7 @@ def gold_table(gold: dict[str, Any]) -> str:
         if status.get(key)
     )
     verified, differ = c["verified"], c["differs_from_official"]
+    same, same_differ = c["same_wording"], c["differs_with_same_wording"]
     return "\n".join(
         [
             "| | |",
@@ -81,8 +82,12 @@ def gold_table(gold: dict[str, Any]) -> str:
             f"({o['empty']} return no rows) |",
             f"| Corrected gold transpiled and verified on both engines | **{verified} / "
             f"{c['total']}**; dropped: {dropped} |",
-            f"| Verified corrected gold whose rows differ from the official gold's | "
-            f"**{differ} / {verified} ({_pct(differ / verified)})** |",
+            f"| Verified corrected questions worded exactly as in the official release | "
+            f"{same} / {verified} |",
+            f"| ... whose corrected gold returns different rows from the official gold | "
+            f"**{same_differ} / {same} ({_pct(same_differ / same)})** |",
+            f"| Reworded questions whose gold rows differ (partly a different question) | "
+            f"{differ - same_differ} / {verified - same} |",
         ]
     )
 
@@ -104,6 +109,14 @@ def link_table(link: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _ordered(items: dict[str, Any], first: Sequence[str] = ("full",)) -> list[tuple[str, Any]]:
+    """Report keys in reading order: the baseline (or the official track) first."""
+    return sorted(
+        items.items(),
+        key=lambda kv: (kv[0] not in first, first.index(kv[0]) if kv[0] in first else 0, kv[0]),
+    )
+
+
 def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     lines = [
         "| Model | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging "
@@ -112,9 +125,9 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     ]
     for _, report in reports:
         model = f"{report['model']} ({report['provider']})"
-        for variant, tracks in report["variants"].items():
+        for variant, tracks in _ordered(report["variants"]):
             for repairs in ("r0", "r2"):
-                for track, entry in tracks.items():
+                for track, entry in _ordered(tracks, ("official", "corrected")):
                     s = entry[repairs]
                     lo, hi = s["ex_wilson95"]
                     d = s["by_difficulty"]
@@ -134,19 +147,13 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     return "\n".join(lines)
 
 
-# Live commands that have not been run, sized in questions and variants.
-LIVE_COMMANDS: tuple[tuple[str, str, int, int], ...] = (
-    (
-        "dev50, both variants, both tracks",
-        "make eval PROVIDER=anthropic MODEL={model} RECORD=1",
-        50,
-        2,
-    ),
+# Live commands that have not been run: (what, command, multiple of the measured dev50 run).
+LIVE_COMMANDS: tuple[tuple[str, str, int], ...] = (
+    ("dev50, both variants, both tracks", "make eval PROVIDER=anthropic MODEL={model} RECORD=1", 1),
     (
         "all 500, both variants, both tracks",
         "make eval PROVIDER=anthropic MODEL={model} SUBSET=all RECORD=1",
-        500,
-        2,
+        10,
     ),
 )
 
@@ -158,18 +165,10 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
         + " |",
         "|---|---|---:|---:|---:|---:|",
     ]
-    per_question: list[tuple[int, int]] = []
     for name, report in reports:
-        questions = sum(
-            sum(1 for v in entry["verdicts"] if not v["reused"])
-            for tracks in report["variants"].values()
-            for entry in tracks.values()
-        )
-        tokens = [0, 0]
-        for row in report["ledger"]:
-            if row["variant"].endswith("-r2"):
-                tokens[0] += row["input_tokens"]
-                tokens[1] += row["output_tokens"]
+        for row in sorted(
+            report["ledger"], key=lambda r: (not r["variant"].startswith("full"), r["variant"])
+        ):
             estimates = " / ".join(
                 DASH if row["estimate_usd"][m] is None else f"${row['estimate_usd'][m]:.2f}"
                 for m in ESTIMATE_MODELS
@@ -179,31 +178,31 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
                 f"{row['input_tokens']:,} / {row['output_tokens']:,} | "
                 f"${row['cost_usd']:.2f} | {estimates} |"
             )
-        if questions:
-            per_question.append((tokens[0] // questions, tokens[1] // questions))
-    if not per_question:
+    if not reports:
         return "\n".join(lines)
-    tin = max(p[0] for p in per_question)
-    tout = max(p[1] for p in per_question)
+    # The live runs are the recorded run's variants with repairs: its measured tokens,
+    # scaled by question count for a larger subset (same questions per database mix).
+    name, report = reports[0]
+    tokens_in = sum(r["input_tokens"] for r in report["ledger"] if r["variant"].endswith("-r2"))
+    tokens_out = sum(r["output_tokens"] for r in report["ledger"] if r["variant"].endswith("-r2"))
     lines += [
         "",
-        f"Estimated cost of the live runs, from the largest measured tokens per question "
-        f"({tin:,} in / {tout:,} out, repairs included) at list price with no cache hits:",
+        f"Estimated cost of the live runs: the token counts `{name}` measured for "
+        f"its two variants with repairs ({tokens_in:,} in / {tokens_out:,} out, both tracks), "
+        "scaled by question count, at list price with no cache hits (an upper bound on "
+        "input: the planner caches its schema prefix), Claude's own tokenizer and "
+        "thinking tokens not modelled:",
         "",
-        "| What | Command | Questions answered | "
-        + " | ".join(f"`{m}`" for m in ESTIMATE_MODELS)
-        + " |",
-        "|---|---|---:|" + "---:|" * len(ESTIMATE_MODELS),
+        "| What | Command | " + " | ".join(f"`{m}`" for m in ESTIMATE_MODELS) + " |",
+        "|---|---|" + "---:|" * len(ESTIMATE_MODELS),
     ]
-    for what, command, questions, variants in LIVE_COMMANDS:
-        # The corrected track re-asks about a quarter of the questions in other words.
-        answered = round(questions * variants * 1.3)
+    for what, command, scale in LIVE_COMMANDS:
         costs = []
         for m in ESTIMATE_MODELS:
-            cost = estimate_cost(tin * answered, tout * answered, m)
+            cost = estimate_cost(tokens_in * scale, tokens_out * scale, m)
             costs.append(DASH if cost is None else f"${cost:.2f}")
-        cmd = command.format(model="claude-haiku-5-5")
-        lines.append(f"| {what} | `{cmd}` | {answered} | " + " | ".join(costs) + " |")
+        cmd = command.format(model="<model>")
+        lines.append(f"| {what} | `{cmd}` | " + " | ".join(costs) + " |")
     return "\n".join(lines)
 
 

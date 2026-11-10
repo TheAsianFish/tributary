@@ -34,7 +34,9 @@ Verification compares rows with numbers at six significant digits (SQLite
 divides in floating point where PostgreSQL may return ``numeric``), and it
 also runs every *official* gold query, so the report says how many official
 golds execute and, for each verified corrected question, whether its result
-differs from the official gold's: the share of labels that change the answer.
+differs from the official gold's. Only questions worded identically in both
+releases measure label disagreement: the corrections keep BIRD dev's original
+wording, which Mini-Dev changed for some questions.
 """
 
 from __future__ import annotations
@@ -342,10 +344,18 @@ def verify_corrected(
     # (label, corrected rows, official rows) as fetched, for the scorer cross-check.
     pairs: list[tuple[str, Any, Any]] = []
     rows = json.loads((data.DATA_DIR / data.CORRECTED.name).read_text(encoding="utf-8"))
+    wording = {q.id: (q.question, q.evidence) for q in data.official_questions()}
 
     def work(r: dict[str, Any]) -> dict[str, Any]:
         qid, db_id, source = int(r["question_id"]), str(r["db_id"]), str(r["SQL"])
-        item: dict[str, Any] = {"id": qid, "db_id": db_id, "sqlite": source}
+        item: dict[str, Any] = {
+            "id": qid,
+            "db_id": db_id,
+            "sqlite": source,
+            # Arcwise keeps BIRD dev's original wording; Mini-Dev reworded some questions,
+            # and a reworded question's gold may differ because the question does.
+            "same_wording": wording.get(qid) == (str(r["question"]), str(r.get("evidence") or "")),
+        }
         try:
             item["postgres"] = transpile(source, types.get(db_id))
         except TranspileError as exc:
@@ -386,6 +396,10 @@ def verify_corrected(
         "verified": len(verified),
         "by_status": dict(sorted(by_status.items())),
         "differs_from_official": sum(1 for i in verified if i["differs_from_official"]),
+        "same_wording": sum(1 for i in verified if i["same_wording"]),
+        "differs_with_same_wording": sum(
+            1 for i in verified if i["same_wording"] and i["differs_from_official"]
+        ),
         "same_as_official": sum(1 for i in verified if i["differs_from_official"] is False),
         "official_gold_missing": sum(1 for i in verified if i["differs_from_official"] is None),
         "seconds": round(time.perf_counter() - started, 1),
