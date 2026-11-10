@@ -1,0 +1,500 @@
+{
+ "fill": {
+  "topic": "bench.scale.backlog-p1-6ed606af",
+  "prefix": "ea3928cf-7be0-6161-cdb9",
+  "events": 1200000,
+  "seconds": 8.08,
+  "events_per_s": 148507.4
+ },
+ "drains": {
+  "noop": {
+   "run": "drain-p1-noop-e872b00a",
+   "sink": "noop",
+   "partitions": 1,
+   "completed": true,
+   "rows_per_s": 44998.4,
+   "measured_rows": 1000000,
+   "measured_batches": 5,
+   "batches": [
+    {
+     "batch_id": 0,
+     "trigger_at": 1794320561.209179,
+     "queued": 1200000,
+     "rows": 200000,
+     "trigger_ms": 7926.0,
+     "add_batch_ms": 6956.0,
+     "durations": {
+      "addBatch": 6956.0,
+      "latestOffset": 399.0,
+      "queryPlanning": 404.0,
+      "walCommit": 33.0,
+      "triggerExecution": 7926.0
+     }
+    },
+    {
+     "batch_id": 1,
+     "trigger_at": 1794320569.1069,
+     "queued": 1000000,
+     "rows": 200000,
+     "trigger_ms": 4563.0,
+     "add_batch_ms": 4442.0,
+     "durations": {
+      "addBatch": 4442.0,
+      "latestOffset": 8.0,
+      "queryPlanning": 38.0,
+      "walCommit": 37.0,
+      "triggerExecution": 4563.0
+     }
+    },
+    {
+     "batch_id": 2,
+     "trigger_at": 1794320573.751179,
+     "queued": 800000,
+     "rows": 200000,
+     "trigger_ms": 4091.0,
+     "add_batch_ms": 3989.0,
+     "durations": {
+      "addBatch": 3989.0,
+      "latestOffset": 3.0,
+      "queryPlanning": 43.0,
+      "walCommit": 30.0,
+      "triggerExecution": 4091.0
+     }
+    },
+    {
+     "batch_id": 3,
+     "trigger_at": 1794320577.832954,
+     "queued": 600000,
+     "rows": 200000,
+     "trigger_ms": 4447.0,
+     "add_batch_ms": 4351.0,
+     "durations": {
+      "addBatch": 4351.0,
+      "latestOffset": 4.0,
+      "queryPlanning": 25.0,
+      "walCommit": 32.0,
+      "triggerExecution": 4447.0
+     }
+    },
+    {
+     "batch_id": 4,
+     "trigger_at": 1794320582.209373,
+     "queued": 400000,
+     "rows": 200000,
+     "trigger_ms": 4303.0,
+     "add_batch_ms": 4204.0,
+     "durations": {
+      "addBatch": 4204.0,
+      "latestOffset": 4.0,
+      "queryPlanning": 25.0,
+      "walCommit": 33.0,
+      "triggerExecution": 4303.0
+     }
+    },
+    {
+     "batch_id": 5,
+     "trigger_at": 1794320586.534253,
+     "queued": 200000,
+     "rows": 200000,
+     "trigger_ms": 4819.0,
+     "add_batch_ms": 4714.0,
+     "durations": {
+      "addBatch": 4714.0,
+      "latestOffset": 12.0,
+      "queryPlanning": 25.0,
+      "walCommit": 40.0,
+      "triggerExecution": 4819.0
+     }
+    }
+   ],
+   "sink_batches": [],
+   "cpu_cores": {
+    "kafka": 0.354,
+    "minio": 0.017,
+    "postgres": 0.029,
+    "stream": 1.307
+   },
+   "host_cores": 1.832,
+   "pg_activity": {
+    "ticks": 33,
+    "idle_backend_s": 0,
+    "active_backend_s": {}
+   }
+  },
+  "python": {
+   "run": "drain-p1-python-6a1d4796",
+   "sink": "python",
+   "partitions": 1,
+   "completed": true,
+   "rows_per_s": 34734.3,
+   "measured_rows": 1000000,
+   "measured_batches": 5,
+   "batches": [
+    {
+     "batch_id": 0,
+     "trigger_at": 1794320602.7526999,
+     "queued": 1200000,
+     "rows": 200000,
+     "trigger_ms": 9844.0,
+     "add_batch_ms": 8892.0,
+     "durations": {
+      "addBatch": 8892.0,
+      "latestOffset": 367.0,
+      "queryPlanning": 414.0,
+      "walCommit": 32.0,
+      "triggerExecution": 9844.0
+     }
+    },
+    {
+     "batch_id": 1,
+     "trigger_at": 1794320612.597507,
+     "queued": 1000000,
+     "rows": 200000,
+     "trigger_ms": 6089.0,
+     "add_batch_ms": 5946.0,
+     "durations": {
+      "addBatch": 5946.0,
+      "latestOffset": 4.0,
+      "queryPlanning": 43.0,
+      "walCommit": 37.0,
+      "triggerExecution": 6089.0
+     }
+    },
+    {
+     "batch_id": 2,
+     "trigger_at": 1794320618.650717,
+     "queued": 800000,
+     "rows": 200000,
+     "trigger_ms": 5613.0,
+     "add_batch_ms": 5520.0,
+     "durations": {
+      "addBatch": 5520.0,
+      "latestOffset": 3.0,
+      "queryPlanning": 28.0,
+      "walCommit": 27.0,
+      "triggerExecution": 5613.0
+     }
+    },
+    {
+     "batch_id": 3,
+     "trigger_at": 1794320624.258282,
+     "queued": 600000,
+     "rows": 200000,
+     "trigger_ms": 5678.0,
+     "add_batch_ms": 5586.0,
+     "durations": {
+      "addBatch": 5586.0,
+      "latestOffset": 5.0,
+      "queryPlanning": 29.0,
+      "walCommit": 28.0,
+      "triggerExecution": 5678.0
+     }
+    },
+    {
+     "batch_id": 4,
+     "trigger_at": 1794320629.998781,
+     "queued": 400000,
+     "rows": 200000,
+     "trigger_ms": 5457.0,
+     "add_batch_ms": 5366.0,
+     "durations": {
+      "addBatch": 5366.0,
+      "latestOffset": 4.0,
+      "queryPlanning": 26.0,
+      "walCommit": 27.0,
+      "triggerExecution": 5457.0
+     }
+    },
+    {
+     "batch_id": 5,
+     "trigger_at": 1794320635.516805,
+     "queued": 200000,
+     "rows": 200000,
+     "trigger_ms": 5953.0,
+     "add_batch_ms": 5815.0,
+     "durations": {
+      "addBatch": 5815.0,
+      "latestOffset": 7.0,
+      "queryPlanning": 43.0,
+      "walCommit": 41.0,
+      "triggerExecution": 5953.0
+     }
+    }
+   ],
+   "sink_batches": [
+    {
+     "batch_id": 0,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 8038.6,
+     "db_ms_max": 0.0
+    },
+    {
+     "batch_id": 1,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 5795.8,
+     "db_ms_max": 0.0
+    },
+    {
+     "batch_id": 2,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 5406.4,
+     "db_ms_max": 0.0
+    },
+    {
+     "batch_id": 3,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 5469.3,
+     "db_ms_max": 0.0
+    },
+    {
+     "batch_id": 4,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 5288.3,
+     "db_ms_max": 0.0
+    },
+    {
+     "batch_id": 5,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 5722.6,
+     "db_ms_max": 0.0
+    }
+   ],
+   "cpu_cores": {
+    "kafka": 0.365,
+    "minio": 0.018,
+    "postgres": 0.028,
+    "stream": 1.611
+   },
+   "host_cores": 2.176,
+   "pg_activity": {
+    "ticks": 42,
+    "idle_backend_s": 0,
+    "active_backend_s": {}
+   }
+  },
+  "postgres": {
+   "run": "drain-p1-postgres-6ca5abc6",
+   "sink": "postgres",
+   "partitions": 1,
+   "completed": true,
+   "rows_per_s": 24698.7,
+   "measured_rows": 1000000,
+   "measured_batches": 5,
+   "batches": [
+    {
+     "batch_id": 0,
+     "trigger_at": 1794320653.495441,
+     "queued": 1200000,
+     "rows": 200000,
+     "trigger_ms": 12769.0,
+     "add_batch_ms": 11793.0,
+     "durations": {
+      "addBatch": 11793.0,
+      "latestOffset": 354.0,
+      "queryPlanning": 441.0,
+      "walCommit": 32.0,
+      "triggerExecution": 12769.0
+     }
+    },
+    {
+     "batch_id": 1,
+     "trigger_at": 1794320666.233863,
+     "queued": 1000000,
+     "rows": 200000,
+     "trigger_ms": 8034.0,
+     "add_batch_ms": 7918.0,
+     "durations": {
+      "addBatch": 7918.0,
+      "latestOffset": 5.0,
+      "queryPlanning": 41.0,
+      "walCommit": 32.0,
+      "triggerExecution": 8034.0
+     }
+    },
+    {
+     "batch_id": 2,
+     "trigger_at": 1794320674.287452,
+     "queued": 800000,
+     "rows": 200000,
+     "trigger_ms": 7793.0,
+     "add_batch_ms": 7698.0,
+     "durations": {
+      "addBatch": 7698.0,
+      "latestOffset": 5.0,
+      "queryPlanning": 28.0,
+      "walCommit": 29.0,
+      "triggerExecution": 7793.0
+     }
+    },
+    {
+     "batch_id": 3,
+     "trigger_at": 1794320682.091196,
+     "queued": 600000,
+     "rows": 200000,
+     "trigger_ms": 7911.0,
+     "add_batch_ms": 7798.0,
+     "durations": {
+      "addBatch": 7798.0,
+      "latestOffset": 4.0,
+      "queryPlanning": 27.0,
+      "walCommit": 29.0,
+      "triggerExecution": 7911.0
+     }
+    },
+    {
+     "batch_id": 4,
+     "trigger_at": 1794320689.984574,
+     "queued": 400000,
+     "rows": 200000,
+     "trigger_ms": 8175.0,
+     "add_batch_ms": 7993.0,
+     "durations": {
+      "addBatch": 7993.0,
+      "latestOffset": 6.0,
+      "queryPlanning": 79.0,
+      "walCommit": 54.0,
+      "triggerExecution": 8175.0
+     }
+    },
+    {
+     "batch_id": 5,
+     "trigger_at": 1794320698.147841,
+     "queued": 200000,
+     "rows": 200000,
+     "trigger_ms": 8575.0,
+     "add_batch_ms": 8421.0,
+     "durations": {
+      "addBatch": 8421.0,
+      "latestOffset": 5.0,
+      "queryPlanning": 23.0,
+      "walCommit": 87.0,
+      "triggerExecution": 8575.0
+     }
+    }
+   ],
+   "sink_batches": [
+    {
+     "batch_id": 0,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 10758.0,
+     "db_ms_max": 1973.6
+    },
+    {
+     "batch_id": 1,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 7784.1,
+     "db_ms_max": 2142.8
+    },
+    {
+     "batch_id": 2,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 7590.3,
+     "db_ms_max": 2181.4
+    },
+    {
+     "batch_id": 3,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 7683.1,
+     "db_ms_max": 2183.8
+    },
+    {
+     "batch_id": 4,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 7823.9,
+     "db_ms_max": 2493.0
+    },
+    {
+     "batch_id": 5,
+     "rows": 200000,
+     "partitions": 1,
+     "sink_ms": 8313.5,
+     "db_ms_max": 2469.4
+    }
+   ],
+   "cpu_cores": {
+    "kafka": 0.388,
+    "minio": 0.017,
+    "postgres": 0.233,
+    "stream": 1.306
+   },
+   "host_cores": 2.073,
+   "pg_activity": {
+    "ticks": 56,
+    "idle_backend_s": 75,
+    "active_backend_s": {
+     "CPU:active": 7,
+     "Client:ClientRead": 3,
+     "IO:DataFileExtend": 2,
+     "LWLock:WALWrite": 1
+    }
+   }
+  }
+ },
+ "broker": {
+  "consumer": {
+   "records_per_s": 821917.8082,
+   "start.time": "2026-11-10 14:25:12:829",
+   "end.time": "2026-11-10 14:25:14:289",
+   "data.consumed.in.MB": "508.9566",
+   "MB.sec": "348.6004",
+   "data.consumed.in.nMsg": "1200000",
+   "nMsg.sec": "821917.8082",
+   "rebalance.time.ms": "302",
+   "fetch.time.ms": "1158",
+   "fetch.MB.sec": "439.5135",
+   "fetch.nMsg.sec": "1036269.4301"
+  },
+  "consumer_raw": [
+   "start.time, end.time, data.consumed.in.MB, MB.sec, data.consumed.in.nMsg, nMsg.sec, rebalance.time.ms, fetch.time.ms, fetch.MB.sec, fetch.nMsg.sec",
+   "2026-11-10 14:25:12:829, 2026-11-10 14:25:14:289, 508.9566, 348.6004, 1200000, 821917.8082, 302, 1158, 439.5135, 1036269.4301"
+  ],
+  "producer_records_per_s": 212464.589235,
+  "producer_raw": [
+   "1200000 records sent, 212464.589235 records/sec (82.81 MB/sec), 644.57 ms avg latency, 1250.00 ms max latency, 596 ms 50th, 1200 ms 95th, 1233 ms 99th, 1248 ms 99.9th."
+  ]
+ },
+ "sink": {
+  "partitions": 1,
+  "batch_sizes": [
+   200000,
+   200000,
+   200000,
+   200000,
+   200000,
+   200000
+  ],
+  "rows": 1200000,
+  "seconds": 13.632,
+  "rows_per_s": 88027.4,
+  "per_process_seconds": [
+   13.632
+  ],
+  "cpu_cores": {
+   "kafka": 0.36,
+   "minio": 0.019,
+   "postgres": 0.813
+  },
+  "host_cores": 1.72,
+  "pg_activity": {
+   "ticks": 61,
+   "idle_backend_s": 1,
+   "active_backend_s": {
+    "CPU:active": 11,
+    "IO:DataFileExtend": 1,
+    "IO:WalSync": 1,
+    "Client:ClientRead": 1
+   }
+  }
+ }
+}

@@ -48,10 +48,12 @@ alone too: `docker compose up -d postgres && make bird`.
 | `make eval` | BIRD execution accuracy on the `dev50` subset, variants `full` and `bm25-k4`, official and corrected tracks. `PROVIDER=fake` (default) replays recorded model calls and database executions with no model and no database, checks every verdict against the recorded run and checks RESULTS.md's tables (CI runs it). `PROVIDER=ollama`/`anthropic` with `MODEL=...` runs live after `make bird`; `RECORD=1` stores the calls (`RESUME=1` continues an interrupted recording from the calls already stored). `VARIANTS`, `TRACKS`, `SUBSET=all` select the run. |
 | `make eval-link` | Schema-linking table recall and precision on the 500 BIRD questions for every strategy (offline, in CI). |
 | `make results` | Re-render RESULTS.md's BIRD tables from `eval/results/`. |
+| `make bench` | Brings up the `lakehouse` and `airflow` profiles. It then tunes the trigger interval and `maxOffsetsPerTrigger`, produces 50,000 keyed events per run with the stream job and then the broker killed (SIGKILL) at three points, checks zero loss and zero duplicates in PostgreSQL and Iceberg, and reads freshness from `ops.quality_runs`. Writes `bench/results/m5-bench/`. About 75 minutes. It recreates containers, so use a stack you can throw away. |
+| `make bench-scale` | Sustained events/s and p95 at 1, 3 and 6 partitions, the per-stage ceilings (broker, Spark `noop`, Spark + Python, the PostgreSQL sink alone), the bottleneck, and the Iceberg sink's cost at P = 3. Writes `bench/results/m5-scale/`. About 3 hours. It truncates `raw.recentchange` before each run, so use a disposable stack. A rerun skips finished units. |
+| `make bench-results` | Re-render RESULTS.md's ingest tables from `bench/results/` (a unit test fails if they are stale). |
 | `make serve` / `make up-api` | The API on localhost:8000 from the host / in Compose (profile `api`); both need `TRIBUTARY_API_KEYS`. |
 
-Planned targets (`make bench`, `make bench-scale`, `make bench-query`,
-`make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
+Planned targets (`make bench-query`, `make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
 `uv run tributary warehouse grant-agent` once to create the agent's role.
 
 ## Conventions

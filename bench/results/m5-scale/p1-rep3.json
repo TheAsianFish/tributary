@@ -1,0 +1,793 @@
+{
+ "run": "ladder-p1-7d5e4896",
+ "topic": "bench.scale.ladder-p1-7d5e4896",
+ "partitions": 1,
+ "lake": false,
+ "start_rate": 18524.0,
+ "steps": [
+  {
+   "rate": 18524.0,
+   "sent": 1667156,
+   "delivered": 1667156,
+   "failed": 0,
+   "generator_cpu_s": 19.79,
+   "started_at": 1794321795.3913815,
+   "sustained": true,
+   "verdict": "kept up",
+   "queries": {
+    "warehouse": {
+     "sustained": true,
+     "reason": "kept up",
+     "queue_slope": 309.2873738200047,
+     "batches": 10,
+     "offered_ratio": 0.9999976007101898,
+     "batches_in_step": [
+      {
+       "batch_id": 1,
+       "trigger_at": 1794321800.210007,
+       "queued": 85531,
+       "rows": 85531,
+       "trigger_ms": 6158.0,
+       "add_batch_ms": 5979.0,
+       "durations": {
+        "addBatch": 5979.0,
+        "latestOffset": 16.0,
+        "queryPlanning": 82.0,
+        "walCommit": 41.0,
+        "triggerExecution": 6158.0
+       }
+      },
+      {
+       "batch_id": 2,
+       "trigger_at": 1794321806.299874,
+       "queued": 113844,
+       "rows": 113844,
+       "trigger_ms": 5518.0,
+       "add_batch_ms": 5415.0,
+       "durations": {
+        "addBatch": 5415.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 30.0,
+        "walCommit": 30.0,
+        "triggerExecution": 5518.0
+       }
+      },
+      {
+       "batch_id": 3,
+       "trigger_at": 1794321811.793917,
+       "queued": 102245,
+       "rows": 102245,
+       "trigger_ms": 4852.0,
+       "add_batch_ms": 4714.0,
+       "durations": {
+        "addBatch": 4714.0,
+        "latestOffset": 8.0,
+        "queryPlanning": 41.0,
+        "walCommit": 53.0,
+        "triggerExecution": 4852.0
+       }
+      },
+      {
+       "batch_id": 4,
+       "trigger_at": 1794321816.672794,
+       "queued": 89853,
+       "rows": 89853,
+       "trigger_ms": 4066.0,
+       "add_batch_ms": 3946.0,
+       "durations": {
+        "addBatch": 3946.0,
+        "latestOffset": 5.0,
+        "queryPlanning": 26.0,
+        "walCommit": 30.0,
+        "triggerExecution": 4066.0
+       }
+      },
+      {
+       "batch_id": 5,
+       "trigger_at": 1794321820.693395,
+       "queued": 75572,
+       "rows": 75572,
+       "trigger_ms": 4200.0,
+       "add_batch_ms": 4079.0,
+       "durations": {
+        "addBatch": 4079.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 25.0,
+        "walCommit": 39.0,
+        "triggerExecution": 4200.0
+       }
+      },
+      {
+       "batch_id": 6,
+       "trigger_at": 1794321825.1103458,
+       "queued": 81266,
+       "rows": 81266,
+       "trigger_ms": 3752.0,
+       "add_batch_ms": 3637.0,
+       "durations": {
+        "addBatch": 3637.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 22.0,
+        "walCommit": 26.0,
+        "triggerExecution": 3752.0
+       }
+      },
+      {
+       "batch_id": 7,
+       "trigger_at": 1794321830.076735,
+       "queued": 92477,
+       "rows": 92477,
+       "trigger_ms": 4189.0,
+       "add_batch_ms": 4083.0,
+       "durations": {
+        "addBatch": 4083.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 21.0,
+        "walCommit": 46.0,
+        "triggerExecution": 4189.0
+       }
+      },
+      {
+       "batch_id": 8,
+       "trigger_at": 1794321835.075724,
+       "queued": 92770,
+       "rows": 92770,
+       "trigger_ms": 4868.0,
+       "add_batch_ms": 4774.0,
+       "durations": {
+        "addBatch": 4774.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 22.0,
+        "walCommit": 28.0,
+        "triggerExecution": 4868.0
+       }
+      },
+      {
+       "batch_id": 9,
+       "trigger_at": 1794321840.090937,
+       "queued": 92817,
+       "rows": 92817,
+       "trigger_ms": 4963.0,
+       "add_batch_ms": 4884.0,
+       "durations": {
+        "addBatch": 4884.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 16.0,
+        "walCommit": 24.0,
+        "triggerExecution": 4963.0
+       }
+      },
+      {
+       "batch_id": 10,
+       "trigger_at": 1794321845.091401,
+       "queued": 92311,
+       "rows": 92311,
+       "trigger_ms": 3988.0,
+       "add_batch_ms": 3867.0,
+       "durations": {
+        "addBatch": 3867.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 20.0,
+        "walCommit": 28.0,
+        "triggerExecution": 3988.0
+       }
+      },
+      {
+       "batch_id": 11,
+       "trigger_at": 1794321850.079849,
+       "queued": 92618,
+       "rows": 92618,
+       "trigger_ms": 4296.0,
+       "add_batch_ms": 4190.0,
+       "durations": {
+        "addBatch": 4190.0,
+        "latestOffset": 5.0,
+        "queryPlanning": 20.0,
+        "walCommit": 42.0,
+        "triggerExecution": 4296.0
+       }
+      },
+      {
+       "batch_id": 12,
+       "trigger_at": 1794321855.096443,
+       "queued": 92687,
+       "rows": 92687,
+       "trigger_ms": 5986.0,
+       "add_batch_ms": 5911.0,
+       "durations": {
+        "addBatch": 5911.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 17.0,
+        "walCommit": 26.0,
+        "triggerExecution": 5986.0
+       }
+      },
+      {
+       "batch_id": 13,
+       "trigger_at": 1794321861.084928,
+       "queued": 110856,
+       "rows": 110856,
+       "trigger_ms": 5827.0,
+       "add_batch_ms": 5750.0,
+       "durations": {
+        "addBatch": 5750.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 18.0,
+        "walCommit": 26.0,
+        "triggerExecution": 5827.0
+       }
+      },
+      {
+       "batch_id": 14,
+       "trigger_at": 1794321866.9149542,
+       "queued": 108091,
+       "rows": 108091,
+       "trigger_ms": 5587.0,
+       "add_batch_ms": 5501.0,
+       "durations": {
+        "addBatch": 5501.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 18.0,
+        "walCommit": 30.0,
+        "triggerExecution": 5587.0
+       }
+      },
+      {
+       "batch_id": 15,
+       "trigger_at": 1794321872.550076,
+       "queued": 103642,
+       "rows": 103642,
+       "trigger_ms": 5366.0,
+       "add_batch_ms": 5270.0,
+       "durations": {
+        "addBatch": 5270.0,
+        "latestOffset": 5.0,
+        "queryPlanning": 19.0,
+        "walCommit": 30.0,
+        "triggerExecution": 5366.0
+       }
+      },
+      {
+       "batch_id": 16,
+       "trigger_at": 1794321877.878109,
+       "queued": 99351,
+       "rows": 99351,
+       "trigger_ms": 4919.0,
+       "add_batch_ms": 4814.0,
+       "durations": {
+        "addBatch": 4814.0,
+        "latestOffset": 5.0,
+        "queryPlanning": 24.0,
+        "walCommit": 45.0,
+        "triggerExecution": 4919.0
+       }
+      }
+     ]
+    }
+   },
+   "lag_samples": [
+    {
+     "t": 1794321826.57,
+     "warehouse": 110153
+    },
+    {
+     "t": 1794321828.57,
+     "warehouse": 147269
+    },
+    {
+     "t": 1794321830.57,
+     "warehouse": 103295
+    },
+    {
+     "t": 1794321832.58,
+     "warehouse": 140340
+    },
+    {
+     "t": 1794321834.58,
+     "warehouse": 84842
+    },
+    {
+     "t": 1794321836.58,
+     "warehouse": 122066
+    },
+    {
+     "t": 1794321838.58,
+     "warehouse": 158988
+    },
+    {
+     "t": 1794321840.58,
+     "warehouse": 103504
+    },
+    {
+     "t": 1794321842.58,
+     "warehouse": 140507
+    },
+    {
+     "t": 1794321844.59,
+     "warehouse": 177775
+    },
+    {
+     "t": 1794321846.59,
+     "warehouse": 121814
+    },
+    {
+     "t": 1794321848.59,
+     "warehouse": 158765
+    },
+    {
+     "t": 1794321850.6,
+     "warehouse": 103730
+    },
+    {
+     "t": 1794321852.6,
+     "warehouse": 140923
+    },
+    {
+     "t": 1794321854.6,
+     "warehouse": 85209
+    },
+    {
+     "t": 1794321856.6,
+     "warehouse": 122305
+    },
+    {
+     "t": 1794321858.6,
+     "warehouse": 159575
+    },
+    {
+     "t": 1794321860.6,
+     "warehouse": 196394
+    },
+    {
+     "t": 1794321862.6,
+     "warehouse": 140903
+    },
+    {
+     "t": 1794321864.61,
+     "warehouse": 177941
+    },
+    {
+     "t": 1794321866.61,
+     "warehouse": 215042
+    },
+    {
+     "t": 1794321868.61,
+     "warehouse": 141251
+    },
+    {
+     "t": 1794321870.61,
+     "warehouse": 178180
+    },
+    {
+     "t": 1794321872.62,
+     "warehouse": 107165
+    },
+    {
+     "t": 1794321874.62,
+     "warehouse": 144330
+    },
+    {
+     "t": 1794321876.62,
+     "warehouse": 181652
+    },
+    {
+     "t": 1794321878.62,
+     "warehouse": 115010
+    },
+    {
+     "t": 1794321880.62,
+     "warehouse": 151973
+    },
+    {
+     "t": 1794321882.62,
+     "warehouse": 188958
+    },
+    {
+     "t": 1794321884.63,
+     "warehouse": 126839
+    }
+   ],
+   "cpu_cores": {
+    "kafka": 0.41,
+    "minio": 0.017,
+    "postgres": 0.225,
+    "stream": 1.193
+   },
+   "host_cores": 2.208,
+   "pg_activity": {
+    "ticks": 93,
+    "idle_backend_s": 138,
+    "active_backend_s": {
+     "CPU:active": 18,
+     "Client:ClientRead": 2,
+     "IO:WalSync": 2,
+     "IO:WalWrite": 1,
+     "IO:DataFileExtend": 1,
+     "LWLock:WALWrite": 1
+    }
+   }
+  },
+  {
+   "rate": 21302.6,
+   "sent": 1917226,
+   "delivered": 1917226,
+   "failed": 0,
+   "generator_cpu_s": 22.15,
+   "started_at": 1794321889.4138417,
+   "sustained": false,
+   "verdict": "queue growing",
+   "queries": {
+    "warehouse": {
+     "sustained": false,
+     "reason": "queue growing",
+     "queue_slope": 1534.8649608673436,
+     "batches": 6,
+     "offered_ratio": 0.9999958273220693,
+     "batches_in_step": [
+      {
+       "batch_id": 19,
+       "trigger_at": 1794321890.847388,
+       "queued": 28464,
+       "rows": 28464,
+       "trigger_ms": 2569.0,
+       "add_batch_ms": 2492.0,
+       "durations": {
+        "addBatch": 2492.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 14.0,
+        "walCommit": 28.0,
+        "triggerExecution": 2569.0
+       }
+      },
+      {
+       "batch_id": 20,
+       "trigger_at": 1794321895.080253,
+       "queued": 90219,
+       "rows": 90219,
+       "trigger_ms": 4295.0,
+       "add_batch_ms": 4219.0,
+       "durations": {
+        "addBatch": 4219.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 12.0,
+        "walCommit": 25.0,
+        "triggerExecution": 4295.0
+       }
+      },
+      {
+       "batch_id": 21,
+       "trigger_at": 1794321900.078354,
+       "queued": 106755,
+       "rows": 106755,
+       "trigger_ms": 4799.0,
+       "add_batch_ms": 4723.0,
+       "durations": {
+        "addBatch": 4723.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 12.0,
+        "walCommit": 28.0,
+        "triggerExecution": 4799.0
+       }
+      },
+      {
+       "batch_id": 22,
+       "trigger_at": 1794321905.095561,
+       "queued": 106588,
+       "rows": 106588,
+       "trigger_ms": 5251.0,
+       "add_batch_ms": 5104.0,
+       "durations": {
+        "addBatch": 5104.0,
+        "latestOffset": 6.0,
+        "queryPlanning": 31.0,
+        "walCommit": 81.0,
+        "triggerExecution": 5251.0
+       }
+      },
+      {
+       "batch_id": 23,
+       "trigger_at": 1794321910.3437521,
+       "queued": 111734,
+       "rows": 111734,
+       "trigger_ms": 5705.0,
+       "add_batch_ms": 5623.0,
+       "durations": {
+        "addBatch": 5623.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 12.0,
+        "walCommit": 27.0,
+        "triggerExecution": 5705.0
+       }
+      },
+      {
+       "batch_id": 24,
+       "trigger_at": 1794321916.05462,
+       "queued": 121487,
+       "rows": 121487,
+       "trigger_ms": 5996.0,
+       "add_batch_ms": 5919.0,
+       "durations": {
+        "addBatch": 5919.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 12.0,
+        "walCommit": 31.0,
+        "triggerExecution": 5996.0
+       }
+      },
+      {
+       "batch_id": 25,
+       "trigger_at": 1794321922.0454888,
+       "queued": 127620,
+       "rows": 127620,
+       "trigger_ms": 6900.0,
+       "add_batch_ms": 6823.0,
+       "durations": {
+        "addBatch": 6823.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 15.0,
+        "walCommit": 30.0,
+        "triggerExecution": 6900.0
+       }
+      },
+      {
+       "batch_id": 26,
+       "trigger_at": 1794321928.953742,
+       "queued": 147403,
+       "rows": 147403,
+       "trigger_ms": 7207.0,
+       "add_batch_ms": 7127.0,
+       "durations": {
+        "addBatch": 7127.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 17.0,
+        "walCommit": 29.0,
+        "triggerExecution": 7207.0
+       }
+      },
+      {
+       "batch_id": 27,
+       "trigger_at": 1794321936.163594,
+       "queued": 153504,
+       "rows": 153504,
+       "trigger_ms": 7925.0,
+       "add_batch_ms": 7848.0,
+       "durations": {
+        "addBatch": 7848.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 16.0,
+        "walCommit": 29.0,
+        "triggerExecution": 7925.0
+       }
+      },
+      {
+       "batch_id": 28,
+       "trigger_at": 1794321944.0894082,
+       "queued": 168858,
+       "rows": 168858,
+       "trigger_ms": 8077.0,
+       "add_batch_ms": 7995.0,
+       "durations": {
+        "addBatch": 7995.0,
+        "latestOffset": 4.0,
+        "queryPlanning": 17.0,
+        "walCommit": 30.0,
+        "triggerExecution": 8077.0
+       }
+      },
+      {
+       "batch_id": 29,
+       "trigger_at": 1794321952.210516,
+       "queued": 172237,
+       "rows": 172237,
+       "trigger_ms": 9094.0,
+       "add_batch_ms": 8980.0,
+       "durations": {
+        "addBatch": 8980.0,
+        "latestOffset": 3.0,
+        "queryPlanning": 17.0,
+        "walCommit": 29.0,
+        "triggerExecution": 9094.0
+       }
+      },
+      {
+       "batch_id": 30,
+       "trigger_at": 1794321961.272321,
+       "queued": 193829,
+       "rows": 193829,
+       "trigger_ms": 9942.0,
+       "add_batch_ms": 9833.0,
+       "durations": {
+        "addBatch": 9833.0,
+        "latestOffset": 9.0,
+        "queryPlanning": 21.0,
+        "walCommit": 47.0,
+        "triggerExecution": 9942.0
+       }
+      }
+     ]
+    }
+   },
+   "lag_samples": [
+    {
+     "t": 1794321920.66,
+     "warehouse": 221636
+    },
+    {
+     "t": 1794321922.66,
+     "warehouse": 142629
+    },
+    {
+     "t": 1794321924.66,
+     "warehouse": 185559
+    },
+    {
+     "t": 1794321926.66,
+     "warehouse": 227805
+    },
+    {
+     "t": 1794321928.66,
+     "warehouse": 270646
+    },
+    {
+     "t": 1794321930.66,
+     "warehouse": 185583
+    },
+    {
+     "t": 1794321932.67,
+     "warehouse": 228497
+    },
+    {
+     "t": 1794321934.67,
+     "warehouse": 270813
+    },
+    {
+     "t": 1794321936.67,
+     "warehouse": 165962
+    },
+    {
+     "t": 1794321938.67,
+     "warehouse": 208726
+    },
+    {
+     "t": 1794321940.67,
+     "warehouse": 251589
+    },
+    {
+     "t": 1794321942.68,
+     "warehouse": 294219
+    },
+    {
+     "t": 1794321944.68,
+     "warehouse": 183067
+    },
+    {
+     "t": 1794321946.68,
+     "warehouse": 225959
+    },
+    {
+     "t": 1794321948.68,
+     "warehouse": 268323
+    },
+    {
+     "t": 1794321950.68,
+     "warehouse": 311225
+    },
+    {
+     "t": 1794321952.68,
+     "warehouse": 185100
+    },
+    {
+     "t": 1794321954.68,
+     "warehouse": 227652
+    },
+    {
+     "t": 1794321956.69,
+     "warehouse": 270424
+    },
+    {
+     "t": 1794321958.69,
+     "warehouse": 312801
+    },
+    {
+     "t": 1794321960.69,
+     "warehouse": 355394
+    },
+    {
+     "t": 1794321962.69,
+     "warehouse": 226025
+    },
+    {
+     "t": 1794321964.69,
+     "warehouse": 268499
+    },
+    {
+     "t": 1794321966.69,
+     "warehouse": 311042
+    },
+    {
+     "t": 1794321968.7,
+     "warehouse": 353658
+    },
+    {
+     "t": 1794321970.78,
+     "warehouse": 400663
+    },
+    {
+     "t": 1794321972.89,
+     "warehouse": 249220
+    },
+    {
+     "t": 1794321974.89,
+     "warehouse": 291845
+    },
+    {
+     "t": 1794321976.89,
+     "warehouse": 334431
+    },
+    {
+     "t": 1794321978.89,
+     "warehouse": 377075
+    }
+   ],
+   "cpu_cores": {
+    "kafka": 0.388,
+    "minio": 0.017,
+    "postgres": 0.237,
+    "stream": 1.129
+   },
+   "host_cores": 2.141,
+   "pg_activity": {
+    "ticks": 92,
+    "idle_backend_s": 156,
+    "active_backend_s": {
+     "CPU:active": 17,
+     "LWLock:WALWrite": 4,
+     "Client:ClientRead": 3,
+     "IO:DataFileWrite": 2,
+     "IO:WalSync": 2
+    }
+   }
+  }
+ ],
+ "sustained_per_s": 18524.0,
+ "latency": {
+  "rate": 14819.2,
+  "sent": 2667448,
+  "delivered": 2667448,
+  "landed": 2667448,
+  "generator_cpu_s": 30.83,
+  "window_s": [
+   30.0,
+   180.0
+  ],
+  "rows": 2222876,
+  "p50_ms": 9146.1,
+  "p95_ms": 17177.0,
+  "p99_ms": 21257.3,
+  "max_ms": 21740.8,
+  "produced_per_s": 14819.4,
+  "landed_per_s": 14118.1,
+  "cpu_cores": {
+   "kafka": 0.397,
+   "minio": 0.017,
+   "postgres": 0.2,
+   "stream": 1.162
+  },
+  "host_cores": 2.088,
+  "pg_activity": {
+   "ticks": 208,
+   "idle_backend_s": 360,
+   "active_backend_s": {
+    "CPU:active": 34,
+    "IO:DataFileRead": 23,
+    "LWLock:WALWrite": 8,
+    "IO:DataFileWrite": 7,
+    "Client:ClientRead": 5,
+    "IO:WalSync": 1,
+    "IO:DataFileExtend": 1,
+    "LWLock:CheckpointerComm": 1,
+    "IPC:BgworkerShutdown": 1
+   }
+  }
+ }
+}

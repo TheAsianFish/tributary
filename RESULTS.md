@@ -615,6 +615,67 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 | all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
 <!-- /bird:ledger -->
 
+## Ingest under faults and at scale (M5)
+
+These numbers come from `make bench` and `make bench-scale`. They make no model calls and cost $0. Raw output for every
+run (one JSON file per unit of work, with the progress lines, samples and
+settings it was judged on) is under
+[`bench/results/m5-bench/`](bench/results/m5-bench/) and
+[`bench/results/m5-scale/`](bench/results/m5-scale/). The tables between the
+`bench:` markers are rendered from those files by `make bench-results`, and a
+unit test fails if they drift apart.
+
+<!-- bench:environment -->
+4 vCPU (AMD EPYC 9V74 80-Core Processor), 15.6 GiB RAM, Linux 7.0.0-1019-azure, Docker 29.4.2, Compose 5.1.3. Memory limits: kafka 1 GiB, minio 0.5 GiB, postgres 1 GiB, stream 3 GiB. CPU limits: none (every container may use all cores).
+<!-- /bench:environment -->
+
+### Throughput at 1, 3 and 6 partitions
+
+<!-- bench:scale -->
+| P | Sustained events/s, median (range) | p95 at 80% of it, median | Full drain | Spark `noop` | Spark + Python | PostgreSQL sink alone | Broker (consume / produce) | Bottleneck |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 18,524 (18,524–21,303) | 17.18 s | 24,699 | 44,998 | 34,734 | 88,027 | 821,918 / 212,465 | spark (JVM) |
+| 3 | 29,765 (25,882–29,765) | 14.12 s | 34,510 | 73,926 | 48,414 | 91,387 | 329,308 / 265,604 | spark (JVM), CPU-bound (host 3.5 of 4 cores busy) |
+| 3 + Iceberg | 25,882 (22,506–25,882) | 42.07 s | – | – | – | – | – | see below |
+| 6 | 28,753 (21,742–28,753) | 14.89 s | 33,337 | 77,796 | 44,600 | 115,868 | 950,872 / 204,255 | spark (JVM), CPU-bound (host 3.7 of 4 cores busy) |
+<!-- /bench:scale -->
+
+<!-- bench:evidence -->
+| P | Per-event time: JVM / transfer / database (µs) | Predicted vs measured drain | Database share of the sink's time | CPU at the top sustained step: stream / PostgreSQL / whole host (cores of nproc) | PostgreSQL backends, busy share and top wait |
+|---|---|---|---|---|---|
+| 1 | 22.2 / 6.6 / 11.4 | 24,906 vs 24,699 | 29% | 1.17 / 0.23 / 2.16 | 13% busy; CPU:active 53% |
+| 3 | 13.5 / 7.1 / 10.9 | 31,648 vs 34,510 | 29% | 2.15 / 0.42 / 3.53 | 16% busy; CPU:active 43% |
+| 3 + Iceberg | – | – | – | 2.24 / 0.31 / 3.48 | 9% busy; CPU:active 47% |
+| 6 | 12.8 / 9.6 / 8.6 | 32,204 vs 33,337 | 32% | 2.34 / 0.41 / 3.72 | 16% busy; CPU:active 33% |
+<!-- /bench:evidence -->
+
+### What the Iceberg sink costs at P = 3
+
+<!-- bench:iceberg -->
+| P = 3 | Sustained events/s, median | p95 at 80% | Stream job CPU at the top step | Lake batch time at the top step, max |
+|---|---|---|---|---|
+| warehouse only | 29,765 (25,882–29,765) | 14.12 s | 2.15 | – |
+| warehouse + Iceberg | 25,882 (22,506–25,882) | 42.07 s | 2.24 | 32.18 s |
+<!-- /bench:iceberg -->
+
+### Exactly-once with the job and the broker killed
+
+<!-- bench:faults -->
+<!-- /bench:faults -->
+
+### Trigger interval and backpressure
+
+<!-- bench:trigger -->
+<!-- /bench:trigger -->
+
+<!-- bench:cap -->
+<!-- /bench:cap -->
+
+### Freshness during the fault runs
+
+<!-- bench:freshness -->
+<!-- /bench:freshness -->
+
 ## To measure
 
 | What | Command | Milestone | Cost |
