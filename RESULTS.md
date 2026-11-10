@@ -2,7 +2,9 @@
 
 Every number here was produced by a command in this repository, on the
 machine noted, with its raw output committed. Nothing is estimated or taken
-from a mock. Model spend so far: **$0** (no model calls exist yet).
+from a mock. Model spend so far: **$0**. Every model call so far ran on a
+local open model through Ollama (no Anthropic key was available); the Claude
+runs are listed under [To measure](#to-measure) with their commands.
 
 Machine for all runs below: 4 vCPU, 15 GB RAM, Linux 6.17, Docker 28.0.4,
 Compose v2.38.2; Compose memory limits as in `compose.yaml` (Kafka 1 GB,
@@ -191,6 +193,161 @@ build.
 | One failing check, of any kind, turns `warehouse_refresh` red only after every result is recorded; the catalog is then not republished | `tests/unit/test_refresh.py` | pass |
 | A catalog reader never sees a half-written version | `tests/unit/test_catalog.py` (versioned directory, atomic symlink swap, last 3 kept) | pass |
 
+## The agent on its own warehouse (M3)
+
+### The guard suite
+
+`make eval-guard` (offline, also in CI): 112 unsafe statements in
+[`eval/guard/unsafe.yaml`](eval/guard/unsafe.yaml) and, as the benign set, the
+40 gold queries of the warehouse question set, through the guard with the
+catalog's allowlist (the five marts). Raw verdicts:
+[`eval/results/guard.json`](eval/results/guard.json).
+
+| | |
+|---|---|
+| Unsafe statements blocked | **112 / 112 (100%)**: dangerous functions 19, session 12, encoding tricks 11, outside the allowlist 11, DML 8, file access 8, system catalog 8, DDL 7, procedural 7, comment tricks 5, stacked 4, locking 4, privilege 4, exfiltration 4 |
+| Gold queries blocked (false blocks) | **0 / 40** |
+| Queries the 7B model wrote (46, repairs included) blocked | 0 / 46 |
+
+The last row is from the recorded run below: every draft the model produced
+for the 40 questions was a read of the marts, and the guard let each one
+through (counted by re-checking `tests/recordings/warehouse.jsonl`).
+
+### What the database layer alone stops
+
+`make eval-guard-db`: the same 112 statements sent straight to
+`PostgresExecutor` as the agent's role, **with the guard switched off**, on a
+plain `postgres:17` set up like CI (`tributary sample load`, `make dbt`,
+`tributary warehouse grant-agent`), statement timeout 1 s. Raw:
+[`eval/results/guard-db.json`](eval/results/guard-db.json).
+
+| Outcome | Statements |
+|---|---:|
+| Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects, a backend that terminated itself | 53 |
+| Refused: permission (raw, staging, temp tables, superuser-only functions, other roles) | 29 |
+| Cancelled by the statement timeout | 7 |
+| Refused: read-only transaction | 1 |
+| **Ran** | **22** |
+
+The 22 that ran are the guard's alone to stop: catalog reads
+(`information_schema.columns`, `pg_roles`, `pg_user`, `pg_stat_activity`, a
+`UNION` appending one, and `pg_stat_get_activity` reached through field
+notation), `ops.quality_runs` (the role may read `ops` for provenance),
+`version()`, `inet_server_addr()`, `current_user` and its keyword forms
+`user`, `current_role` and `system_user`, `txid_current()`,
+`pg_advisory_lock`, `pg_notify` (rolled back, so never delivered),
+`pg_cancel_backend` (on the suite's made-up pid it returned false),
+`set_config` (which can lift the statement timeout inside the query), a
+three-part name for a mart (`tributary.marts.fct_edits`, which PostgreSQL
+accepts for the current database), a top-level `VALUES`, and both `xml`
+casts. None of them writes, but two are worth knowing:
+`set_config('statement_timeout', '0', true)` makes the timeout only as
+strong as the guard's ban on it, and PostgreSQL lets a role signal its own
+sessions: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity` (counted
+under "refused" above, because the first backend it killed was its own)
+would end every concurrent agent query. The guard blocks all of these.
+
+**Field notation.** The seven statements added by the review are the
+ones a reader of the guard's source would not think to try: PostgreSQL
+reads `(x).f` as the call `f(x)`, so `SELECT (10).pg_sleep` sleeps,
+`((NULL::int).pg_stat_get_activity).*` lists every backend, and
+`(pid).pg_terminate_backend` over that list kills the agent's other
+sessions, none of which contains a function call as far as sqlglot is
+concerned (they parse as a plain dotted expression). The first version of
+the guard let all three through, and the role stops none of them (sleeping,
+reading `pg_stat_activity` and signalling one's own sessions need no
+privilege). The guard now refuses every dotted expression that is not a
+column, and denies the SQL-standard keyword functions (`user` is
+`current_user`) that parse as columns. A name with four parts
+(`tributary.marts.fct_edits.wiki`) is refused by the guard too, rather than
+left for the database to reject.
+
+Two executor defects came out of this run and were fixed before the numbers
+above: a parameterless query went over the simple protocol, so a stacked
+`SELECT 1; COMMIT; ...` ran every statement (the `EXPLAIN` pass included;
+queries are now prepared statements, which hold exactly one), and a query
+that terminated its own backend crashed the executor's rollback instead of
+returning an error.
+
+### The 40 warehouse questions
+
+`make record PROVIDER=ollama` with `TRIBUTARY_OLLAMA_MODEL=qwen2.5-coder:7b`
+(Ollama 0.40.6 on the CPU of the machine above, temperature 0, seed 0,
+16k context): every question goes through the planner, the guard and the
+agent's role, and its rows are compared with the gold query's as a multiset
+of tuples with numerics rounded to six decimals (execution accuracy as BIRD
+defines it, but stricter: BIRD compares sets, so duplicate rows would not
+count there). Every model call was recorded
+(`tests/recordings/warehouse.jsonl`); `make eval-warehouse` replays them.
+Raw: [`eval/results/warehouse-ollama-qwen2.5-coder-7b.json`](eval/results/warehouse-ollama-qwen2.5-coder-7b.json)
+and, for the same run on the 14B model (recordings in
+`tests/recordings/warehouse-qwen2.5-coder-14b.jsonl`),
+[`eval/results/warehouse-ollama-qwen2.5-coder-14b.json`](eval/results/warehouse-ollama-qwen2.5-coder-14b.json).
+Cost $0 (local models).
+
+| Model | Correct | Simple | Moderate | Challenging | Model calls | Repaired into a correct answer | Tokens in / out | Latency per question, p50 / p95 (nearest rank, n = 40) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| qwen2.5-coder:7b (Ollama, CPU) | **25 / 40** | 9 / 12 | 13 / 20 | 3 / 8 | 46 | 1 | 122,191 / 6,987 | 37.9 s / 112.8 s |
+| qwen2.5-coder:14b (Ollama, CPU) | **31 / 40** | 9 / 12 | 18 / 20 | 4 / 8 | 42 | 1 | 110,576 / 6,764 | 80.8 s / 203.6 s |
+
+With the 7B model every question produced a query that ran (status
+`answered` 40 / 40); the 15 misses are wrong answers, not refusals or blocks. Six drafts failed in
+PostgreSQL (five unknown columns, one ambiguous column) and were repaired
+from the error message; one of those repairs ended correct. The 15 misses,
+read one by one against the gold (all 15 are model errors; no gold query
+needed changing):
+
+| Error | Count | Example |
+|---|---:|---|
+| Wrong measure: a byte sum (`length_new - length_old`, `byte_delta`) or `pages_edited` where the question counts edits or wikis | 5 | "edits by Japanese wikis per family" answered in bytes |
+| Wrong table or grain: hourly aggregate for a ten-minute window, per-editor flag for per-edit bot counts, hour for "minute" | 5 | `sum(edits) FROM agg_editor_activity WHERE is_bot` counts all edits of anyone who ever made a bot edit (10,168, gold 10,099) |
+| Missing filter | 2 | Wikidata's hour without `wiki = 'wikidatawiki'` |
+| Fan-out: `sum(dim_wiki.edits)` after joining `fct_edits` | 2 | 22,422,333 Wikipedia "edits" |
+| Wrong interpretation of a definition | 1 | "wikis with no edits" as "no edit that changed bytes" |
+
+**What model size fixes, and what it does not.** The 14B model fixes 9 of
+the 7B model's 15 misses (three of the five wrong-measure errors, both
+fan-outs, both missing filters, one grain error, the misread definition)
+and adds three of its own (`wikis-with-edits` counted wikis with any event,
+`wikidata-bot-vs-human` counted editors instead of edits,
+`wikipedia-article-creations` counted every article instead of the ones
+created), at about twice the latency. Six questions defeat both. Four of
+them are the same error: answering from a pre-aggregated mart whose grain
+does not fit the question (`agg_edits_hourly` for a ten-minute window and
+for "the busiest minute", `agg_editor_activity` for a per-edit bot count
+and for one hour's distinct editors). The 14B model even declared "the
+busiest minute" unanswerable because "the tables do not have a
+minute-level granularity", although `fct_edits.event_ts` is documented at
+one-second resolution. The other two need a two-level aggregation (each
+family's top wiki; a count of editors grouped by name), which both models
+flattened. Choosing the table whose grain fits is a schema-linking
+problem, not a size problem, and it is what M4's linker and M7's few-shot
+examples target. All nine 14B misses were read against the gold as well;
+none needed a change.
+
+The replay, which is what the tests run, reproduces the recorded run exactly:
+`make eval-warehouse` gives the same 40 verdicts and the same SQL in 2.1 s,
+against about 31 minutes live for the 7B model (the sum of the per-question
+latencies). The 14B run took 68 minutes, and
+`TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-qwen2.5-coder-14b.jsonl
+make eval-warehouse` replays it to the same 40 verdicts too. A latency is one
+question end to end, repairs included, not one model call. The difficulty
+labels in the question file are the author's judgement, not a rubric: both
+models miss a "simple" question and answer a "challenging" one.
+
+## Verified behaviour (M3)
+
+| Property | Where | Result |
+|---|---|---|
+| Every gold query passes the guard, reads exactly the tables it lists, and runs as the agent's role | `tests/warehouse/test_agent_pg.py` | pass |
+| The fake provider replays every recorded call (46 for 7B, 42 for 14B) and each question's status, correctness, attempts and SQL equal the recorded run, per recordings file | same file | pass |
+| As the agent's role: `raw` and `staging` refused (permission), temp tables refused (read-only), `pg_sleep` cancelled, a fact-table cross join refused by the cost ceiling before running, an unqualified name resolves to nothing, rows capped with `truncated` set | same file | pass |
+| A stacked `SELECT 1; COMMIT; DELETE ...` never runs past parsing; outside the executor, a `COMMIT` in a stacked string still leaves the next statement read-only (the role's default) | same file | pass |
+| `/sql`, `/query`, `/freshness` on the real database: guarded and qualified SQL, provenance from `ops`, request id in header and body | same file | pass |
+| API keys (401 without or with a wrong key, no start without one), request ids in every log line of a request, status mapping (422 blocked or refused, 502 provider failure, 503 no catalog) | `tests/unit/test_api.py` | pass |
+| The Anthropic request: cached system prefix, structured output schema and effort in `output_config`, `fallbacks: "default"` with its beta header, no sampling or thinking parameters; refusal, truncation and error mapping; cost priced at the model that served | `tests/unit/test_providers_anthropic.py` (the SDK over a mocked transport) | pass |
+| A recording misses (never replays a stale answer) when the system prompt, a message or the schema changes | `tests/unit/test_providers_fake.py` | pass |
+
 ## To measure
 
 | What | Command | Milestone | Cost |
@@ -199,4 +356,5 @@ build.
 | Throughput and p95 at 1, 3 and 6 partitions with per-stage ceilings | `make bench-scale` | M5 | $0 |
 | Postgres vs Trino over Iceberg latency, and pruning at 1M and 20M rows (partitioned vs unpartitioned vs uncompacted) | `make bench-query` | M6 | $0 |
 | What the second Kafka read and the Iceberg sink cost in throughput, at P = 3 | `make bench-scale` | M5 | $0 |
+| The 40 warehouse questions on Claude, recorded so the fake provider replays them (M3 is done on the `qwen2.5-coder:7b` recordings; this adds the Claude column) | `ANTHROPIC_API_KEY=... TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse.jsonl make record PROVIDER=anthropic` (default model `claude-opus-5-5`) | M3 | est. under $1 on Opus 5.5 (about 46 calls with a cached ~3k-token prefix), a few cents on `TRIBUTARY_MODEL=claude-haiku-5-5` |
 | Execution accuracy on BIRD Mini-Dev (both label tracks) | `make eval` | M4, M7 | ~$3 Haiku grid, ~$7 Opus subset |

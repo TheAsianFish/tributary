@@ -11,14 +11,18 @@ on BIRD Mini-Dev (execution accuracy, PostgreSQL) and guarded against unsafe
 queries. The demo data is the live Wikipedia edit stream; one
 `docker compose up` brings the pipeline up with a committed sample.
 
-**Status: ingest, warehouse, lake and orchestration work (milestone 2 of
-8).** Kafka feeds one Spark application with two streaming queries: one into
-the PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
+**Status: the pipeline and the guarded agent work (milestone 3 of 8).**
+Kafka feeds one Spark application with two streaming queries: one into the
+PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
 MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
-records every quality check in `ops.quality_runs`, publishes the catalog the
-agent will read, and keeps the lake compacted and reconciled with the
-warehouse hour by hour. The agent, the API and the benchmarks are planned in
-[PLAN.md](PLAN.md); measured numbers live in [RESULTS.md](RESULTS.md).
+records every quality check in `ops.quality_runs`, publishes the catalog,
+and keeps the lake reconciled with the warehouse hour by hour. On top,
+`tributary ask` and a FastAPI service turn a question into SQL with a model
+(Claude by default, a local Ollama model offline), pass it through an AST
+guard and a read-only database role, and answer with the rows, the SQL and
+each table's freshness and quality status. The BIRD benchmark and the
+ingest benchmarks are planned in [PLAN.md](PLAN.md); measured numbers live
+in [RESULTS.md](RESULTS.md).
 
 ## Why
 
@@ -75,6 +79,58 @@ uv run tributary sample stats                      # what the sample looks like,
 uv run tributary stream --available-now            # run the Spark job on the host until caught up
 ```
 
+Ask the warehouse a question (after `tributary warehouse refresh` has
+published a catalog; with `ANTHROPIC_API_KEY` set, or `--provider ollama`
+with a local model):
+
+```bash
+uv run tributary warehouse grant-agent             # the agent's read-only role, once per database
+uv run tributary ask "Which 5 wikis had the most edits? Return the wiki and its number of edits."
+uv run tributary sql "SELECT count(*) FROM fct_edits WHERE is_bot"   # same guard and role, no model
+uv run tributary catalog --relation marts.fct_edits                  # the schema the model sees
+```
+
+```text
+This query selects the top 5 wikis with the most edits from the dim_wiki table, ordering the
+results by the 'edits' column in descending order and limiting the output to 5 rows. 5 rows: wiki
+wikidatawiki, edits 9,745; wiki enwiki, edits 4,564; wiki commonswiki, edits 4,047; wiki
+kuwiktionary, edits 722; wiki zhwiki, edits 636.
+
+SQL:
+  SELECT wiki, edits FROM marts.dim_wiki ORDER BY edits DESC LIMIT 5
+
+wiki          edits
+------------  -----
+wikidatawiki  9745
+enwiki        4564
+commonswiki   4047
+kuwiktionary  722
+zhwiki        636
+
+Provenance:
+  marts.dim_wiki: rebuilt 2026-10-17T23:06:31.587522+00:00, quality pass (38 checks)
+
+qwen2.5-coder:7b, 1 attempt(s), 2614 in / 109 out tokens, $0.0, 236555.6 ms
+```
+
+(A run with `--provider ollama` and `qwen2.5-coder:7b` on CPU, the first call
+of a cold model; the explanation is the model's, written before it saw any
+rows, and every number after it comes from the result.) The same over HTTP:
+
+```bash
+export TRIBUTARY_API_KEYS=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+make up-api                                        # or: uv run tributary serve
+curl -s localhost:8000/query -H "X-API-Key: $TRIBUTARY_API_KEYS" \
+  -H 'content-type: application/json' -d '{"question": "How many page creations are there?"}'
+uv run tributary ask --api http://localhost:8000 --api-key "$TRIBUTARY_API_KEYS" "..."
+```
+
+`/query` (question → answer), `/sql` (guarded SQL), `/catalog` and
+`/freshness` need the key; `/health` does not. `make up-api` starts the
+Airflow profile as well, because the API reads the catalog that
+`warehouse_refresh` publishes: until that DAG has run once (or `uv run
+tributary warehouse refresh` has), `/query` answers 503.
+
 Demo: *screenshot placeholder.* To capture one, run the commands above and
 record `docker compose logs -f stream` next to the `psql` query (for example
 with `asciinema rec` and `agg`), saved as `docs/demo.gif`.
@@ -110,6 +166,18 @@ flowchart LR
     WR --> QR[(ops.quality_runs)]
     LM -->|optimize, expire, orphans| TR
     LM -->|reconcile closed hours| QR
+    subgraph Agent[Agent: tributary ask, FastAPI /query and /sql]
+        Q[Question] --> PL[Planner<br/>structured SQL draft<br/>cached schema prefix]
+        PL --> G[Guard<br/>sqlglot AST policy]
+        G --> EX[Executor<br/>role tributary_agent<br/>read-only, timeout, cost ceiling]
+        EX -->|error| PL
+        G -->|blocked| PL
+        EX --> AN[Answer<br/>rows, SQL, provenance]
+    end
+    CAT --> PL
+    EX --> MARTS
+    QR --> AN
+    PROV[(Claude API / Ollama /<br/>recorded replay)] <--> PL
 ```
 
 **The hard part: every event exactly once, under retries, restarts and late
@@ -161,6 +229,29 @@ time *T*, anything older than *T* − 10 min is dropped as late, so replaying an
 old file into a stack that has already ingested newer events loses it. Start
 from `make down` (which deletes the checkpoint) to replay from scratch.
 
+### The agent: an answer you can check
+
+**The hard part on the agent side is trusting an answer, which takes four
+things the model alone cannot give:** the query must be unable to do harm,
+it must read only what it is allowed to, a failure must be something the
+model can fix, and the answer must say what it rests on. Each layer is
+there because the one before it can be wrong:
+
+| Layer | What it does | What it would miss alone |
+|---|---|---|
+| Planner (`tributary/agent/planner.py`) | The model sees the marts as DDL with dbt's descriptions, keys, lineage and indexed values (the system prefix, cached), and returns a schema-enforced `SQLDraft`. A guard block or PostgreSQL error goes back as the next turn, at most two repairs. | A model can write anything, including `DELETE`. |
+| Guard (`tributary/agent/guard.py`) | Parses with sqlglot and fails closed: one `SELECT`, no write or DDL node anywhere in the tree (a `DELETE` hidden in a CTE included), only the catalog's relations (unqualified names are qualified on the way out), an allowlist for functions sqlglot does not know and a denylist for dangerous ones, `LIMIT` capped. The SQL that runs is regenerated from the checked tree, so comments and anything the parser dropped never reach the database. 112 attack statements, all blocked; 40 gold queries, none blocked. | A parser can disagree with PostgreSQL. |
+| Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap. With the guard switched off it still refuses 90 of the 112 attacks. | Catalog reads, `set_config`, sleeping and signalling its own sessions are open to any role: the 22 the guard alone stops. |
+| Answer (`answer.py`, `provenance.py`) | The text is composed from the rows (the model never restates a number), and carries the SQL that ran, the tables read and, for each, its last successful rebuild and the latest result of every check on it and on its sources. Stale or failing tables become warnings in the answer text. | A correct query over a stale or broken table is still a wrong answer. |
+
+The model boundary (`tributary/agent/provider.py`) is one request shape and
+three providers: `anthropic` (structured outputs, prompt caching on the
+schema prefix, server-side fallback on refusals, cost per call), `ollama`
+(a local model through its JSON-schema output) and `fake`, which replays
+recorded responses by a fingerprint of everything the model saw. Tests run
+on recordings of real model output, and a changed prompt misses its
+recording instead of replaying a stale answer.
+
 ### Design decisions
 
 | Decision | Chosen | Rejected | Why |
@@ -180,11 +271,18 @@ from `make down` (which deletes the checkpoint) to replay from scratch.
 | Data-quality tests | dbt generic tests plus two custom ones: arrival freshness, and an hourly volume z-score that counts empty hours as zero | Great Expectations, Soda, dbt source freshness | A few SQL statements, versioned with the models; results go to `ops.quality_runs` so answers can carry them. The volume test skips with too little history or zero variance rather than firing on noise; a fixture project proves each test passes and fails where it should. |
 | Triggering the warehouse | A 5-minute DAG that emits the `raw.recentchange` asset only when rows arrived (high-water mark kept in the asset event's `extra`); `warehouse_refresh` is scheduled on the asset | A cron schedule; the stream job calling Airflow's API | No rebuild when nothing changed, no coupling of the stream job to the orchestrator, and the trigger's state lives with the asset it describes. When nothing arrived, the same task runs the freshness tests alone, so a stalled sink turns the run red instead of leaving the last `pass` standing. |
 | Airflow image | `python:3.12-slim` plus this repository's `uv.lock` | `apache/airflow` with pip installs on top | The scheduler runs exactly the dbt, Trino client and Airflow versions the tests ran, with no constraint-file conflicts. |
+| Agent safety | AST policy, then a restricted role with per-query limits | Prompt instructions; a regex deny-list; the database role alone | Regexes miss CTEs, comments and quoting; the role alone lets 22 of the 112 attacks run (measured). Two layers that fail differently, each tested on its own. |
+| The agent's role | `tributary_agent`: marts and `ops` only | Reusing `tributary_reader` | The reader serves Trino and can read `raw`, where editor names are; the agent never needs it, so the database refuses it without the guard. |
+| Answer text | Composed from the rows; the model's one-line explanation is written before it sees them | A second model call that summarises the rows | A summary can misquote a number; this cannot, and it costs no extra call. |
+| Repair loop | Feed the guard's reasons or PostgreSQL's error back, at most two repairs | One shot; unbounded retries | Most failed drafts fail on a column PostgreSQL names in its error (all six repairs in the 7B run); a bound keeps the worst case at three calls. |
+| Test provider | Replay real recorded responses, keyed by a fingerprint of the full request | Hand-written mock replies | A mock tests the code against what its author expects the model to say; a recording tests it against what a model said, and goes stale loudly when the prompt changes. |
+| Offline model | Ollama with `qwen2.5-coder` | Bundling a model; no offline path | Free, local, the same JSON-schema output as the API path, and a second column for the results. |
 
 ## Results
 
 From [RESULTS.md](RESULTS.md), where each number has its command and raw
-output. No model calls yet, so $0 spent.
+output. $0 spent: every model call so far ran on a local model; the Claude
+runs are listed there under "To measure".
 
 | Measurement | Result |
 |---|---|
@@ -195,6 +293,10 @@ output. No model calls yet, so $0 spent.
 | One-hour filter on the lake (sample) | Scan read 2 of 4 files and 19,271 of 50,000 rows, exactly the hour's `$files` |
 | Per-hour reconciliation | Closed hour 19,271 = 19,271 ids with equal fingerprints, 0 duplicates; an injected duplicate fails it, and so does an exchange of ids that keeps every count equal |
 | `dbt build` on the sample | PASS=57 (2 seeds, 5 marts, 1 staging view, 49 tests) |
+| Guard suite (`make eval-guard`) | 112 / 112 unsafe statements blocked; 0 / 40 gold queries blocked |
+| Database layer alone, guard off (`make eval-guard-db`) | 90 / 112 refused; the 22 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, ...) are the guard's alone to stop |
+| 40 warehouse questions on local models (CPU, $0) | `qwen2.5-coder:7b` 25 / 40, `:14b` 31 / 40 (execution accuracy); 4 of the 6 questions both miss are the same error, a pre-aggregated mart whose grain does not fit the question |
+| Replay of the recorded runs (what CI tests) | Same 40 verdicts and SQL in 2.1 s, against 31 min live for the 7B run (68 min for 14B) |
 
 ## Development
 
@@ -205,8 +307,9 @@ PostgreSQL; `make test-integration` runs against Compose.
 
 ## Roadmap
 
-M3 the guarded agent and API; M4 BIRD harness; M5 fault-injection and
-scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
+M3 the guarded agent and API (done on local-model recordings; the Claude
+run of the 40 questions waits for a key); M4 BIRD harness and schema
+linking; M5 fault-injection and scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
 over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.

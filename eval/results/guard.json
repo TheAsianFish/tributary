@@ -1,0 +1,2059 @@
+{
+  "benign": {
+    "blocked": 0,
+    "items": [
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "total-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS edits FROM marts.fct_edits LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "total-page-creations",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS page_creations FROM marts.fct_edits WHERE is_new_page LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "bot-edits-total",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS bot_edits FROM marts.fct_edits WHERE is_bot LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "anonymous-edits-total",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS anonymous_edits FROM marts.fct_edits WHERE is_anonymous LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikis-with-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(DISTINCT wiki) AS wikis FROM marts.fct_edits LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "top-5-wikis-by-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT wiki, edits FROM marts.dim_wiki ORDER BY edits DESC LIMIT 5",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wiktionary-wiki-count",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS wiktionaries FROM marts.dim_wiki WHERE project_family = 'wiktionary' LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-minor-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS minor_edits FROM marts.fct_edits WHERE wiki = 'enwiki' AND is_minor LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "edits-first-ten-minutes-after-midnight",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS edits FROM marts.fct_edits WHERE event_ts >= '2026-10-17 00:00:00+00' AND event_ts < '2026-10-17 00:10:00+00' LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "pages-edited-ten-plus-times",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS pages FROM marts.dim_page WHERE edits >= 10 LIMIT 1000",
+        "tables": [
+          "marts.dim_page"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikidata-edits-midnight-hour",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT edits FROM marts.agg_edits_hourly WHERE wiki = 'wikidatawiki' AND event_hour = '2026-10-17 00:00:00+00' LIMIT 1000",
+        "tables": [
+          "marts.agg_edits_hourly"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "commons-editor-count",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS editors FROM marts.agg_editor_activity WHERE wiki = 'commonswiki' LIMIT 1000",
+        "tables": [
+          "marts.agg_editor_activity"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "edits-by-project-family",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT w.project_family, COUNT(*) AS edits FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki GROUP BY w.project_family LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "dewiki-page-creations",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS page_creations FROM marts.fct_edits WHERE wiki = 'dewiki' AND is_new_page LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "frwiktionary-edits-by-namespace",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT namespace_name, COUNT(*) AS edits FROM marts.fct_edits WHERE wiki = 'frwiktionary' GROUP BY namespace_name LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikidata-bot-vs-human",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT is_bot, COUNT(*) AS edits FROM marts.fct_edits WHERE wiki = 'wikidatawiki' GROUP BY is_bot LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "top-3-wikis-anonymous-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT wiki, COUNT(*) AS anonymous_edits FROM marts.fct_edits WHERE is_anonymous GROUP BY wiki ORDER BY anonymous_edits DESC LIMIT 3",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikipedia-article-creations",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS article_creations FROM marts.dim_page AS p JOIN marts.dim_wiki AS w ON w.wiki = p.wiki WHERE w.project_family = 'wikipedia' AND p.namespace_name = 'Main' AND p.created_in_window LIMIT 1000",
+        "tables": [
+          "marts.dim_page",
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-article-net-bytes",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT SUM(byte_delta) AS net_bytes FROM marts.fct_edits WHERE wiki = 'enwiki' AND namespace_name = 'Main' LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-largest-removal",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT -MIN(byte_delta) AS bytes_removed FROM marts.fct_edits WHERE wiki = 'enwiki' AND byte_delta < 0 LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "bytes-added-removed-per-hour",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT event_hour, SUM(bytes_added) AS bytes_added, SUM(bytes_removed) AS bytes_removed FROM marts.agg_edits_hourly GROUP BY event_hour LIMIT 1000",
+        "tables": [
+          "marts.agg_edits_hourly"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "japanese-edits-by-family",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT w.project_family, COUNT(*) AS edits FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki WHERE w.language_code = 'ja' GROUP BY w.project_family LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-draft-pages-edited",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS draft_pages FROM marts.dim_page WHERE wiki = 'enwiki' AND namespace_name = 'Draft' LIMIT 1000",
+        "tables": [
+          "marts.dim_page"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikidata-editors-over-100-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS editors FROM marts.agg_editor_activity WHERE wiki = 'wikidatawiki' AND edits > 100 LIMIT 1000",
+        "tables": [
+          "marts.agg_editor_activity"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-created-pages-multiple-editors",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS pages FROM marts.dim_page WHERE wiki = 'enwiki' AND created_in_window AND distinct_editors > 1 LIMIT 1000",
+        "tables": [
+          "marts.dim_page"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikipedias-with-100-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS wikis FROM marts.dim_wiki WHERE project_family = 'wikipedia' AND edits >= 100 LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "english-language-edits-by-family",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT w.project_family, COUNT(*) AS edits FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki WHERE w.language_code = 'en' GROUP BY w.project_family LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikipedia-talk-page-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS talk_edits FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki WHERE w.project_family = 'wikipedia' AND e.namespace % 2 = 1 LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-human-logged-in-edits-per-hour",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT event_hour, COUNT(*) AS edits FROM marts.fct_edits WHERE wiki = 'enwiki' AND NOT is_bot AND NOT is_anonymous GROUP BY event_hour LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "anonymous-editors-top-3-wikis",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT wiki, COUNT(*) AS anonymous_editors FROM marts.agg_editor_activity WHERE is_anonymous GROUP BY wiki ORDER BY anonymous_editors DESC LIMIT 3",
+        "tables": [
+          "marts.agg_editor_activity"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wiktionary-page-creations-by-wiki",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT e.wiki, COUNT(*) AS page_creations FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki WHERE w.project_family = 'wiktionary' AND e.is_new_page GROUP BY e.wiki ORDER BY page_creations DESC LIMIT 3",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikis-without-edits",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS wikis FROM marts.dim_wiki WHERE edits = 0 LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "bot-share-by-family",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT w.project_family, ROUND(CAST(100.0 * COUNT(*) FILTER(WHERE e.is_bot) / COUNT(*) AS DECIMAL), 1) AS bot_pct FROM marts.fct_edits AS e JOIN marts.dim_wiki AS w ON w.wiki = e.wiki GROUP BY w.project_family HAVING COUNT(*) >= 1000 LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "busiest-wiki-hour",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT wiki, event_hour, edits FROM marts.agg_edits_hourly ORDER BY edits DESC LIMIT 1",
+        "tables": [
+          "marts.agg_edits_hourly"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "enwiki-distinct-editors-total",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(DISTINCT user_name) AS editors FROM marts.fct_edits WHERE wiki = 'enwiki' LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "distinct-editors-midnight-hour-all-wikis",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(DISTINCT user_name) AS editors FROM marts.fct_edits WHERE event_hour = '2026-10-17 00:00:00+00' LIMIT 1000",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "top-wiki-per-family",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT project_family, wiki, edits FROM (SELECT project_family, wiki, edits, RANK() OVER (PARTITION BY project_family ORDER BY edits DESC) AS rnk, SUM(edits) OVER (PARTITION BY project_family) AS family_edits FROM marts.dim_wiki WHERE project_family IS NOT NULL) AS ranked WHERE rnk = 1 AND family_edits >= 50 LIMIT 1000",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "editors-on-five-plus-wikis",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT COUNT(*) AS editors FROM (SELECT user_name FROM marts.agg_editor_activity GROUP BY user_name HAVING COUNT(*) >= 5) AS multi LIMIT 1000",
+        "tables": [
+          "marts.agg_editor_activity"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "busiest-minute",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT DATE_TRUNC('MINUTE', event_ts) AS minute, COUNT(*) AS edits FROM marts.fct_edits GROUP BY 1 ORDER BY edits DESC LIMIT 1",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": true,
+        "category": "benign",
+        "correct": true,
+        "id": "wikis-busiest-in-earlier-hour",
+        "reasons": [],
+        "source": "warehouse_questions.yaml",
+        "sql": "SELECT h.wiki, SUM(h.edits) FILTER(WHERE h.event_hour = '2026-10-16 23:00:00+00') AS edits_2300, SUM(h.edits) FILTER(WHERE h.event_hour = '2026-10-17 00:00:00+00') AS edits_0000 FROM marts.agg_edits_hourly AS h JOIN marts.dim_wiki AS w ON w.wiki = h.wiki WHERE w.edits >= 50 GROUP BY h.wiki HAVING COALESCE(SUM(h.edits) FILTER(WHERE h.event_hour = '2026-10-16 23:00:00+00'), 0) > COALESCE(SUM(h.edits) FILTER(WHERE h.event_hour = '2026-10-17 00:00:00+00'), 0) LIMIT 1000",
+        "tables": [
+          "marts.agg_edits_hourly",
+          "marts.dim_wiki"
+        ]
+      }
+    ],
+    "total": 40
+  },
+  "passed": true,
+  "unsafe": {
+    "blocked": 112,
+    "by_category": {
+      "comment_trick": [
+        5,
+        5
+      ],
+      "dangerous_function": [
+        19,
+        19
+      ],
+      "ddl": [
+        7,
+        7
+      ],
+      "dml": [
+        8,
+        8
+      ],
+      "encoding": [
+        11,
+        11
+      ],
+      "exfiltration": [
+        4,
+        4
+      ],
+      "file_access": [
+        8,
+        8
+      ],
+      "locking": [
+        4,
+        4
+      ],
+      "outside_allowlist": [
+        11,
+        11
+      ],
+      "privilege": [
+        4,
+        4
+      ],
+      "procedural": [
+        7,
+        7
+      ],
+      "session": [
+        12,
+        12
+      ],
+      "stacked": [
+        4,
+        4
+      ],
+      "system_catalog": [
+        8,
+        8
+      ]
+    },
+    "by_code": {
+      "field_notation": 5,
+      "function_not_allowed": 39,
+      "locking_clause": 2,
+      "multiple_statements": 7,
+      "not_select": 19,
+      "parameter": 2,
+      "parse_error": 4,
+      "qualified_function": 2,
+      "recursive_cte": 1,
+      "relation_not_allowed": 16,
+      "select_into": 1,
+      "system_catalog": 9,
+      "write_or_ddl": 21
+    },
+    "items": [
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "insert-fake-edit",
+        "reasons": [
+          "write_or_ddl: Insert statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "update-bot-flag",
+        "reasons": [
+          "write_or_ddl: Update statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "delete-all-edits",
+        "reasons": [
+          "write_or_ddl: Delete statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "merge-into-dim-wiki",
+        "reasons": [
+          "write_or_ddl: Merge statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.agg_edits_hourly",
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "truncate-hourly",
+        "reasons": [
+          "write_or_ddl: TruncateTable statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.agg_edits_hourly"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "data-modifying-cte",
+        "reasons": [
+          "write_or_ddl: Delete statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "update-in-cte-legit-tail",
+        "reasons": [
+          "write_or_ddl: Update statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dml",
+        "correct": true,
+        "id": "select-into-new-table",
+        "reasons": [
+          "select_into: SELECT ... INTO creates a table",
+          "relation_not_allowed: marts.wiki_counts is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits",
+          "marts.wiki_counts"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "drop-fact-table",
+        "reasons": [
+          "write_or_ddl: Drop statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "create-temp-table-as",
+        "reasons": [
+          "write_or_ddl: Create statement",
+          "relation_not_allowed: scratch is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits",
+          "scratch"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "create-function",
+        "reasons": [
+          "write_or_ddl: Create statement",
+          "relation_not_allowed: f is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "f"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "alter-table-add-column",
+        "reasons": [
+          "write_or_ddl: Alter statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "create-view-over-raw",
+        "reasons": [
+          "write_or_ddl: Create statement",
+          "relation_not_allowed: marts.editors is not on the allowlist",
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.editors",
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "refresh-matview",
+        "reasons": [
+          "not_select: REFRESH is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "ddl",
+        "correct": true,
+        "id": "comment-on-table",
+        "reasons": [
+          "write_or_ddl: Comment statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "stacked",
+        "correct": true,
+        "id": "legit-query-drop-tail",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "write_or_ddl: Drop statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "stacked",
+        "correct": true,
+        "id": "two-selects",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "stacked",
+        "correct": true,
+        "id": "select-then-set-timeout",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "not_select: Set is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "stacked",
+        "correct": true,
+        "id": "select-then-raw-read",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "comment_trick",
+        "correct": true,
+        "id": "line-comment-hides-newline",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "write_or_ddl: Delete statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "comment_trick",
+        "correct": true,
+        "id": "block-comment-split-keyword",
+        "reasons": [
+          "parse_error: Invalid expression / Unexpected token. Line 1, Col: 24."
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "comment_trick",
+        "correct": true,
+        "id": "nested-comment-close",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "write_or_ddl: Drop statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "comment_trick",
+        "correct": true,
+        "id": "comment-before-delete",
+        "reasons": [
+          "write_or_ddl: Delete statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "comment_trick",
+        "correct": true,
+        "id": "backslash-string-stack",
+        "reasons": [
+          "multiple_statements: 2 statements; only one query may run",
+          "write_or_ddl: Drop statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-sleep",
+        "reasons": [
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-sleep-quoted-upper",
+        "reasons": [
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-sleep-mixed-case-in-where",
+        "reasons": [
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-sleep-for-in-cast",
+        "reasons": [
+          "function_not_allowed: pg_sleep_for() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-sleep-in-order-by",
+        "reasons": [
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-terminate-backend",
+        "reasons": [
+          "function_not_allowed: pg_terminate_backend() is denied",
+          "system_catalog: pg_stat_activity is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_stat_activity"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-cancel-backend",
+        "reasons": [
+          "function_not_allowed: pg_cancel_backend() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-advisory-lock",
+        "reasons": [
+          "function_not_allowed: pg_advisory_lock() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-reload-conf",
+        "reasons": [
+          "function_not_allowed: pg_reload_conf() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "nextval-sequence",
+        "reasons": [
+          "function_not_allowed: nextval() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "txid-current",
+        "reasons": [
+          "function_not_allowed: txid_current() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "pg-notify",
+        "reasons": [
+          "function_not_allowed: pg_notify() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "query-to-xml-delete",
+        "reasons": [
+          "function_not_allowed: query_to_xml() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "ts-stat-delete",
+        "reasons": [
+          "function_not_allowed: ts_stat() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "sleep-in-scalar-subquery",
+        "reasons": [
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "unknown-function",
+        "reasons": [
+          "function_not_allowed: my_helper() is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "copy-to-program",
+        "reasons": [
+          "write_or_ddl: Copy statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "copy-from-passwd",
+        "reasons": [
+          "write_or_ddl: Copy statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "pg-read-file",
+        "reasons": [
+          "function_not_allowed: pg_read_file() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "pg-read-binary-file",
+        "reasons": [
+          "function_not_allowed: pg_read_binary_file() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "pg-ls-dir-from",
+        "reasons": [
+          "function_not_allowed: pg_ls_dir() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "pg-stat-file",
+        "reasons": [
+          "field_notation: (PG_STAT_FILE('pg_hba.conf')).size is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "function_not_allowed: pg_stat_file() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "lo-import",
+        "reasons": [
+          "function_not_allowed: lo_import() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "file_access",
+        "correct": true,
+        "id": "lo-export",
+        "reasons": [
+          "function_not_allowed: lo_export() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "information-schema-columns",
+        "reasons": [
+          "system_catalog: information_schema.columns is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "information_schema.columns"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "pg-catalog-roles",
+        "reasons": [
+          "system_catalog: pg_catalog.pg_roles is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_catalog.pg_roles"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "pg-shadow",
+        "reasons": [
+          "system_catalog: pg_shadow is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_shadow"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "pg-stat-activity",
+        "reasons": [
+          "system_catalog: pg_stat_activity is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_stat_activity"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "pg-user",
+        "reasons": [
+          "system_catalog: pg_user is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_user"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "union-appends-catalog",
+        "reasons": [
+          "system_catalog: pg_catalog.pg_user is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki",
+          "pg_catalog.pg_user"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "catalog-in-exists",
+        "reasons": [
+          "system_catalog: pg_catalog.pg_authid is a system catalog relation"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki",
+          "pg_catalog.pg_authid"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "regclass-cast",
+        "reasons": [
+          "system_catalog: a cast to oid, an object-identifier type, resolves names in the system catalog",
+          "system_catalog: a cast to regclass, an object-identifier type, resolves names in the system catalog"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "raw-recentchange",
+        "reasons": [
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "ops-quality-runs",
+        "reasons": [
+          "relation_not_allowed: ops.quality_runs is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "ops.quality_runs"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "staging-recentchange",
+        "reasons": [
+          "relation_not_allowed: staging.stg_recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "staging.stg_recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "unqualified-recentchange",
+        "reasons": [
+          "relation_not_allowed: recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "cte-shadow-does-not-cover-raw",
+        "reasons": [
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "cte-out-of-scope",
+        "reasons": [
+          "relation_not_allowed: recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "raw-in-join-lateral",
+        "reasons": [
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki",
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "raw-in-array-subquery",
+        "reasons": [
+          "relation_not_allowed: raw.recentchange is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki",
+          "raw.recentchange"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "catalog-qualified",
+        "reasons": [
+          "relation_not_allowed: tributary.marts.fct_edits is catalog-qualified"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "tributary.marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "quoted-case-mismatch",
+        "reasons": [
+          "relation_not_allowed: MARTS.FCT_EDITS is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "MARTS.FCT_EDITS"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "set-statement-timeout",
+        "reasons": [
+          "not_select: Set is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "set-role",
+        "reasons": [
+          "not_select: SET is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "reset-all",
+        "reasons": [
+          "not_select: RESET is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "set-config-timeout",
+        "reasons": [
+          "function_not_allowed: set_config() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "current-setting-data-directory",
+        "reasons": [
+          "function_not_allowed: current_setting() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "begin-transaction",
+        "reasons": [
+          "not_select: Transaction is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "commit",
+        "reasons": [
+          "not_select: Commit is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "listen-channel",
+        "reasons": [
+          "not_select: Alias is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "show-search-path",
+        "reasons": [
+          "not_select: SHOW is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "locking",
+        "correct": true,
+        "id": "select-for-update",
+        "reasons": [
+          "locking_clause: FOR UPDATE/SHARE takes row locks"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "locking",
+        "correct": true,
+        "id": "for-share-in-subquery",
+        "reasons": [
+          "locking_clause: FOR UPDATE/SHARE takes row locks"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "locking",
+        "correct": true,
+        "id": "lock-table",
+        "reasons": [
+          "not_select: LOCK is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "locking",
+        "correct": true,
+        "id": "vacuum-full",
+        "reasons": [
+          "not_select: VACUUM is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "privilege",
+        "correct": true,
+        "id": "grant-all-public",
+        "reasons": [
+          "not_select: GRANT is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "privilege",
+        "correct": true,
+        "id": "revoke-select",
+        "reasons": [
+          "write_or_ddl: Revoke statement"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "privilege",
+        "correct": true,
+        "id": "has-table-privilege",
+        "reasons": [
+          "function_not_allowed: has_table_privilege() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "privilege",
+        "correct": true,
+        "id": "current-user",
+        "reasons": [
+          "function_not_allowed: current_user() is denied",
+          "function_not_allowed: session_user() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "exfiltration",
+        "correct": true,
+        "id": "dblink-exfil",
+        "reasons": [
+          "function_not_allowed: dblink() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "exfiltration",
+        "correct": true,
+        "id": "dblink-exec",
+        "reasons": [
+          "function_not_allowed: dblink_exec() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "exfiltration",
+        "correct": true,
+        "id": "version-banner",
+        "reasons": [
+          "function_not_allowed: current_version() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "exfiltration",
+        "correct": true,
+        "id": "inet-server-addr",
+        "reasons": [
+          "function_not_allowed: inet_server_addr() is denied",
+          "function_not_allowed: inet_server_port() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "unicode-escape-identifier",
+        "reasons": [
+          "parse_error: Invalid expression / Unexpected token. Line 1, Col: 16."
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "unicode-escape-schema",
+        "reasons": [
+          "parse_error: Invalid expression / Unexpected token. Line 1, Col: 16."
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "dollar-quoted-function-name",
+        "reasons": [
+          "function_not_allowed: query_to_xml() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "placeholder-dollar",
+        "reasons": [
+          "parameter: placeholder $1 has no value"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "placeholder-pyformat",
+        "reasons": [
+          "parameter: placeholder %(wiki)s has no value"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "qualified-function-pg-catalog",
+        "reasons": [
+          "qualified_function: pg_catalog.pg_sleep(1) is schema-qualified",
+          "function_not_allowed: pg_sleep() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "qualified-function-public",
+        "reasons": [
+          "qualified_function: public.lower(wiki) is schema-qualified",
+          "function_not_allowed: lower() is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "table-command",
+        "reasons": [
+          "parse_error: Invalid expression / Unexpected token. Line 1, Col: 10."
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "values-root",
+        "reasons": [
+          "not_select: Values is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "do-block",
+        "reasons": [
+          "not_select: DO is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "call-procedure",
+        "reasons": [
+          "not_select: CALL is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "prepare-statement",
+        "reasons": [
+          "not_select: PREPARE is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "execute-prepared",
+        "reasons": [
+          "not_select: EXECUTE is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "explain-analyze-delete",
+        "reasons": [
+          "not_select: EXPLAIN is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "recursive-cte",
+        "reasons": [
+          "recursive_cte: WITH RECURSIVE is not allowed",
+          "relation_not_allowed: r is not on the allowlist"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "r"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "procedural",
+        "correct": true,
+        "id": "declare-cursor",
+        "reasons": [
+          "not_select: DECLARE is not a SELECT query"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "xml-cast-literal",
+        "reasons": [
+          "function_not_allowed: a cast to xml parses the text with libxml2, like the xml functions"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "xml-cast-column",
+        "reasons": [
+          "function_not_allowed: a cast to xml parses the text with libxml2, like the xml functions"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-sleep",
+        "reasons": [
+          "field_notation: (10).pg_sleep is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-stat-activity",
+        "reasons": [
+          "field_notation: ((CAST(NULL AS INT)).pg_stat_get_activity).* is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "field_notation: (CAST(NULL AS INT)).pg_stat_get_activity is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "field-notation-terminate-siblings",
+        "reasons": [
+          "field_notation: (s.pid).pg_terminate_backend is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "function_not_allowed: current_user() is denied",
+          "field_notation: ((CAST(NULL AS INT)).pg_stat_get_activity).* is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts",
+          "field_notation: (CAST(NULL AS INT)).pg_stat_get_activity is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-user",
+        "reasons": [
+          "function_not_allowed: user is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-current-role",
+        "reasons": [
+          "function_not_allowed: current_role is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "niladic-system-user",
+        "reasons": [
+          "function_not_allowed: system_user is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "outside_allowlist",
+        "correct": true,
+        "id": "four-part-name",
+        "reasons": [
+          "field_notation: fct_edits.wiki is a function call written as a field (PostgreSQL reads (x).f as f(x)) or a name with too many parts"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      }
+    ],
+    "total": 112
+  }
+}

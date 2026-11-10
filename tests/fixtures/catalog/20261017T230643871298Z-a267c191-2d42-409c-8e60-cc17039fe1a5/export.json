@@ -1,0 +1,1 @@
+{"dbt_invocation_id": "a267c191-2d42-409c-8e60-cc17039fe1a5", "dbt_version": "1.12.6", "generated_at": "2026-10-17T23:06:43.871298+00:00", "indexed_columns": 10, "relations": {"catalog_nodes": 8, "catalog_sources": 1, "manifest": {"model": 6, "seed": 2, "test": 49}, "sources": 1}, "run_id": "60eb748a4e95"}

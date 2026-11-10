@@ -29,3 +29,4 @@ jobs:
           python-version: "3.12"
       - run: uv sync --all-extras --locked
       - run: make check
+      - run: make eval-guard

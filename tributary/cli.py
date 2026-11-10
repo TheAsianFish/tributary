@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import structlog
 import typer
@@ -12,6 +12,9 @@ import typer
 from tributary import __version__
 from tributary.config import Settings, get_settings
 from tributary.logging import bind_run_id, configure_logging
+
+if TYPE_CHECKING:
+    from tributary.agent.service import Agent
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help=__doc__)
 sample_app = typer.Typer(no_args_is_help=True, help="Capture and describe the committed sample.")
@@ -266,3 +269,183 @@ def lake_pruning(
         typer.echo(report.plan)
     if not report.pruned:
         raise typer.Exit(1)
+
+
+@warehouse_app.command("grant-agent")
+def warehouse_grant_agent() -> None:
+    """Create the agent's role (marts and ops, read-only) on the configured database."""
+    from tributary.agent.roles import ensure_agent_role
+
+    bind_run_id("warehouse-grant-agent")
+    settings = get_settings()
+    ensure_agent_role(
+        settings.pg_conninfo, settings.agent_user, settings.agent_password.get_secret_value()
+    )
+    typer.echo(f"role {settings.agent_user}: SELECT on marts and ops, read-only sessions")
+
+
+ProviderName = Annotated[
+    str | None,
+    typer.Option(help="anthropic, ollama or fake (default TRIBUTARY_PROVIDER)."),
+]
+ApiUrl = Annotated[
+    str | None,
+    typer.Option("--api", help="Ask a running Tributary API instead of the local warehouse."),
+]
+ApiKey = Annotated[
+    str | None,
+    typer.Option(envvar="TRIBUTARY_API_KEY", help="Key for --api (X-API-Key)."),
+]
+AsJson = Annotated[bool, typer.Option("--json", help="Print the full answer as JSON.")]
+
+
+def _remote(api: str, path: str, body: dict[str, str], key: str | None) -> dict[str, object]:
+    import httpx
+
+    headers = {"X-API-Key": key} if key else {}
+    try:
+        response = httpx.post(api.rstrip("/") + path, json=body, headers=headers, timeout=300)
+    except httpx.HTTPError as exc:
+        typer.echo(f"cannot reach {api}: {exc}", err=True)
+        raise typer.Exit(2) from None
+    try:
+        document: dict[str, object] = response.json()
+    except ValueError:
+        typer.echo(f"{response.status_code} from {api}: {response.text[:200]}", err=True)
+        raise typer.Exit(2) from None
+    if response.status_code >= 400 and "status" not in document:
+        typer.echo(f"{response.status_code}: {document.get('detail')}", err=True)
+        raise typer.Exit(2)
+    return document
+
+
+PROVIDERS = ("anthropic", "ollama", "fake")
+
+
+def _local_agent(provider: str | None) -> Agent:
+    from tributary.agent.service import build_agent
+
+    settings = get_settings()
+    if provider and provider not in PROVIDERS:
+        typer.echo(f"error: --provider must be one of {', '.join(PROVIDERS)}", err=True)
+        raise typer.Exit(2)
+    if provider:
+        settings = settings.model_copy(update={"provider": provider})
+    return build_agent(settings)
+
+
+def _print_answer(document: dict[str, object], as_json: bool) -> None:
+    import json
+
+    from tributary.agent.render import render_answer
+
+    if as_json:
+        typer.echo(json.dumps(document, indent=2, ensure_ascii=False))
+    else:
+        typer.echo(render_answer(document))
+    if document.get("status") not in ("answered", "unanswerable"):
+        raise typer.Exit(1)
+
+
+@app.command()
+def ask(
+    question: Annotated[str, typer.Argument(help="A question about the warehouse.")],
+    api: ApiUrl = None,
+    api_key: ApiKey = None,
+    provider: ProviderName = None,
+    as_json: AsJson = False,
+) -> None:
+    """Answer a question with guarded SQL; prints the answer, the SQL and its provenance."""
+    from tributary.agent.execute import ExecutionError
+    from tributary.agent.provider import ProviderError
+
+    request_id = bind_run_id("ask")
+    if api:
+        document = _remote(api, "/query", {"question": question}, api_key)
+    else:
+        agent = _local_agent(provider)
+        try:
+            document = agent.ask(question, request_id=request_id).to_dict()
+        except (ProviderError, FileNotFoundError) as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(2) from None
+        except ExecutionError as exc:  # unreachable warehouse or a missing privilege
+            typer.echo(f"error: {exc.feedback()}", err=True)
+            raise typer.Exit(2) from None
+    _print_answer(document, as_json)
+
+
+@app.command("sql")
+def sql_command(
+    query: Annotated[str, typer.Argument(help="One SELECT statement.")],
+    api: ApiUrl = None,
+    api_key: ApiKey = None,
+    as_json: AsJson = False,
+) -> None:
+    """Run SQL through the agent's guard, role and limits (no model)."""
+    from tributary.agent.execute import ExecutionError
+
+    request_id = bind_run_id("sql")
+    if api:
+        document = _remote(api, "/sql", {"sql": query}, api_key)
+    else:
+        agent = _local_agent(None)
+        try:
+            document = agent.sql(query, request_id=request_id).to_dict()
+        except FileNotFoundError as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(2) from None
+        except ExecutionError as exc:  # unreachable warehouse or a missing privilege
+            typer.echo(f"error: {exc.feedback()}", err=True)
+            raise typer.Exit(2) from None
+    _print_answer(document, as_json)
+
+
+@app.command("catalog")
+def catalog_command(
+    as_json: AsJson = False,
+    relation: Annotated[
+        list[str] | None, typer.Option(help="Only these relations, e.g. marts.fct_edits.")
+    ] = None,
+) -> None:
+    """Print the schema the agent sees: DDL with descriptions, keys and indexed values."""
+    import json
+
+    from tributary.agent.catalog import load_dbt
+
+    bind_run_id("catalog")
+    settings = get_settings()
+    try:
+        catalog = load_dbt(settings.catalog_dir, settings.agent_schemas)
+    except FileNotFoundError as exc:
+        typer.echo(f"error: {exc}; run `tributary warehouse refresh`", err=True)
+        raise typer.Exit(2) from None
+    if as_json:
+        typer.echo(json.dumps(catalog.to_dict(), indent=2, ensure_ascii=False))
+        return
+    try:
+        typer.echo(catalog.render(relation or None))
+    except KeyError as exc:
+        typer.echo(f"error: {exc.args[0]}", err=True)
+        raise typer.Exit(2) from None
+
+
+@app.command()
+def serve(
+    host: Annotated[
+        str | None, typer.Option(help="Bind address (default TRIBUTARY_API_HOST).")
+    ] = None,
+    port: Annotated[int | None, typer.Option(help="Port (default TRIBUTARY_API_PORT).")] = None,
+) -> None:
+    """Serve the HTTP API (needs the `api` extra and TRIBUTARY_API_KEYS)."""
+    import uvicorn
+
+    settings = get_settings()
+    uvicorn.run(
+        "tributary.api.app:app_from_settings",
+        factory=True,
+        host=host or settings.api_host,
+        port=port or settings.api_port,
+        log_config=None,
+        access_log=False,
+    )

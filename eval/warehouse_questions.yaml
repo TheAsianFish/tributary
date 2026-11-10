@@ -1,0 +1,462 @@
+# Warehouse question set: plain-English questions over the five marts
+# (marts.fct_edits, marts.dim_wiki, marts.dim_page, marts.agg_edits_hourly,
+# marts.agg_editor_activity), each with a gold PostgreSQL query. It is the sanity
+# check and demo script for the text-to-SQL agent, which gets the question and the
+# schema descriptions in warehouse/models/marts/_marts.yml.
+#
+# Comparison: execution accuracy, as BIRD defines it but stricter. The candidate's
+# result and the gold result are compared as multisets of row tuples: column order
+# matters, row order does not, duplicate rows count (BIRD compares sets, so they
+# would not there), numerics are compared after rounding to 6 decimal places. Each question therefore says exactly which columns to return.
+#
+# Checked: every gold query was run on the committed 50,000-event sample
+# (25,901 edits on 153 wikis, event_ts from 2026-10-16 23:45 to 2026-10-17 00:21
+# UTC, so the hours 23:00 and 00:00) after dbt build. The "checked" line records
+# the result and, where useful, an independent second query that agrees with it.
+# Top-N questions have no tie at the N-th position. Times are fixed literals,
+# never relative to now(). Each query runs in milliseconds and returns 1 to 14 rows.
+questions:
+  - id: total-edits
+    question: "How many edits are there in total, counting page creations as edits? Return one number."
+    sql: |
+      SELECT count(*) AS edits
+      FROM marts.fct_edits
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 25,901 (equals sum(edits) of dim_wiki and of agg_edits_hourly)"
+
+  - id: total-page-creations
+    question: "How many pages were created in the data? Return the number of page creations."
+    sql: |
+      SELECT count(*) AS page_creations
+      FROM marts.fct_edits
+      WHERE is_new_page
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 1,713 (equals sum(new_pages) of agg_edits_hourly and dim_page rows with created_in_window)"
+
+  - id: bot-edits-total
+    question: "How many edits were made by bots (editors with the bot flag)? Return one number."
+    sql: |
+      SELECT count(*) AS bot_edits
+      FROM marts.fct_edits
+      WHERE is_bot
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 10,099 (equals sum(bot_edits) of agg_edits_hourly)"
+
+  - id: anonymous-edits-total
+    question: "How many edits were made by editors who were not logged in? Return one number."
+    sql: |
+      SELECT count(*) AS anonymous_edits
+      FROM marts.fct_edits
+      WHERE is_anonymous
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 862 (equals sum(anonymous_edits) of agg_edits_hourly)"
+
+  - id: wikis-with-edits
+    question: "How many different wikis received at least one edit? Return one number."
+    sql: |
+      SELECT count(DISTINCT wiki) AS wikis
+      FROM marts.fct_edits
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 153 (dim_wiki has 160 wikis, 153 of them with edits > 0; both agree)"
+
+  - id: top-5-wikis-by-edits
+    question: "Which 5 wikis had the most edits (including page creations)? Return the wiki and its number of edits."
+    sql: |
+      SELECT wiki, edits
+      FROM marts.dim_wiki
+      ORDER BY edits DESC
+      LIMIT 5
+    tables: [marts.dim_wiki]
+    difficulty: simple
+    checked: "5 rows: wikidatawiki 9,745, enwiki 4,564, commonswiki 4,047, kuwiktionary 722, zhwiki 636; 6th is frwiki 476, no tie; dim_wiki.edits matches count(*) of fct_edits for every wiki"
+
+  - id: wiktionary-wiki-count
+    question: "How many Wiktionary wikis appear in the data? Return one number."
+    sql: |
+      SELECT count(*) AS wiktionaries
+      FROM marts.dim_wiki
+      WHERE project_family = 'wiktionary'
+    tables: [marts.dim_wiki]
+    difficulty: simple
+    checked: "1 row: 20 (all 20 also have edits in fct_edits, so either table gives 20)"
+
+  - id: enwiki-minor-edits
+    question: "How many edits on English Wikipedia were marked as minor? Return one number."
+    sql: |
+      SELECT count(*) AS minor_edits
+      FROM marts.fct_edits
+      WHERE wiki = 'enwiki' AND is_minor
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 1,524"
+
+  - id: edits-first-ten-minutes-after-midnight
+    question: "How many edits were saved from 2026-10-17 00:00:00 UTC (inclusive) to 2026-10-17 00:10:00 UTC (exclusive)? Return one number."
+    sql: |
+      SELECT count(*) AS edits
+      FROM marts.fct_edits
+      WHERE event_ts >= '2026-10-17 00:00:00+00'
+        AND event_ts < '2026-10-17 00:10:00+00'
+    tables: [marts.fct_edits]
+    difficulty: simple
+    checked: "1 row: 7,309 (cross-checked by summing per-minute counts for 00:00-00:09)"
+
+  - id: pages-edited-ten-plus-times
+    question: "How many pages received 10 or more edits (including their creation)? Return one number."
+    sql: |
+      SELECT count(*) AS pages
+      FROM marts.dim_page
+      WHERE edits >= 10
+    tables: [marts.dim_page]
+    difficulty: simple
+    checked: "1 row: 118 pages"
+
+  - id: wikidata-edits-midnight-hour
+    question: "How many edits did Wikidata receive in the hour starting 2026-10-17 00:00 UTC? Return one number."
+    sql: |
+      SELECT edits
+      FROM marts.agg_edits_hourly
+      WHERE wiki = 'wikidatawiki'
+        AND event_hour = '2026-10-17 00:00:00+00'
+    tables: [marts.agg_edits_hourly]
+    difficulty: simple
+    checked: "1 row: 4,195 (cross-checked by counting fct_edits rows on wikidatawiki in 00:00-01:00)"
+
+  - id: commons-editor-count
+    question: "How many different editors edited Wikimedia Commons? Return one number."
+    sql: |
+      SELECT count(*) AS editors
+      FROM marts.agg_editor_activity
+      WHERE wiki = 'commonswiki'
+    tables: [marts.agg_editor_activity]
+    difficulty: simple
+    checked: "1 row: 164 (equals count(DISTINCT user_name) in fct_edits for commonswiki)"
+
+  - id: edits-by-project-family
+    question: "How many edits did each project family receive? Return the project family and its number of edits, for families with at least one edit."
+    sql: |
+      SELECT w.project_family, count(*) AS edits
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      GROUP BY w.project_family
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: moderate
+    checked: "14 rows; wikipedia 9,791, wikidata 9,763, commons 4,047, wiktionary 1,989, smallest abstract_wikipedia 2; summing dim_wiki.edits by family gives the same plus a NULL family with 0"
+
+  - id: dewiki-page-creations
+    question: "How many pages were created on German Wikipedia? Return one number."
+    sql: |
+      SELECT count(*) AS page_creations
+      FROM marts.fct_edits
+      WHERE wiki = 'dewiki' AND is_new_page
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "1 row: 2 (agg_edits_hourly new_pages for dewiki also sums to 2)"
+
+  - id: frwiktionary-edits-by-namespace
+    question: "How many edits did French Wiktionary get in each namespace? Return the namespace name and the number of edits."
+    sql: |
+      SELECT namespace_name, count(*) AS edits
+      FROM marts.fct_edits
+      WHERE wiki = 'frwiktionary'
+      GROUP BY namespace_name
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "2 rows: Main 20, Template 3"
+
+  - id: wikidata-bot-vs-human
+    question: "On Wikidata, how many edits were made by bots and how many by non-bots? Return whether the editor is a bot (true/false) and the number of edits."
+    sql: |
+      SELECT is_bot, count(*) AS edits
+      FROM marts.fct_edits
+      WHERE wiki = 'wikidatawiki'
+      GROUP BY is_bot
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "2 rows: false 7,590, true 2,155"
+
+  - id: top-3-wikis-anonymous-edits
+    question: "Which 3 wikis had the most edits by editors who were not logged in? Return the wiki and its number of such edits."
+    sql: |
+      SELECT wiki, count(*) AS anonymous_edits
+      FROM marts.fct_edits
+      WHERE is_anonymous
+      GROUP BY wiki
+      ORDER BY anonymous_edits DESC
+      LIMIT 3
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "3 rows: enwiki 274, commonswiki 256, wikidatawiki 104; 4th is jawiki 35, no tie"
+
+  - id: wikipedia-article-creations
+    question: "How many articles (pages in the Main namespace) were created on wikis in the Wikipedia project family? Return one number."
+    sql: |
+      SELECT count(*) AS article_creations
+      FROM marts.dim_page AS p
+      JOIN marts.dim_wiki AS w ON w.wiki = p.wiki
+      WHERE w.project_family = 'wikipedia'
+        AND p.namespace_name = 'Main'
+        AND p.created_in_window
+    tables: [marts.dim_page, marts.dim_wiki]
+    difficulty: moderate
+    checked: "1 row: 273 (cross-checked against fct_edits is_new_page rows in Main on wikipedia-family wikis: 273)"
+
+  - id: enwiki-article-net-bytes
+    question: "What was the net change in bytes (sum of size changes) on English Wikipedia articles (the Main namespace)? Return one number."
+    sql: |
+      SELECT sum(byte_delta) AS net_bytes
+      FROM marts.fct_edits
+      WHERE wiki = 'enwiki' AND namespace_name = 'Main'
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "1 row: 247,273 (all enwiki namespaces together are -112,177)"
+
+  - id: enwiki-largest-removal
+    question: "What was the largest number of bytes removed by a single edit on English Wikipedia? Return it as a positive number."
+    sql: |
+      SELECT -min(byte_delta) AS bytes_removed
+      FROM marts.fct_edits
+      WHERE wiki = 'enwiki' AND byte_delta < 0
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "1 row: 148,842"
+
+  - id: bytes-added-removed-per-hour
+    question: "For each hour (UTC), how many bytes were added and how many removed across all wikis? Return the hour, bytes added and bytes removed."
+    sql: |
+      SELECT event_hour, sum(bytes_added) AS bytes_added, sum(bytes_removed) AS bytes_removed
+      FROM marts.agg_edits_hourly
+      GROUP BY event_hour
+    tables: [marts.agg_edits_hourly]
+    difficulty: moderate
+    checked: "2 rows: 23:00 added 6,992,342 removed 534,898; 00:00 added 9,536,321 removed 2,978,013; totals match positive and negative byte_delta sums in fct_edits"
+
+  - id: japanese-edits-by-family
+    question: "How many edits did Japanese-language wikis receive, per project family? Return the project family and the number of edits."
+    sql: |
+      SELECT w.project_family, count(*) AS edits
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      WHERE w.language_code = 'ja'
+      GROUP BY w.project_family
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: moderate
+    checked: "2 rows: wikipedia 388, wiktionary 16"
+
+  - id: enwiki-draft-pages-edited
+    question: "How many different Draft pages on English Wikipedia were edited or created? Return one number."
+    sql: |
+      SELECT count(*) AS draft_pages
+      FROM marts.dim_page
+      WHERE wiki = 'enwiki' AND namespace_name = 'Draft'
+    tables: [marts.dim_page]
+    difficulty: moderate
+    checked: "1 row: 43 (equals count(DISTINCT page_key) of enwiki Draft rows in fct_edits)"
+
+  - id: wikidata-editors-over-100-edits
+    question: "How many editors made more than 100 edits on Wikidata? Return one number."
+    sql: |
+      SELECT count(*) AS editors
+      FROM marts.agg_editor_activity
+      WHERE wiki = 'wikidatawiki' AND edits > 100
+    tables: [marts.agg_editor_activity]
+    difficulty: moderate
+    checked: "1 row: 14 (no wikidatawiki editor has between 95 and 105 edits)"
+
+  - id: enwiki-created-pages-multiple-editors
+    question: "How many pages created on English Wikipedia during the data were edited by more than one different editor? Return one number."
+    sql: |
+      SELECT count(*) AS pages
+      FROM marts.dim_page
+      WHERE wiki = 'enwiki' AND created_in_window AND distinct_editors > 1
+    tables: [marts.dim_page]
+    difficulty: moderate
+    checked: "1 row: 7 (of 324 enwiki pages created in the data)"
+
+  - id: wikipedias-with-100-edits
+    question: "How many Wikipedia language editions (wikis in the wikipedia project family) had at least 100 edits? Return one number."
+    sql: |
+      SELECT count(*) AS wikis
+      FROM marts.dim_wiki
+      WHERE project_family = 'wikipedia' AND edits >= 100
+    tables: [marts.dim_wiki]
+    difficulty: moderate
+    checked: "1 row: 14 (itwiki with 101 is the closest to the boundary)"
+
+  - id: english-language-edits-by-family
+    question: "How many edits did English-language wikis receive in each project family? Return the project family and the number of edits."
+    sql: |
+      SELECT w.project_family, count(*) AS edits
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      WHERE w.language_code = 'en'
+      GROUP BY w.project_family
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: moderate
+    checked: "6 rows: wikipedia 4,576, wiktionary 289, wikisource 74, wikivoyage 11, wikiquote 9, wikiversity 4"
+
+  - id: wikipedia-talk-page-edits
+    question: "How many edits were made to talk pages (odd namespace ids) on wikis in the Wikipedia project family? Return one number."
+    sql: |
+      SELECT count(*) AS talk_edits
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      WHERE w.project_family = 'wikipedia' AND e.namespace % 2 = 1
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: moderate
+    checked: "1 row: 1,580 (namespace_name ILIKE '%talk%' gives the same 1,580; Talk 741 is the largest)"
+
+  - id: enwiki-human-logged-in-edits-per-hour
+    question: "For each hour (UTC), how many edits on English Wikipedia were made by logged-in editors who are not bots? Return the hour and the number of edits."
+    sql: |
+      SELECT event_hour, count(*) AS edits
+      FROM marts.fct_edits
+      WHERE wiki = 'enwiki' AND NOT is_bot AND NOT is_anonymous
+      GROUP BY event_hour
+    tables: [marts.fct_edits]
+    difficulty: moderate
+    checked: "2 rows: 23:00 917, 00:00 1,990"
+
+  - id: anonymous-editors-top-3-wikis
+    question: "Which 3 wikis had the most different editors who were not logged in? Return the wiki and the number of such editors."
+    sql: |
+      SELECT wiki, count(*) AS anonymous_editors
+      FROM marts.agg_editor_activity
+      WHERE is_anonymous
+      GROUP BY wiki
+      ORDER BY anonymous_editors DESC
+      LIMIT 3
+    tables: [marts.agg_editor_activity]
+    difficulty: moderate
+    checked: "3 rows: enwiki 151, eswiki 28, wikidatawiki 22; 4th is jawiki 18, no tie"
+
+  - id: wiktionary-page-creations-by-wiki
+    question: "Which 3 Wiktionary wikis had the most page creations? Return the wiki and its number of page creations."
+    sql: |
+      SELECT e.wiki, count(*) AS page_creations
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      WHERE w.project_family = 'wiktionary' AND e.is_new_page
+      GROUP BY e.wiki
+      ORDER BY page_creations DESC
+      LIMIT 3
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: moderate
+    checked: "3 rows: enwiktionary 72, mgwiktionary 16, blkwiktionary 15; 4th is jawiktionary 7, no tie"
+
+  - id: wikis-without-edits
+    question: "How many wikis appear in the data with events but no edits or page creations at all? Return one number."
+    sql: |
+      SELECT count(*) AS wikis
+      FROM marts.dim_wiki
+      WHERE edits = 0
+    tables: [marts.dim_wiki]
+    difficulty: moderate
+    checked: "1 row: 7 (160 wikis in dim_wiki minus 153 in fct_edits)"
+
+  - id: bot-share-by-family
+    question: "For each project family with at least 1,000 edits, what percentage of its edits were made by bots? Return the project family and the percentage rounded to 1 decimal place."
+    sql: |
+      SELECT w.project_family,
+             round(100.0 * count(*) FILTER (WHERE e.is_bot) / count(*), 1) AS bot_pct
+      FROM marts.fct_edits AS e
+      JOIN marts.dim_wiki AS w ON w.wiki = e.wiki
+      GROUP BY w.project_family
+      HAVING count(*) >= 1000
+    tables: [marts.fct_edits, marts.dim_wiki]
+    difficulty: challenging
+    checked: "4 rows: wikidata 22.1, wikipedia 45.1, commons 47.0, wiktionary 79.8; same as sum(bot_edits)/sum(edits) from agg_edits_hourly"
+
+  - id: busiest-wiki-hour
+    question: "Which wiki and hour (UTC) had the most edits of any single wiki in any single hour? Return the wiki, the hour and the number of edits."
+    sql: |
+      SELECT wiki, event_hour, edits
+      FROM marts.agg_edits_hourly
+      ORDER BY edits DESC
+      LIMIT 1
+    tables: [marts.agg_edits_hourly]
+    difficulty: challenging
+    checked: "1 row: wikidatawiki, 2026-10-16 23:00 UTC, 5,550; next is wikidatawiki 00:00 with 4,195, no tie"
+
+  - id: enwiki-distinct-editors-total
+    question: "How many different editors edited English Wikipedia over the whole data (each editor counted once, even if active in several hours)? Return one number."
+    sql: |
+      SELECT count(DISTINCT user_name) AS editors
+      FROM marts.fct_edits
+      WHERE wiki = 'enwiki'
+    tables: [marts.fct_edits]
+    difficulty: challenging
+    checked: "1 row: 916 (equals agg_editor_activity rows for enwiki; summing agg_edits_hourly.distinct_editors gives a wrong 1,118)"
+
+  - id: distinct-editors-midnight-hour-all-wikis
+    question: "How many different editors were active across all wikis in the hour starting 2026-10-17 00:00 UTC (an editor active on several wikis counts once)? Return one number."
+    sql: |
+      SELECT count(DISTINCT user_name) AS editors
+      FROM marts.fct_edits
+      WHERE event_hour = '2026-10-17 00:00:00+00'
+    tables: [marts.fct_edits]
+    difficulty: challenging
+    checked: "1 row: 1,416 (summing agg_edits_hourly.distinct_editors for the hour gives a wrong 1,612)"
+
+  - id: top-wiki-per-family
+    question: "For each project family that has at least 50 edits, which wiki in it had the most edits? Return the project family, the wiki and its number of edits."
+    sql: |
+      SELECT project_family, wiki, edits
+      FROM (
+        SELECT project_family, wiki, edits,
+               rank() OVER (PARTITION BY project_family ORDER BY edits DESC) AS rnk,
+               sum(edits) OVER (PARTITION BY project_family) AS family_edits
+        FROM marts.dim_wiki
+        WHERE project_family IS NOT NULL
+      ) AS ranked
+      WHERE rnk = 1 AND family_edits >= 50
+    tables: [marts.dim_wiki]
+    difficulty: challenging
+    checked: "6 rows: commons commonswiki 4,047, wikidata wikidatawiki 9,745, wikimedia metawiki 55, wikipedia enwiki 4,564, wikisource enwikisource 74, wiktionary kuwiktionary 722; no ties at rank 1"
+
+  - id: editors-on-five-plus-wikis
+    question: "How many editors (by user name) edited at least 5 different wikis? Return one number."
+    sql: |
+      SELECT count(*) AS editors
+      FROM (
+        SELECT user_name
+        FROM marts.agg_editor_activity
+        GROUP BY user_name
+        HAVING count(*) >= 5
+      ) AS multi
+    tables: [marts.agg_editor_activity]
+    difficulty: challenging
+    checked: "1 row: 8 (3 user names on 5 wikis, 1 on 6, 2 on 9, 1 on 20, 1 on 79)"
+
+  - id: busiest-minute
+    question: "In which minute (UTC) were the most edits saved across all wikis? Return the start of the minute and the number of edits."
+    sql: |
+      SELECT date_trunc('minute', event_ts) AS minute, count(*) AS edits
+      FROM marts.fct_edits
+      GROUP BY 1
+      ORDER BY edits DESC
+      LIMIT 1
+    tables: [marts.fct_edits]
+    difficulty: challenging
+    checked: "1 row: 2026-10-17 00:09 UTC with 1,021; next is 00:08 with 944, no tie"
+
+  - id: wikis-busiest-in-earlier-hour
+    question: "Which wikis had more edits in the hour starting 2026-10-16 23:00 UTC than in the hour starting 2026-10-17 00:00 UTC, among wikis with at least 50 edits in total? Return the wiki, its edits in the 23:00 hour and its edits in the 00:00 hour."
+    sql: |
+      SELECT h.wiki,
+             sum(h.edits) FILTER (WHERE h.event_hour = '2026-10-16 23:00:00+00') AS edits_2300,
+             sum(h.edits) FILTER (WHERE h.event_hour = '2026-10-17 00:00:00+00') AS edits_0000
+      FROM marts.agg_edits_hourly AS h
+      JOIN marts.dim_wiki AS w ON w.wiki = h.wiki
+      WHERE w.edits >= 50
+      GROUP BY h.wiki
+      HAVING coalesce(sum(h.edits) FILTER (WHERE h.event_hour = '2026-10-16 23:00:00+00'), 0)
+           > coalesce(sum(h.edits) FILTER (WHERE h.event_hour = '2026-10-17 00:00:00+00'), 0)
+    tables: [marts.agg_edits_hourly, marts.dim_wiki]
+    difficulty: challenging
+    checked: "5 rows: wikidatawiki 5,550/4,195, ruwiktionary 69/18, arywiki 64/3, urwiki 36/22, metawiki 33/22"

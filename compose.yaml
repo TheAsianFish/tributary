@@ -1,7 +1,8 @@
 # Kafka (KRaft), PostgreSQL, MinIO, the Spark stream job writing both the
 # warehouse and the Iceberg lake, and a producer that replays the committed
 # sample once: `docker compose up -d`. Profile `lakehouse` adds Trino; profile
-# `airflow` adds the scheduler and its UI.
+# `airflow` adds the scheduler and its UI; profile `api` the HTTP API; profile
+# `ollama` a local model.
 name: tributary
 
 x-app: &app
@@ -89,6 +90,8 @@ services:
       POSTGRES_DB: ${TRIBUTARY_PG_DATABASE:-tributary}
       TRIBUTARY_READER_USER: ${TRIBUTARY_READER_USER:-tributary_reader}
       TRIBUTARY_READER_PASSWORD: ${TRIBUTARY_READER_PASSWORD:-tributary_reader}
+      TRIBUTARY_AGENT_USER: ${TRIBUTARY_AGENT_USER:-tributary_agent}
+      TRIBUTARY_AGENT_PASSWORD: ${TRIBUTARY_AGENT_PASSWORD:-tributary_agent}
     ports:
       - "127.0.0.1:${TRIBUTARY_PG_PORT:-5432}:5432"
     volumes:
@@ -208,6 +211,56 @@ services:
     restart: "no"
     mem_limit: 512m
 
+  # Profile `api`: the HTTP API on http://localhost:8000 (`make up-api`). It reads
+  # the catalog warehouse_refresh publishes into the `catalog` volume and queries as
+  # the agent's read-only role. It refuses to start without TRIBUTARY_API_KEYS.
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    image: tributary-api:dev
+    profiles: [api]
+    environment:
+      TRIBUTARY_PG_HOST: postgres
+      TRIBUTARY_PG_PORT: "5432"
+      TRIBUTARY_PG_DATABASE: ${TRIBUTARY_PG_DATABASE:-tributary}
+      TRIBUTARY_AGENT_USER: ${TRIBUTARY_AGENT_USER:-tributary_agent}
+      TRIBUTARY_AGENT_PASSWORD: ${TRIBUTARY_AGENT_PASSWORD:-tributary_agent}
+      TRIBUTARY_API_KEYS: ${TRIBUTARY_API_KEYS:-}
+      TRIBUTARY_PROVIDER: ${TRIBUTARY_PROVIDER:-anthropic}
+      TRIBUTARY_MODEL: ${TRIBUTARY_MODEL:-claude-opus-5-5}
+      TRIBUTARY_ANTHROPIC_EFFORT: ${TRIBUTARY_ANTHROPIC_EFFORT:-medium}
+      TRIBUTARY_OLLAMA_URL: http://ollama:11434
+      TRIBUTARY_OLLAMA_MODEL: ${TRIBUTARY_OLLAMA_MODEL:-qwen2.5-coder:7b}
+      # The agent's limits, same defaults as tributary/config.py (.env is not copied in).
+      TRIBUTARY_AGENT_MAX_REPAIRS: ${TRIBUTARY_AGENT_MAX_REPAIRS:-2}
+      TRIBUTARY_AGENT_ROW_CAP: ${TRIBUTARY_AGENT_ROW_CAP:-1000}
+      TRIBUTARY_AGENT_STATEMENT_TIMEOUT_MS: ${TRIBUTARY_AGENT_STATEMENT_TIMEOUT_MS:-10000}
+      TRIBUTARY_AGENT_COST_CEILING: ${TRIBUTARY_AGENT_COST_CEILING:-1000000}
+      TRIBUTARY_AGENT_STALE_AFTER_MINUTES: ${TRIBUTARY_AGENT_STALE_AFTER_MINUTES:-120}
+      TRIBUTARY_LOG_LEVEL: ${TRIBUTARY_LOG_LEVEL:-INFO}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${TRIBUTARY_API_PORT:-8000}:8000"
+    volumes:
+      - catalog:/data/catalog:ro
+    restart: on-failure:3
+    mem_limit: 512m
+
+  # Profile `ollama`: a local model for the agent's offline path
+  # (`docker compose exec ollama ollama pull qwen2.5-coder:7b` once).
+  ollama:
+    image: ollama/ollama:0.40.6
+    profiles: [ollama]
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    mem_limit: 8g
+
   trino:
     image: trinodb/trino:484
     profiles: [lakehouse]
@@ -298,3 +351,4 @@ volumes:
   minio-data:
   # The published catalog (manifest, catalog, value index); the API mounts it from M3.
   catalog:
+  ollama:

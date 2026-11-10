@@ -40,10 +40,16 @@ is enough for `make dbt` and `make test-warehouse`. The `bird` profile and
 | `make logs` | Follow the stream job and producer logs. |
 | `make demo-data` | Regenerate the committed sample from the live stream (maintainers only; keeps factual fields, drops comment text; about 45 minutes). |
 | `make sample-stats` | Counts, duplicates, emit delay and lateness of the committed sample. |
+| `make eval-guard` | The guard suite (offline, in CI): every statement in `eval/guard/unsafe.yaml` blocked, none of the 40 gold queries blocked. |
+| `make eval-guard-db` | The same suite with the guard off, as the agent's role: what PostgreSQL alone refuses. Disposable databases only. |
+| `make eval-warehouse` | The 40 warehouse questions end to end; `PROVIDER=fake` (default) replays the recordings, `ollama`/`anthropic` call a model. Needs PostgreSQL. |
+| `make record PROVIDER=...` | Re-run the 40 questions on a live model and store every call in `TRIBUTARY_RECORDINGS_PATH`. |
+| `make serve` / `make up-api` | The API on localhost:8000 from the host / in Compose (profile `api`); both need `TRIBUTARY_API_KEYS`. |
 
 Planned targets (`make eval`, `make bench`, `make bench-scale`,
 `make bench-query`, `make bird`, `make test-live`) are specified in PLAN.md
-and land with their milestones.
+and land with their milestones. On a database created before M3, run
+`uv run tributary warehouse grant-agent` once to create the agent's role.
 
 ## Conventions
 
@@ -55,8 +61,10 @@ and land with their milestones.
   `tests/integration` (the Compose stack), `tests/live`. Unit tests never
   touch the network or Docker; the Anthropic client is replaced
   by the `fake` provider, which replays recordings from
-  `tests/recordings/`. A recording is real API output captured once with
-  `make record`; never hand-write one.
+  `tests/recordings/`. A recording is real model output (Claude, or a local
+  model through Ollama) captured once with `make record`; never hand-write
+  one. A changed prompt, schema or message misses its recording, so
+  re-record after changing any of them.
 - **Config via environment** (`tributary/config.py`, pydantic-settings).
   `.env.example` lists every variable with a comment. No secrets in the repo.
 - **Logging** through structlog, JSON in containers, key-value in a terminal.
