@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, replace
 from typing import Any
 
@@ -214,3 +215,15 @@ def test_an_empty_marker_block_is_filled() -> None:
     once = report.apply(text, {"gold": "| a |"})
     assert once == "<!-- bird:gold -->\n| a |\n<!-- /bird:gold -->\n"
     assert report.apply(once, {"gold": "| a |"}) == once
+
+
+def test_compare_finds_a_summary_or_ledger_the_verdicts_do_not_support() -> None:
+    """RESULTS.md renders the summaries and the ledger, so a stale one must fail the replay."""
+    recorded = _report([verdict(id=1), verdict(id=2)])
+    recorded["ledger"] = ledger(recorded)
+    tampered = copy.deepcopy(recorded)
+    tampered["variants"]["full"]["official"]["r2"]["correct"] = 30
+    tampered["ledger"][0]["input_tokens"] = 1
+    problems = compare(recorded, tampered)
+    assert "full/official/r2: correct 2 != 30" in problems
+    assert "ledger differs from the recorded run" in problems

@@ -443,7 +443,7 @@ def ledger(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def compare(replayed: dict[str, Any], recorded: dict[str, Any]) -> list[str]:
-    """Differences in any verdict between a replay and the recorded report."""
+    """Differences in any verdict, summary or ledger row between a replay and the recording."""
     fields = ("status", "correct", "correct_r0", "lenient", "strict", "attempts", "sql")
     problems = []
     for name, tracks in recorded["variants"].items():
@@ -462,6 +462,18 @@ def compare(replayed: dict[str, Any], recorded: dict[str, Any]) -> list[str]:
                 for f in fields:
                     if g[f] != w[f]:
                         problems.append(f"{name}/{track}/{qid}: {f} {g[f]!r} != {w[f]!r}")
+            # RESULTS.md is rendered from the summaries, so they must follow from the verdicts
+            # too. The official scorer needs the upstream file, which a replay does not load.
+            for repairs in ("r0", "r2"):
+                g_sum, w_sum = got_entry.get(repairs, {}), entry.get(repairs, {})
+                for key in sorted((set(g_sum) | set(w_sum)) - {"official_ex"}):
+                    if g_sum.get(key) != w_sum.get(key):
+                        problems.append(
+                            f"{name}/{track}/{repairs}: {key} "
+                            f"{g_sum.get(key)!r} != {w_sum.get(key)!r}"
+                        )
+    if replayed.get("ledger") != recorded.get("ledger"):
+        problems.append("ledger differs from the recorded run")
     return problems
 
 
