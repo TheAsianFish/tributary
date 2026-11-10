@@ -17,7 +17,7 @@ htmlcov/
 
 # Data and caches (benchmark data is downloaded, never committed)
 .cache/
-bird/
+/bird/
 warehouse/target/
 warehouse/dbt_packages/
 warehouse/logs/
@@ -44,3 +44,4 @@ tests/dbt/quality_fixtures/logs/
 # Published catalog (tributary warehouse publish-catalog), default TRIBUTARY_CATALOG_DIR
 /catalog/
 eval/results/warehouse-replay.json
+eval/results/bird-replay*.json

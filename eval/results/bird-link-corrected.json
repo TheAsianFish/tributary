@@ -1,0 +1,96 @@
+{
+  "gold_tables_per_question": {
+    "max": 4,
+    "mean": 2.038
+  },
+  "questions": 449,
+  "results": [
+    {
+      "all_found": 1.0,
+      "all_found_count": 449,
+      "k": null,
+      "precision": 0.3271,
+      "questions": 449,
+      "recall": 1.0,
+      "strategy": "full",
+      "tables_shown": 7.334
+    },
+    {
+      "all_found": 0.167,
+      "all_found_count": 75,
+      "k": 1,
+      "precision": 0.9443,
+      "questions": 449,
+      "recall": 0.5245,
+      "strategy": "bm25",
+      "tables_shown": 1.0
+    },
+    {
+      "all_found": 0.5278,
+      "all_found_count": 237,
+      "k": 2,
+      "precision": 0.7372,
+      "questions": 449,
+      "recall": 0.77,
+      "strategy": "bm25",
+      "tables_shown": 2.0
+    },
+    {
+      "all_found": 0.7238,
+      "all_found_count": 325,
+      "k": 3,
+      "precision": 0.5761,
+      "questions": 449,
+      "recall": 0.8775,
+      "strategy": "bm25",
+      "tables_shown": 3.0
+    },
+    {
+      "all_found": 0.833,
+      "all_found_count": 374,
+      "k": 4,
+      "precision": 0.487,
+      "questions": 449,
+      "recall": 0.9332,
+      "strategy": "bm25",
+      "tables_shown": 3.86
+    },
+    {
+      "all_found": 0.902,
+      "all_found_count": 405,
+      "k": 5,
+      "precision": 0.429,
+      "questions": 449,
+      "recall": 0.9605,
+      "strategy": "bm25",
+      "tables_shown": 4.637
+    },
+    {
+      "all_found": 0.9621,
+      "all_found_count": 432,
+      "k": 6,
+      "precision": 0.3925,
+      "questions": 449,
+      "recall": 0.9857,
+      "strategy": "bm25",
+      "tables_shown": 5.365
+    }
+  ],
+  "tables_per_database": {
+    "california_schools": 3,
+    "card_games": 6,
+    "codebase_community": 8,
+    "debit_card_specializing": 5,
+    "european_football_2": 7,
+    "financial": 8,
+    "formula_1": 13,
+    "student_club": 8,
+    "superhero": 10,
+    "thrombosis_prediction": 3,
+    "toxicology": 4
+  },
+  "track": "corrected",
+  "unavailable": {
+    "core": "the core schema linker is not implemented yet; choose full or bm25"
+  }
+}

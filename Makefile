@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -71,6 +71,28 @@ eval-warehouse: ## The 40 warehouse questions (PROVIDER=fake replays recordings)
 record: ## Re-record the 40 questions' model calls from a live provider (PROVIDER=anthropic|ollama)
 	@test "$(PROVIDER)" != fake || { echo "make record PROVIDER=anthropic (or ollama)"; exit 1; }
 	uv run python -m eval.warehouse_eval --provider $(PROVIDER) --record
+
+# BIRD Mini-Dev (M4). `make bird` needs PostgreSQL (`docker compose up -d postgres`);
+# `make eval` with PROVIDER=fake replays recorded model calls and database executions and
+# needs neither a model nor a database (CI runs it).
+VARIANTS ?= full,bm25-k4
+TRACKS ?= official,corrected
+SUBSET ?= dev50
+
+bird: ## Download BIRD Mini-Dev, load it into PostgreSQL, verify every gold query (~2 min)
+	uv run python -m eval.bird.load
+
+eval: ## BIRD execution accuracy (PROVIDER=fake replays; ollama|anthropic run live, RECORD=1 stores)
+	uv run python -m eval.bird.run --provider $(PROVIDER) --variants $(VARIANTS) \
+		--tracks $(TRACKS) --subset $(SUBSET) $(if $(MODEL),--model $(MODEL)) $(if $(RECORD),--record) $(if $(RESUME),--resume)
+	uv run python -m eval.bird.report $(if $(filter fake,$(PROVIDER)),--check)
+
+eval-link: ## Schema-linking recall and precision on BIRD, full vs bm25 (offline)
+	uv run python -m eval.bird.link_eval
+	uv run python -m eval.bird.link_eval --track corrected
+
+results: ## Re-render RESULTS.md's BIRD tables from eval/results/
+	uv run python -m eval.bird.report
 
 serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	uv run tributary serve

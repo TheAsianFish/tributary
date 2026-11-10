@@ -1,8 +1,9 @@
 # Results
 
 Every number here was produced by a command in this repository, on the
-machine noted, with its raw output committed. Nothing is estimated or taken
-from a mock. Model spend so far: **$0**. Every model call so far ran on a
+machine noted, with its raw output committed. Nothing is taken from a mock,
+and the only estimates are the costs of Claude runs not yet made, labelled
+as such and priced from token counts this repository measured. Model spend so far: **$0**. Every model call so far ran on a
 local open model through Ollama (no Anthropic key was available); the Claude
 runs are listed under [To measure](#to-measure) with their commands.
 
@@ -348,6 +349,272 @@ models miss a "simple" question and answer a "challenging" one.
 | The Anthropic request: cached system prefix, structured output schema and effort in `output_config`, `fallbacks: "default"` with its beta header, no sampling or thinking parameters; refusal, truncation and error mapping; cost priced at the model that served | `tests/unit/test_providers_anthropic.py` (the SDK over a mocked transport) | pass |
 | A recording misses (never replays a stale answer) when the system prompt, a message or the schema changes | `tests/unit/test_providers_fake.py` | pass |
 
+## BIRD Mini-Dev (M4)
+
+Machine for this section: 4 vCPU (AMD EPYC 9V74), 15 GB RAM, Linux 7.0,
+Docker 29.4.2, Compose 5.1.3; PostgreSQL 17 from `compose.yaml` (1 GB
+limit), Ollama 0.40.6 in Compose (8 GB limit), CPU only.
+
+### The benchmark in PostgreSQL
+
+`make bird` on a fresh `postgres:17` (the Compose service): downloads
+`minidev.zip` (800 MB, sha256-pinned), restores BIRD's PostgreSQL dump into
+the database `bird` with one schema per BIRD database, grants the read-only
+role `tributary_bird`, writes the catalogs the agent sees
+([`eval/bird/data/catalogs.json`](eval/bird/data/catalogs.json)), runs every
+official gold query and transpiles and verifies the corrected track. Raw:
+[`eval/results/bird-gold.json`](eval/results/bird-gold.json).
+
+<!-- bird:gold -->
+| | |
+|---|---|
+| Tables loaded | 75 in 11 schemas (source: dump) |
+| Official gold queries that execute | **500 / 500** (2 return no rows) |
+| Corrected gold transpiled and verified on both engines | **449 / 498**; dropped: fails on PostgreSQL 34, different rows from SQLite 15 |
+| Verified corrected questions worded exactly as in the official release | 333 / 449 |
+| ... whose corrected gold returns different rows from the official gold | **66 / 333 (19.8%)** |
+| Reworded questions whose gold rows differ (partly a different question) | 51 / 116 |
+<!-- /bird:gold -->
+
+**One label in five changes the answer.** The corrections keep BIRD dev's
+original wording, which Mini-Dev changed for some questions, so a
+different gold on a reworded question may just be a different question.
+Counting only the 333 verified questions worded identically in both
+releases (question and evidence), 66 corrected gold queries (19.8%) return
+different rows from the official gold: graded against the corrections,
+BIRD's own answer key scores 267 / 333 (80.2%) on those questions. The two
+tracks are therefore not two measurements of the same thing, and the gap
+between a model's scores on them is the part of its error that is the
+benchmark's. (Over all 449 the count is 117, but 51 of those are among the
+116 reworded questions, where the comparison says less.)
+
+**Verification is what makes the corrected track usable.** sqlglot's
+SQLite-to-PostgreSQL output alone runs and matches SQLite for 418 of the
+498 corrected queries (65 fail on PostgreSQL, 15 return other rows). Five
+rewrites of SQLite semantics, each a rule rather than a per-query patch,
+bring that to 449: plain identifiers lowercased as the PostgreSQL copy of
+BIRD lowercased them (reserved words such as the `order` table kept
+quoted), `REAL` as `double precision` (8 bytes in SQLite), `LIKE` as
+`ILIKE` (SQLite ignores ASCII case), a number compared with a text column
+turned into a string (SQLite's type affinity), and `SUM(a = b)` cast to
+integer. The 49 still dropped are
+counted by reason above: arithmetic on text columns, `julianday`, `LIKE` on
+a date, SQLite's lax `GROUP BY`, and 15 that run on both engines but return
+different rows. Two of the mismatches are the database, not the query:
+
+- **The dump's timestamps are 8 hours behind the SQLite files.** Every one
+  of the 40,325 `codebase_community.users.creationdate` values (and the
+  database's ten other `timestamptz` columns) reads exactly 8 hours earlier
+  in BIRD's PostgreSQL dump than in its SQLite file, as if the dump had been
+  taken in a UTC−8 session. PostgreSQL's gold queries are consistent with
+  their own data, but an answer near a date boundary differs per engine
+  (question 532: user `Niroshan` joined on 2012-01-01 in SQLite and on
+  2011-12-31 in PostgreSQL). Two *official* PostgreSQL gold queries return
+  no rows at all on BIRD's own dump, because they match an exact timestamp
+  copied from the SQLite data (563: `T2.CreationDate = '2014-04-23
+  20:29:39.0'`; 565 likewise): any answer to those two questions is graded
+  against an empty result. Three more official golds (532, 533, 683) return
+  different values than they do on the SQLite data, so 5 of the 31
+  `codebase_community` questions have a gold answer moved by the dump.
+- **Floating-point sums depend on the plan.** Several tables store 4-byte
+  `real` columns; a parallel aggregate adds partial sums in the order its
+  workers finish, so `SUM(consumption)` changed in the sixth digit between
+  runs and one question flipped between verified and mismatched. Gold
+  verification runs with serial plans (`max_parallel_workers_per_gather =
+  0`), and three consecutive `make bird` runs now write byte-identical
+  files; SQLite results are cached per database file and query, so the one
+  corrected query that needs minutes on SQLite (a join on unindexed columns)
+  is paid for once.
+
+**The SQLite fallback.** `make bird` with `--source sqlite` (database
+`bird_sqlite`, converted from the eleven SQLite files in 49 s, 3,898,114
+rows): all 500 official gold queries execute, 494 return the same rows as
+on the dump, and 451 corrected queries verify (before serial plans). The
+six that differ are one `real` sum (1482) and the five shifted-timestamp
+questions above, where the SQLite copy holds the original times: the
+fallback is a working substitute, and on those five it is the more faithful
+one.
+
+**The scorer, checked against BIRD's.** BIRD's `calculate_ex` is
+`set(predicted) == set(gold)` on the values the driver returned, so a
+`numeric` average (`Decimal('61.5714285714285714')`) is never equal to a
+`float8` gold (`61.57142857142857`): the same number in another type is a
+wrong answer. The harness grades with exactly that rule (recorded
+executions keep every value's type so a replay grades the same values), and
+compiles the official function from the pinned upstream file
+(`bird-bench/mini_dev@1c49a37`, sha256-checked) to grade every pair a
+second time. On the 449 corrected-vs-official gold pairs, which are
+near-misses by construction, the two agree on **449 / 449**; one verdict
+(question 1039) is decided by the value type alone, and a type-blind
+comparison would call it equal. The live run below reports the same check
+on its own pairs.
+
+### Schema linking without a model
+
+`make eval-link` (offline, in CI): for each of the 500 official questions,
+the gold tables are parsed from the gold SQL with sqlglot and compared with
+the tables a strategy links from the question and its evidence. Raw:
+[`eval/results/bird-link.json`](eval/results/bird-link.json) (and
+[`bird-link-corrected.json`](eval/results/bird-link-corrected.json) for the
+corrected track, within 0.01 of these).
+
+<!-- bird:link -->
+| Strategy | k | Recall | All gold tables found | Precision | Tables shown |
+|---|---:|---:|---:|---:|---:|
+| `full` | all | 1.000 | 100.0% (500/500) | 0.340 | 7.26 |
+| `bm25` | 1 | 0.518 | 16.0% (80/500) | 0.942 | 1.00 |
+| `bm25` | 2 | 0.768 | 52.8% (264/500) | 0.742 | 2.00 |
+| `bm25` | 3 | 0.870 | 71.6% (358/500) | 0.575 | 3.00 |
+| `bm25` | 4 | 0.927 | 82.0% (410/500) | 0.491 | 3.84 |
+| `bm25` | 5 | 0.957 | 89.4% (447/500) | 0.437 | 4.60 |
+| `bm25` | 6 | 0.981 | 95.4% (477/500) | 0.402 | 5.30 |
+| `core` | | not implemented yet | | | |
+<!-- /bird:link -->
+
+A gold query reads 2.06 tables on average, and a database has between 3
+and 13 (7.26 shown on average with `full`). Lexical retrieval finds every
+gold table for 82% of questions at k = 4 while showing about half the
+tables; the other 18% (90 questions) are questions the planner can no
+longer answer correctly whatever it writes, so bm25 trades a hard ceiling
+on accuracy for a smaller prompt.
+
+**Why bm25 misses: hub tables lose to the tables that point at them.** Of
+the 98 gold tables missed at k = 4, 59 are named in the question itself:
+`formula_1.races` alone is missed 27 times, `financial.account` 17,
+`superhero.superhero` 15. The word that names a hub table also appears in
+the descriptions of the tables that reference it ("race" occurs in 8 of
+`formula_1`'s 13 table documents), so it barely discriminates, and any
+other shared word decides the ranking. In "Please give the name of the race
+held on the circuits in Germany" the only term `races` matches is "race"
+(score 1.04), while `qualifying` collects 1.09 from the single word
+"evidence": the harness appends the question's evidence after a label
+"Evidence:", and BIRD's column descriptions are full of "commonsense
+evidence:" notes. Removing that one label word lifts the share of questions
+with every gold table linked at k = 4 from 82.0% to 83.4% (measured with
+the word added to the stopwords); the baseline is left as it is, since
+the recorded bm25 run used it, and the word is one more thing `core` must
+not be fooled by. Only
+9 misses are bridge tables the question never names; the other 30 are
+named neither directly nor by a join. This is the evidence the `core`
+strategy is specified against (a table whose name the question uses is
+kept, values pick their table, join paths add bridges): its contract tests
+are in `tests/unit/test_linker_core.py`.
+
+### Execution accuracy on dev50
+
+`docker compose --profile ollama up -d ollama && make bird && make eval
+PROVIDER=ollama MODEL=qwen2.5-coder:7b RECORD=1` (with `RESUME=1` for the
+second half; see below): 50 questions of the official release, a fixed
+sample stratified as the release is (15 simple, 25 moderate, 10
+challenging; `eval/bird/data.py`), each answered through the product's own
+planner, guard and executor (role `tributary_bird`, 30 s timeout) and
+graded by BIRD's rule on both label tracks. 45 of the 50 are in the
+verified corrected track; 13 of those are worded differently there and
+were answered again in that wording. Ollama 0.40.6 on the CPU above,
+temperature 0, seed 0, 16k context. Raw:
+[`eval/results/bird-dev50-ollama-qwen2.5-coder-7b.json`](eval/results/bird-dev50-ollama-qwen2.5-coder-7b.json);
+every model call is in `tests/recordings/bird-qwen2.5-coder-7b.jsonl` and
+every query the run sent to PostgreSQL in
+`tests/recordings/bird-executions.jsonl.gz`. Cost $0 (local model).
+
+<!-- bird:ex -->
+| Model | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging | Model calls | Tokens in / out | Model time per question, p50 / p95 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| qwen2.5-coder:7b (ollama) | `full-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 50 | 104,241 / 8,402 | 37.6 s / 112.7 s |
+| qwen2.5-coder:7b (ollama) | `full-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 7/13 | 8/23 | 1/9 | 13 | 35,813 / 2,773 | 33.8 s / 106.0 s |
+| qwen2.5-coder:7b (ollama) | `full-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 62 | 131,273 / 10,687 | 42.5 s / 225.1 s |
+| qwen2.5-coder:7b (ollama) | `full-r2` | corrected | **18/45** (40.0%) | 27.0%–54.5% | 7/13 | 10/23 | 1/9 | 21 | 62,073 / 4,522 | 34.6 s / 190.5 s |
+| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 50 | 84,189 / 8,664 | 47.2 s / 158.1 s |
+| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
+| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
+| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
+<!-- /bird:ex -->
+
+The `-r0` rows are the same run read at its first attempt (the first model
+call is the same request with or without repairs), so they cost nothing
+extra. "Model calls" counts the calls a variant would make on its own: on
+the corrected track only the 13 re-worded questions need new calls, and on
+databases with at most four tables bm25 shows exactly what `full` shows, so
+those requests were sent once and counted for both variants.
+
+**What the numbers say, and what they cannot.**
+
+- **42% (21 / 50), with a 95% interval of 29% to 56%.** Fifty questions
+  bound EX to about ±13 points; the subset is for regression testing and
+  for comparing variants on the same questions, not for a leaderboard
+  figure. One of the 21 (question 563) is right only by accident: its
+  official gold returns no rows on BIRD's dump (the timestamp shift above),
+  and so does the model's query, so EX without it is 20 / 50.
+- **bm25 neither helped nor hurt, on different questions.** Both variants
+  score 21 / 50 on the official track; 18 questions are right in both, 3
+  only with `full` and 3 only with `bm25-k4` (a 3-to-3 split, which says
+  nothing either way at this size). bm25 left a gold table out of the
+  prompt for 9 questions: the model refused 3 of those as unanswerable,
+  answered 2 wrongly and still answered 4 correctly through another join
+  path (a gold table missing from the prompt is not always fatal). It cut
+  input tokens by 15% (111,740 against 131,273 with repairs) but raised the
+  median time per question from 42 s to 51 s, because every question now has
+  its own system prompt and Ollama's prefix cache no longer carries over
+  between questions on one database, the same effect prompt caching would
+  have on the Claude path.
+- **The dominant failure is a refusal, not a wrong query.** With every
+  table in front of it, the model set `answerable` to false on 11 of the 50
+  questions (22%), each time on a question the schema can answer: it says
+  that drivers' birth dates are missing (`formula_1.drivers.dob` is in the
+  prompt), that "Branch location 1" is undefined (`financial` encodes
+  branches as district ids), that the `colour` table has no 'No Colour'
+  entry. Of the 50: 21 answered correctly, 13 answered wrongly, 11 refused,
+  5 failed all three attempts. The planner's rule "if these tables cannot
+  answer the question, set answerable to false" is there for the warehouse,
+  where unanswerable questions are real; on a 7B model it is an exit taken
+  far too often, and it is the first thing M7 measures.
+- **Repairs fix syntax, not meaning.** 7 official questions needed more
+  than one attempt (a PostgreSQL error fed back); none of them ended
+  correct. On the corrected track, two re-worded questions were repaired
+  into correct answers (`full`), one with `bm25-k4`. Most wrong answers
+  run fine and return the wrong rows, which no error message can repair.
+- **The corrected track grades the same answers the same way.** On the 32
+  questions worded identically in both tracks, not one verdict changes
+  between the official and the corrected gold: only one of those 32 labels
+  differs (question 1265), and the model's query failed on it in both. The
+  tracks' different totals come from the 13 re-worded questions, answered
+  once in each wording.
+- **The scorer.** BIRD's own `calculate_ex` agreed with the harness on all
+  134 (prediction, gold) pairs where the predicted query ran; the type-blind
+  count equals EX on every row of the table (no verdict in this run turned
+  on a value type), and the stricter multiset count is 17 / 50 for `full` on
+  the official track: BIRD's set rule accepts 4 answers that repeat the
+  gold's rows (question 850 returns 76 rows for a 3-row gold).
+
+**Recording, and how it was checked.** The run was recorded in two
+sittings: the first was stopped after 52 model calls to fix two harness
+defects a review found (each variant re-ran the gold query and re-sent an
+identical request, while a recording keeps one outcome per request, so a
+replay could have graded a different reply than the live run did), and
+`--resume` then served those 52 from the recordings and made the other 83
+calls live (69 min). Every reported verdict is therefore graded from the
+recorded reply and from this run's own query executions, and the offline
+replay (`make eval`, which CI runs) reproduces all 190 verdicts of the
+report in 0.4 s with no model and no database.
+
+### Cost
+
+<!-- bird:ledger -->
+| Run | Variant | Model calls | Tokens in / out | Cost | Same tokens on `claude-haiku-5-5` / `claude-opus-5-5` |
+|---|---|---:|---:|---:|---:|
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r0` | 63 | 140,054 / 11,175 | $0.00 | $0.02 / $0.78 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r2` | 83 | 193,346 / 15,209 | $0.00 | $0.03 / $1.08 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r0` | 63 | 117,031 / 11,469 | $0.00 | $0.02 / $0.70 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r2` | 78 | 153,384 / 14,736 | $0.00 | $0.02 / $0.91 |
+
+Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its two variants with repairs (346,730 in / 29,945 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
+
+| What | Command | `claude-haiku-5-5` | `claude-opus-5-5` |
+|---|---|---:|---:|
+| dev50, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> RECORD=1` | $0.05 | $1.99 |
+| all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
+<!-- /bird:ledger -->
+
 ## To measure
 
 | What | Command | Milestone | Cost |
@@ -357,4 +624,7 @@ models miss a "simple" question and answer a "challenging" one.
 | Postgres vs Trino over Iceberg latency, and pruning at 1M and 20M rows (partitioned vs unpartitioned vs uncompacted) | `make bench-query` | M6 | $0 |
 | What the second Kafka read and the Iceberg sink cost in throughput, at P = 3 | `make bench-scale` | M5 | $0 |
 | The 40 warehouse questions on Claude, recorded so the fake provider replays them (M3 is done on the `qwen2.5-coder:7b` recordings; this adds the Claude column) | `ANTHROPIC_API_KEY=... TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse.jsonl make record PROVIDER=anthropic` (default model `claude-opus-5-5`) | M3 | est. under $1 on Opus 5.5 (about 46 calls with a cached ~3k-token prefix), a few cents on `TRIBUTARY_MODEL=claude-haiku-5-5` |
-| Execution accuracy on BIRD Mini-Dev (both label tracks) | `make eval` | M4, M7 | ~$3 Haiku grid, ~$7 Opus subset |
+| BIRD dev50 on Claude Haiku 5.5, both variants and tracks, recorded so CI replays it | `docker compose up -d postgres && make bird && ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1` | M4 | see [Cost](#cost): estimated from this run's measured tokens |
+| BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |
+| BIRD dev50 on Claude Opus 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-opus-5-5 RECORD=1` | M7 | see [Cost](#cost) |
+| BIRD, all 500 questions on the local model (about 13 h of CPU at this run's pace) | `make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=all RECORD=1` | M7 | $0 |

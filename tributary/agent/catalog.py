@@ -151,6 +151,46 @@ class Catalog:
             ],
         }
 
+    @classmethod
+    def from_dict(cls, document: Mapping[str, Any]) -> Catalog:
+        """The inverse of :meth:`to_dict` (a catalog saved as JSON, e.g. a benchmark's)."""
+        # Any: a JSON document shaped as to_dict writes it.
+        source = document.get("source", "information_schema")
+        if source not in ("dbt", "information_schema"):
+            raise ValueError(f"unknown catalog source {source!r}")
+        tables = []
+        for t in document["tables"]:
+            columns = tuple(
+                Column(
+                    name=str(c["name"]),
+                    data_type=str(c["type"]),
+                    description=str(c.get("description") or ""),
+                    distinct=c.get("distinct"),
+                    values=None if c.get("values") is None else tuple(map(str, c["values"])),
+                )
+                for c in t["columns"]
+            )
+            tables.append(
+                Table(
+                    schema=str(t["schema"]),
+                    name=str(t["name"]),
+                    description=str(t.get("description") or ""),
+                    columns=columns,
+                    primary_key=tuple(t.get("primary_key", ())),
+                    foreign_keys=tuple(
+                        ForeignKey(str(f["column"]), str(f["ref_relation"]), str(f["ref_column"]))
+                        for f in t.get("foreign_keys", ())
+                    ),
+                    upstream=tuple(t.get("upstream", ())),
+                )
+            )
+        return cls(
+            tables=tuple(tables),
+            source=source,
+            version=document.get("version"),
+            generated_at=document.get("generated_at"),
+        )
+
     def render(
         self,
         relations: Sequence[str] | None = None,

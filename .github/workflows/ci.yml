@@ -30,3 +30,10 @@ jobs:
       - run: uv sync --all-extras --locked
       - run: make check
       - run: make eval-guard
+      # BIRD dev50 replayed from recorded model calls and database executions (no model,
+      # no database); fails if any verdict differs from the recorded run or RESULTS.md
+      # is not what the reports render to.
+      - run: make eval
+      - run: make eval-link
+      - name: Committed results are what the commands produce
+        run: git diff --exit-code eval/results RESULTS.md

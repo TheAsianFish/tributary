@@ -22,8 +22,8 @@ whole sample once. `make down` deletes the volumes (topic, tables, lake
 files and checkpoints together, so they never disagree). The warehouse can
 be worked on without the streaming stack: any PostgreSQL 17 plus
 `uv run tributary sample load` (the sample straight into `raw.recentchange`)
-is enough for `make dbt` and `make test-warehouse`. The `bird` profile and
-`tributary ask` arrive with later milestones (PLAN.md).
+is enough for `make dbt` and `make test-warehouse`. BIRD needs PostgreSQL
+alone too: `docker compose up -d postgres && make bird`.
 
 ## Commands
 
@@ -44,11 +44,14 @@ is enough for `make dbt` and `make test-warehouse`. The `bird` profile and
 | `make eval-guard-db` | The same suite with the guard off, as the agent's role: what PostgreSQL alone refuses. Disposable databases only. |
 | `make eval-warehouse` | The 40 warehouse questions end to end; `PROVIDER=fake` (default) replays the recordings, `ollama`/`anthropic` call a model. Needs PostgreSQL. |
 | `make record PROVIDER=...` | Re-run the 40 questions on a live model and store every call in `TRIBUTARY_RECORDINGS_PATH`. |
+| `make bird` | Download BIRD Mini-Dev (cached, sha256-pinned), load the eleven databases into PostgreSQL (database `bird`, one schema each, read-only role `tributary_bird`), write the committed catalogs and verify every gold query, transpiling the corrected track. Needs PostgreSQL; about 2 minutes after the 800 MB download. |
+| `make eval` | BIRD execution accuracy on the `dev50` subset, variants `full` and `bm25-k4`, official and corrected tracks. `PROVIDER=fake` (default) replays recorded model calls and database executions with no model and no database, checks every verdict against the recorded run and checks RESULTS.md's tables (CI runs it). `PROVIDER=ollama`/`anthropic` with `MODEL=...` runs live after `make bird`; `RECORD=1` stores the calls (`RESUME=1` continues an interrupted recording from the calls already stored). `VARIANTS`, `TRACKS`, `SUBSET=all` select the run. |
+| `make eval-link` | Schema-linking table recall and precision on the 500 BIRD questions for every strategy (offline, in CI). |
+| `make results` | Re-render RESULTS.md's BIRD tables from `eval/results/`. |
 | `make serve` / `make up-api` | The API on localhost:8000 from the host / in Compose (profile `api`); both need `TRIBUTARY_API_KEYS`. |
 
-Planned targets (`make eval`, `make bench`, `make bench-scale`,
-`make bench-query`, `make bird`, `make test-live`) are specified in PLAN.md
-and land with their milestones. On a database created before M3, run
+Planned targets (`make bench`, `make bench-scale`, `make bench-query`,
+`make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
 `uv run tributary warehouse grant-agent` once to create the agent's role.
 
 ## Conventions
@@ -61,7 +64,8 @@ and land with their milestones. On a database created before M3, run
   `tests/integration` (the Compose stack), `tests/live`. Unit tests never
   touch the network or Docker; the Anthropic client is replaced
   by the `fake` provider, which replays recordings from
-  `tests/recordings/`. A recording is real model output (Claude, or a local
+  `tests/recordings/` (for BIRD, database executions are recorded too, in
+  `tests/recordings/bird-executions.jsonl.gz`, with value types kept). A recording is real model output (Claude, or a local
   model through Ollama) captured once with `make record`; never hand-write
   one. A changed prompt, schema or message misses its recording, so
   re-record after changing any of them.

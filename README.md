@@ -11,7 +11,8 @@ on BIRD Mini-Dev (execution accuracy, PostgreSQL) and guarded against unsafe
 queries. The demo data is the live Wikipedia edit stream; one
 `docker compose up` brings the pipeline up with a committed sample.
 
-**Status: the pipeline and the guarded agent work (milestone 3 of 8).**
+**Status: the pipeline, the guarded agent and its benchmark harness work
+(milestone 4 of 8).**
 Kafka feeds one Spark application with two streaming queries: one into the
 PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
 MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
@@ -20,9 +21,12 @@ and keeps the lake reconciled with the warehouse hour by hour. On top,
 `tributary ask` and a FastAPI service turn a question into SQL with a model
 (Claude by default, a local Ollama model offline), pass it through an AST
 guard and a read-only database role, and answer with the rows, the SQL and
-each table's freshness and quality status. The BIRD benchmark and the
-ingest benchmarks are planned in [PLAN.md](PLAN.md); measured numbers live
-in [RESULTS.md](RESULTS.md).
+each table's freshness and quality status. `make bird` loads BIRD
+Mini-Dev into PostgreSQL and `make eval` grades the agent on it by
+execution accuracy, on the official and the corrected labels, from
+recordings that CI replays without a model or a database. The ingest
+benchmarks are planned in [PLAN.md](PLAN.md); measured numbers live in
+[RESULTS.md](RESULTS.md).
 
 ## Why
 
@@ -130,6 +134,18 @@ uv run tributary ask --api http://localhost:8000 --api-key "$TRIBUTARY_API_KEYS"
 Airflow profile as well, because the API reads the catalog that
 `warehouse_refresh` publishes: until that DAG has run once (or `uv run
 tributary warehouse refresh` has), `/query` answers 503.
+
+Grade the agent on BIRD Mini-Dev (PostgreSQL alone is enough):
+
+```bash
+make eval                                   # replay the recorded dev50 run: no model, no database
+docker compose up -d postgres && make bird  # 800 MB download once, then about a minute
+docker compose --profile ollama up -d ollama
+docker compose exec ollama ollama pull qwen2.5-coder:7b
+make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b          # live, about 70 min on 4 CPUs
+ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1
+make eval-link                              # schema-linking recall, offline
+```
 
 Demo: *screenshot placeholder.* To capture one, run the commands above and
 record `docker compose logs -f stream` next to the `psql` query (for example
@@ -252,6 +268,55 @@ recorded responses by a fingerprint of everything the model saw. Tests run
 on recordings of real model output, and a changed prompt misses its
 recording instead of replaying a stale answer.
 
+### Grading the agent: BIRD Mini-Dev in PostgreSQL
+
+`make bird` loads BIRD Mini-Dev's eleven databases into PostgreSQL (one
+schema each, a read-only role) and `make eval` runs the agent on them
+through the same planner, guard and executor as `/query`. Three things
+make the number trustworthy rather than merely produced:
+
+- **The scorer is BIRD's, to the value type.** BIRD counts an answer
+  correct when the predicted rows and the gold rows are the same *set of
+  Python values*, so a `numeric` average is never equal to a `float8` one.
+  The harness grades with exactly that rule and grades every pair a second
+  time with BIRD's own `calculate_ex`, compiled from the pinned upstream
+  file; they agree on all 449 corrected-vs-official gold pairs.
+- **Two label tracks, both executed.** The official PostgreSQL gold, and
+  the corrected labels from the VLDB 2026 annotation-error study,
+  transpiled from SQLite with sqlglot plus five SQLite-semantics rewrites
+  and kept only when both engines return the same rows (449 of 498). On the 333 of those worded exactly as in the
+  official release, 66 corrections (19.8%) change the answer. Loading also
+  showed that BIRD's
+  PostgreSQL dump stores one database's timestamps 8 hours early, which
+  empties two official gold answers.
+- **CI replays the run without a model or a database.** Every model call
+  is recorded by request fingerprint and every query execution by database
+  and SQL, with value types kept, so `make eval` in CI reruns the 50-question
+  subset through the real planner, guard and scorer and fails if a single
+  verdict differs from the recorded live run.
+
+```mermaid
+flowchart LR
+    Z[(minidev.zip<br/>SQLite files + PostgreSQL dump)] --> LOAD[make bird<br/>one schema per database<br/>role tributary_bird]
+    LOAD --> PG[(PostgreSQL<br/>database bird)]
+    ARC[Arcwise corrections<br/>SQLite gold] --> TV[transpile + verify<br/>same rows on both engines]
+    TV --> CG[corrected gold]
+    Q[question + evidence] --> LK[linker<br/>full / bm25 / core]
+    LK --> PL[planner] --> GD[guard] --> RUN[executor]
+    RUN --> PG
+    RUN -->|rows| SC[scorer<br/>BIRD calculate_ex rule]
+    OG[official gold] --> SC
+    CG --> SC
+    SC --> R[eval/results/*.json<br/>RESULTS.md tables]
+    REC[(recordings<br/>model calls + executions)] -. replay in CI .-> PL
+    REC -. replay in CI .-> RUN
+```
+
+Schema linking is a strategy behind one interface
+(`tributary/agent/linker.py`): `full` sends every table, `bm25` the k best
+lexical matches; `make eval-link` measures what each one finds before any
+model sees it.
+
 ### Design decisions
 
 | Decision | Chosen | Rejected | Why |
@@ -277,12 +342,17 @@ recording instead of replaying a stale answer.
 | Repair loop | Feed the guard's reasons or PostgreSQL's error back, at most two repairs | One shot; unbounded retries | Most failed drafts fail on a column PostgreSQL names in its error (all six repairs in the 7B run); a bound keeps the worst case at three calls. |
 | Test provider | Replay real recorded responses, keyed by a fingerprint of the full request | Hand-written mock replies | A mock tests the code against what its author expects the model to say; a recording tests it against what a model said, and goes stale loudly when the prompt changes. |
 | Offline model | Ollama with `qwen2.5-coder` | Bundling a model; no offline path | Free, local, the same JSON-schema output as the API path, and a second column for the results. |
+| Benchmark grading | BIRD's `calculate_ex` rule exactly (set of rows, values compared with their types), cross-checked with the official function | A normalised comparison (numbers as floats, rounding) | Comparable with every published BIRD number; the type-blind count is reported beside it, so the cost of the rule is visible instead of silently changed. |
+| Corrected labels | Transpile SQLite gold and keep a query only if SQLite and PostgreSQL return the same rows | Trust the transpiler | sqlglot alone verifies 418 of 498; unverified, the other 80 would grade answers against queries that fail or say something else. |
+| Replaying the benchmark in CI | Record model calls and database executions | Load BIRD in CI; mock the database | Loading BIRD costs minutes and 800 MB per run; a mock would grade against invented rows. Recorded executions are the rows PostgreSQL returned, keyed by database and SQL. |
+| The no-repair variant | Read off the first attempt of the same run | A second run with repairs off | The first model call is the same request either way, so it is the same result at no extra cost. |
+| Baseline linker | BM25 over each table's name, columns, descriptions and values | Embeddings | Deterministic, offline, no model or index to host, and its failures are explainable (see RESULTS.md: hub tables lose to the tables that reference them). |
 
 ## Results
 
 From [RESULTS.md](RESULTS.md), where each number has its command and raw
 output. $0 spent: every model call so far ran on a local model; the Claude
-runs are listed there under "To measure".
+runs are listed there under "To measure", with their estimated cost.
 
 | Measurement | Result |
 |---|---|
@@ -297,6 +367,13 @@ runs are listed there under "To measure".
 | Database layer alone, guard off (`make eval-guard-db`) | 90 / 112 refused; the 22 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, ...) are the guard's alone to stop |
 | 40 warehouse questions on local models (CPU, $0) | `qwen2.5-coder:7b` 25 / 40, `:14b` 31 / 40 (execution accuracy); 4 of the 6 questions both miss are the same error, a pre-aggregated mart whose grain does not fit the question |
 | Replay of the recorded runs (what CI tests) | Same 40 verdicts and SQL in 2.1 s, against 31 min live for the 7B run (68 min for 14B) |
+| BIRD gold in PostgreSQL (`make bird`) | 500 / 500 official gold queries execute; 449 / 498 corrected labels transpile from SQLite and return the same rows on both engines |
+| BIRD label noise, by execution | On the 333 questions worded identically in both releases, 66 corrected labels (19.8%) return different rows from the official gold |
+| BIRD's own scorer against the harness's | `calculate_ex` agrees on 449 / 449 gold pairs and 134 / 134 live pairs |
+| BIRD's PostgreSQL dump | `codebase_community` timestamps stored 8 h early (all 40,325 user rows); 2 official gold queries return no rows because of it |
+| Schema linking without a model (`make eval-link`, 500 questions) | bm25 at k = 4 links every gold table for 82.0% of questions with half the tables; 59 of its 98 misses are hub tables the question names |
+| BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
+| Replay of the BIRD run (what CI tests) | All 190 verdicts in 0.4 s, no model and no database, against 69 min live |
 
 ## Development
 
@@ -309,7 +386,8 @@ PostgreSQL; `make test-integration` runs against Compose.
 
 M3 the guarded agent and API (done on local-model recordings; the Claude
 run of the 40 questions waits for a key); M4 BIRD harness and schema
-linking; M5 fault-injection and scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
+linking (done on local-model recordings; the Claude runs are costed in
+RESULTS.md); M5 fault-injection and scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
 over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.
@@ -317,5 +395,8 @@ Details in PLAN.md.
 ## Licence
 
 MIT. The sample is derived from Wikimedia's public recentchange stream
-(factual fields only, no comment text). Benchmark data (BIRD Mini-Dev,
-CC BY-SA 4.0) is downloaded on demand and never committed.
+(factual fields only, no comment text). BIRD Mini-Dev's databases are
+downloaded on demand and never committed; its question files, the
+Arcwise-Plat-SQL corrections and the catalogs derived from the databases
+are committed under `eval/bird/data/` under their own licence, CC BY-SA 4.0
+(attribution in `eval/bird/data/README.md`).
