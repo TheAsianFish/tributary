@@ -106,6 +106,24 @@ def parsed_events(
     return deduplicate(parse_events(source), settings.watermark_delay)
 
 
+def warn_if_discarding(settings: Settings) -> bool:
+    """Warn when the warehouse query will drop every row; True if it will.
+
+    A discarding sink still commits offsets to its checkpoint, so switching back
+    to ``postgres`` on the same checkpoint never replays what it dropped. That is
+    right for a benchmark's throwaway checkpoint and silent data loss anywhere else.
+    """
+    if settings.stream_sink == "postgres":
+        return False
+    log.warning(
+        "stream.sink_discards_rows",
+        sink=settings.stream_sink,
+        checkpoint=str(settings.checkpoint_dir),
+        hint="benchmark only: offsets this checkpoint commits are never written to PostgreSQL",
+    )
+    return True
+
+
 def start_warehouse_query(
     spark: SparkSession, settings: Settings, *, available_now: bool = False
 ) -> StreamingQuery:
@@ -115,6 +133,7 @@ def start_warehouse_query(
     ``python`` hands every row to the Python workers and drops it, ``noop`` is
     Spark's own sink (the rows never leave the JVM). Neither lands anything.
     """
+    warn_if_discarding(settings)
     events = parsed_events(spark, settings)
     stream = events.writeStream.queryName(QUERY_NAME)
     if settings.stream_sink == "noop":
