@@ -726,9 +726,9 @@ Afterwards every acknowledged id is fetched back by its run's id range from `raw
 | none | 1 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 2.00 s / 11.20 s / 15.84 s | 1.72 s / 3.06 s |
 | none | 2 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 1.66 s / 2.62 s / 3.55 s | 1.64 s / 2.60 s |
 | none | 3 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 1.64 s / 2.63 s / 3.62 s | 1.68 s / 2.73 s |
-| stream | 1 | 3 (3) | 50,000 | 0 / 0 | 0 / 0 | 0 | 3,103 | 27.55 s / 60.73 s / 64.72 s | 31.52 s / 61.44 s |
-| stream | 2 | 3 (3) | 50,000 | 0 / 0 | 0 / 0 | 0 | 996 | 22.11 s / 49.85 s / 53.40 s | 25.61 s / 50.60 s |
-| stream | 3 | 3 (3) | 50,000 | 0 / 0 | 0 / 0 | 0 | 997 | 24.80 s / 53.97 s / 58.75 s | 27.81 s / 54.88 s |
+| stream | 1 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 3,103 | 27.55 s / 60.73 s / 64.72 s | 31.52 s / 61.44 s |
+| stream | 2 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 996 | 22.11 s / 49.85 s / 53.40 s | 25.61 s / 50.60 s |
+| stream | 3 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 997 | 24.80 s / 53.97 s / 58.75 s | 27.81 s / 54.88 s |
 | broker | 1 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 22.13 s / 55.37 s / 60.44 s | 24.17 s / 47.13 s |
 | broker | 2 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 25.89 s / 62.30 s / 67.40 s | 27.78 s / 54.16 s |
 | broker | 3 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 12.69 s / 28.99 s / 31.76 s | 14.46 s / 29.16 s |
@@ -747,13 +747,13 @@ Both detections poll PostgreSQL every 2 ms. The kill writes `1` to the container
 |---|---|---|---|---|---|---|
 | 1 | warehouse-written | cgroup.kill | 132 | 132 / 131 | yes | – |
 | 1 | lake-committed | cgroup.kill | 18 | 18 / 17 | yes | 1 |
-| 1 | warehouse | cgroup.kill | 136 | – | yes | – |
+| 1 | warehouse | cgroup.kill | 136 | – | not checked | – |
 | 2 | warehouse-written | cgroup.kill | 201 | 201 / 200 | yes | – |
 | 2 | lake-committed | cgroup.kill | 22 | 22 / 21 | yes | 1 |
-| 2 | warehouse | cgroup.kill | 205 | – | yes | – |
+| 2 | warehouse | cgroup.kill | 205 | – | not checked | – |
 | 3 | warehouse-written | cgroup.kill | 289 | 289 / 288 | yes | – |
 | 3 | lake-committed | cgroup.kill | 29 | 29 / 28 | yes | 1 |
-| 3 | warehouse | cgroup.kill | 292 | – | yes | – |
+| 3 | warehouse | cgroup.kill | 292 | – | not checked | – |
 <!-- /bench:kills -->
 
 **What it means.** 18 kills across 9 runs (9 of the job, 9 of the broker), and 450,000 events landed exactly once in both stores.

@@ -37,8 +37,24 @@ def test_a_targeted_kill_hits_only_when_the_batch_is_planned_but_not_committed()
     missed = {"service": "stream", "offsets_after_kill": 18, "commits_after_kill": 18}
     assert report.window_hit(hit) is True
     assert report.window_hit(missed) is False
-    assert report.window_hit({"service": "stream", "in_flight": True}) is True
+    # Seen in flight before the kill, never read after it: unchecked, not a hit.
+    assert report.window_hit({"service": "stream", "in_flight": True}) is None
     assert report.window_hit({"service": "kafka"}) is None
+
+
+def test_a_written_kill_must_catch_the_batch_whose_write_it_saw() -> None:
+    caught = {
+        "service": "stream",
+        "target": "warehouse-written",
+        "batch_id": 132,
+        "offsets_after_kill": 132,
+        "commits_after_kill": 131,
+    }
+    # The write of 132 was seen, but the kill landed inside 133: 132 is committed
+    # and will not be replayed, so the primary key is never exercised.
+    next_batch = {**caught, "offsets_after_kill": 133, "commits_after_kill": 132}
+    assert report.window_hit(caught) is True
+    assert report.window_hit(next_batch) is False
 
 
 def test_every_recorded_fault_run_is_exactly_once_with_every_kill_window_hit() -> None:

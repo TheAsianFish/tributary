@@ -51,18 +51,23 @@ def _median(values: Sequence[float]) -> float | None:
 
 
 def window_hit(fault: Mapping[str, Any]) -> bool | None:
-    """Did a stream kill land where it was aimed? None for a broker kill.
+    """Did a stream kill land where it was aimed? None for a broker kill, or if unchecked.
 
-    For the targeted kills, the checkpoint read after the kill must show the
-    batch planned and not committed (so the restart re-runs it); for the
-    untargeted one, a batch must have been in flight.
+    The checkpoint read after the kill must show a batch planned and not
+    committed (so the restart re-runs it). A ``warehouse-written`` kill must
+    have caught the very batch whose write it saw: a kill that missed it and
+    landed in the next batch is a miss. A batch seen in flight *before* the kill
+    says nothing about where the kill landed, so a fault without an after-kill
+    checkpoint is unchecked (None), not a hit.
     """
-    if fault.get("service") != "stream":
+    if fault.get("service") != "stream" or "offsets_after_kill" not in fault:
         return None
-    if "offsets_after_kill" in fault:
-        offsets, commits = fault.get("offsets_after_kill"), fault.get("commits_after_kill")
-        return offsets is not None and (commits is None or offsets > commits)
-    return bool(fault.get("in_flight"))
+    offsets, commits = fault.get("offsets_after_kill"), fault.get("commits_after_kill")
+    if offsets is None or (commits is not None and offsets <= commits):
+        return False
+    if fault.get("target") == "warehouse-written":
+        return offsets == fault.get("batch_id") and commits in (None, offsets - 1)
+    return True
 
 
 def faults_table(results: Path = BENCH) -> str:
@@ -78,7 +83,12 @@ def faults_table(results: Path = BENCH) -> str:
         kills = DASH
         if faults:
             hits = [h for f in faults if (h := window_hit(f)) is not None]
-            kills = f"{len(faults)} ({sum(hits)})" if hits else str(len(faults))
+            if not hits:
+                kills = str(len(faults))
+            elif len(hits) == len(faults):
+                kills = f"{len(faults)} ({sum(hits)})"
+            else:
+                kills = f"{len(faults)} ({sum(hits)} of {len(hits)} checked)"
         pg, lake, lat = doc["postgres"], doc["iceberg"], doc["latency"]
         steady = doc.get("latency_after_30s") or {}
         lines.append(
@@ -108,10 +118,14 @@ def kills_table(results: Path = BENCH) -> str:
             hit = window_hit(fault)
             lines.append(
                 f"| {doc['rep']} | {fault.get('target')} | {fault.get('kill_method', DASH)} | "
-                f"{fault.get('batch_id', DASH)} | {ckpt} | {'yes' if hit else 'no'} | "
+                f"{fault.get('batch_id', DASH)} | {ckpt} | {_hit_cell(hit)} | "
                 f"{fault.get('snapshots_with_batch_id', DASH)} |"
             )
     return "\n".join(lines)
+
+
+def _hit_cell(hit: bool | None) -> str:
+    return "not checked" if hit is None else ("yes" if hit else "no")
 
 
 def _fault_order(path: Path) -> tuple[int, int]:
