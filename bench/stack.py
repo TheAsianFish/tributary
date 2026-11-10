@@ -226,17 +226,26 @@ class CgroupKiller:
         self._tee.stdin.write(b"1\n")
         self._tee.stdin.flush()
         self._tee.stdin.close()
-        self._tee.wait(10)
+        code = self._tee.wait(10)
+        if code != 0:
+            raise RuntimeError(f"writing {self.path} failed (tee exited {code})")
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             state = subprocess_run(
                 ["docker", "inspect", "-f", "{{.State.Running}}", self.container]
             )
             if state.strip() == "false":
-                break
+                return at
             time.sleep(0.1)
-        return at
+        raise RuntimeError(f"container {self.container} still running 30 s after cgroup.kill")
 
     def restore(self) -> None:
+        """Put the restart policy back and close the ``tee``; safe to call more than once."""
+        if self._tee.poll() is None:
+            # EOF ends tee (and its sudo) without writing; nothing is killed.
+            if self._tee.stdin is not None and not self._tee.stdin.closed:
+                self._tee.stdin.close()
+            self._tee.wait(10)
         if self._policy:
             subprocess_run(["docker", "update", "--restart", self._policy, self.container])
+            self._policy = ""

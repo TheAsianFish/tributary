@@ -231,37 +231,41 @@ def _inject(
 ) -> dict[str, Any]:
     service = "stream" if scenario == "stream" else "kafka"
     fault: dict[str, Any] = {"service": service, "point": config.points[index], "sent": sent}
-    if service == "stream":
-        stack.wait_healthy("stream")
-        cid = stack.container_id("stream")
-        mode = config.targets[index % len(config.targets)]
-        timeout = config.in_flight_timeout_s
-        killer = stack.CgroupKiller(cid) if stack.CgroupKiller.available(cid) else None
-        fault["kill_method"] = "cgroup.kill" if killer is not None else "docker kill"
-        if mode == "warehouse-written":
-            found, value = wait_for_change(settings.pg_conninfo, PROGRESS_SQL, timeout)
-            fault.update(target=mode, in_flight=found, batch_id=value)
-        elif mode == "lake-committed":
-            # The snapshot's batch id is read from the offsets log just after the kill.
-            found, _ = wait_for_change(settings.pg_conninfo, METADATA_SQL, timeout)
-            fault.update(target=mode, in_flight=found)
+    killer: stack.CgroupKiller | None = None
+    try:
+        if service == "stream":
+            stack.wait_healthy("stream")
+            cid = stack.container_id("stream")
+            mode = config.targets[index % len(config.targets)]
+            timeout = config.in_flight_timeout_s
+            killer = stack.CgroupKiller(cid) if stack.CgroupKiller.available(cid) else None
+            fault["kill_method"] = "cgroup.kill" if killer is not None else "docker kill"
+            if mode == "warehouse-written":
+                found, value = wait_for_change(settings.pg_conninfo, PROGRESS_SQL, timeout)
+                fault.update(target=mode, in_flight=found, batch_id=value)
+            elif mode == "lake-committed":
+                # The snapshot's batch id is read from the offsets log just after the kill.
+                found, _ = wait_for_change(settings.pg_conninfo, METADATA_SQL, timeout)
+                fault.update(target=mode, in_flight=found)
+            else:
+                found, batch = wait_in_flight(cid, mode, timeout)
+                fault.update(target=mode, in_flight=found, batch_id=batch)
         else:
-            found, batch = wait_in_flight(cid, mode, timeout)
-            fault.update(target=mode, in_flight=found, batch_id=batch)
-    else:
-        killer = None
-        stack.wait_healthy("kafka")
-    fault["killed_at"] = killer.kill() if killer is not None else stack.kill(service)
-    if fault.get("target") in ("warehouse-written", "lake-committed"):
-        query = "warehouse" if fault["target"] == "warehouse-written" else "lake"
-        offsets, commits = _checkpoint_after_kill(stack.container_id("stream"), query)
-        fault.update(offsets_after_kill=offsets, commits_after_kill=commits)
-        if query == "lake":
-            fault["batch_id"] = offsets
-    time.sleep(config.downtime_s)
-    started = stack.start(service, wait=False)
-    if killer is not None:
-        killer.restore()
+            stack.wait_healthy("kafka")
+        fault["killed_at"] = killer.kill() if killer is not None else stack.kill(service)
+        if service == "stream":
+            # Every stream kill, the untargeted ones included, is checked after the
+            # fact: what was seen in flight before the kill proves nothing about it.
+            query = "lake" if fault["target"] in ("lake-committed", "lake") else "warehouse"
+            offsets, commits = _checkpoint_after_kill(stack.container_id("stream"), query)
+            fault.update(offsets_after_kill=offsets, commits_after_kill=commits)
+            if fault["target"] == "lake-committed":
+                fault["batch_id"] = offsets
+        time.sleep(config.downtime_s)
+        started = stack.start(service, wait=False)
+    finally:
+        if killer is not None:
+            killer.restore()
     healthy_s = stack.wait_healthy(service, timeout=300)
     fault.update(
         started_at=started, healthy_after_s=round(time.time() - started, 1), waited_s=healthy_s
