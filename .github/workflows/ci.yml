@@ -30,3 +30,6 @@ jobs:
       - run: uv sync --all-extras --locked
       - run: make check
       - run: make eval-guard
+      - run: make eval-link
+      - name: Committed results are what the commands produce
+        run: git diff --exit-code eval/results

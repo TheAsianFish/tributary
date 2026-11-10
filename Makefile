@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval-link
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -75,6 +75,10 @@ record: ## Re-record the 40 questions' model calls from a live provider (PROVIDE
 # BIRD Mini-Dev (M4): needs PostgreSQL (`docker compose up -d postgres`).
 bird: ## Download BIRD Mini-Dev, load it into PostgreSQL, verify every gold query (~2 min)
 	uv run python -m eval.bird.load
+
+eval-link: ## Schema-linking recall and precision on BIRD, full vs bm25 (offline)
+	uv run python -m eval.bird.link_eval
+	uv run python -m eval.bird.link_eval --track corrected
 
 serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	uv run tributary serve
