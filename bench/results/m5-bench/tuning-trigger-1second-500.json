@@ -1,0 +1,22 @@
+{
+ "trigger": "1 second",
+ "rate": 500.0,
+ "sent": 44999,
+ "delivered": 44999,
+ "latency": {
+  "rows": 34999,
+  "p50_ms": 1343.4,
+  "p95_ms": 2899.6,
+  "p99_ms": 3510.3,
+  "max_ms": 4125.0,
+  "produced_per_s": 500.0,
+  "landed_per_s": 491.8
+ },
+ "batches": 63,
+ "batch_ms_p50": 854.0,
+ "overhead_ms_p50": 74.0,
+ "cpu_cores": {
+  "stream": 1.345,
+  "postgres": 1.044
+ }
+}

@@ -45,8 +45,12 @@ class Settings(BaseSettings):
     # Spark stream job
     checkpoint_dir: Path = Path("spark-checkpoints/warehouse")
     watermark_delay: str = "10 minutes"
-    trigger_interval: str = "5 seconds"
-    max_offsets_per_trigger: int = Field(default=20_000, ge=1)
+    # Both chosen by `make bench` (RESULTS.md, "Trigger interval and backpressure"): a 2 s
+    # trigger halves p95 against 5 s at the replay rate for less CPU than 1 s; the cap bounds
+    # a catch-up batch and, divided by the trigger, is the most the job can ever ingest
+    # (50,000 events/s, above the sustained ceiling; the old 20,000 per 5 s capped it at 4,000).
+    trigger_interval: str = "2 seconds"
+    max_offsets_per_trigger: int = Field(default=100_000, ge=1)
     # Where the warehouse query writes: postgres (the product), or, for the scaling
     # benchmark's stage ceilings, python (rows handed to the Python workers and
     # discarded) and noop (Spark's noop sink: Kafka read, parse, dedup, no write).
@@ -69,9 +73,9 @@ class Settings(BaseSettings):
     # Every trigger commits a snapshot and at least one file per hour touched, so the
     # lake triggers less often than the warehouse query: fewer, larger files.
     lake_trigger_interval: str = "1 minute"
-    # Per-trigger cap for the lake query. At one trigger a minute the warehouse's cap
-    # would limit the lake to 333 events/s, below the default replay rate.
-    lake_max_offsets_per_trigger: int = Field(default=200_000, ge=1)
+    # Per-trigger cap for the lake query: at one trigger a minute this is its ceiling
+    # (33,000 events/s), set above what the warehouse query sustains on 4 vCPU.
+    lake_max_offsets_per_trigger: int = Field(default=2_000_000, ge=1)
     s3_endpoint: str = "http://localhost:9000"
     s3_region: str = "us-east-1"
     s3_access_key: str = "tributary"

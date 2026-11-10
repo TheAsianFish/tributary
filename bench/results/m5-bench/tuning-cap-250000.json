@@ -1,0 +1,19 @@
+{
+ "fill": {
+  "topic": "bench.tuning.backlog-c972e436",
+  "prefix": "208b6d02-a118-fd04-8652",
+  "events": 300000,
+  "seconds": 6.65,
+  "events_per_s": 45129.6
+ },
+ "cap": 250000,
+ "trigger": "5 seconds",
+ "drain_rows_per_s": 11704.4,
+ "measured_batches": 1,
+ "batches": 2,
+ "batch_ms_max": 26415.0,
+ "batch_ms_p50": 15343.5,
+ "backlog_s": 30.9,
+ "memory_peak_bytes": 1493086208,
+ "ceiling_per_s": 50000.0
+}

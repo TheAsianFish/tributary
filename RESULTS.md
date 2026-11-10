@@ -661,19 +661,35 @@ unit test fails if they drift apart.
 ### Exactly-once with the job and the broker killed
 
 <!-- bench:faults -->
+| Scenario | Run | Kills (in flight) | Acked | PostgreSQL missing / dup | Iceberg missing / dup | Batches committed twice | Rows the key absorbed | p50 / p95 / max latency |
+|---|---|---|---|---|---|---|---|---|
 <!-- /bench:faults -->
 
 ### Trigger interval and backpressure
 
 <!-- bench:trigger -->
+| Rate (events/s) | Trigger | p50 | p95 | p99 | Batch time p50 | Stream job CPU (cores) |
+|---|---|---|---|---|---|---|
+| 500 | 1 second | 1.34 s | 2.90 s | 3.51 s | 854 ms | 1.34 |
+| 500 | 2 seconds | 1.75 s | 2.95 s | 3.75 s | 743 ms | 0.86 |
+| 500 | 5 seconds | 3.33 s | 5.55 s | 5.95 s | 890 ms | 0.53 |
+| 5,000 | 1 second | 1.64 s | 5.37 s | 6.44 s | 948 ms | 1.78 |
+| 5,000 | 2 seconds | 2.31 s | 9.37 s | 11.05 s | 1,362 ms | 1.30 |
+| 5,000 | 5 seconds | 19.00 s | 25.76 s | 27.83 s | 1,479 ms | 0.83 |
 <!-- /bench:trigger -->
 
 <!-- bench:cap -->
+| `maxOffsetsPerTrigger` | Ceiling at a 5 s trigger | Batches | Longest batch | 300,000-event backlog cleared in | Effective rate | Stream job peak memory |
+|---|---|---|---|---|---|---|
+| 20,000 | 4,000 events/s | 16 | 11.22 s | 80.1 s | 3,745 events/s | 1.30 GiB |
+| 100,000 | 20,000 events/s | 4 | 13.86 s | 24.7 s | 12,146 events/s | 1.33 GiB |
+| 250,000 | 50,000 events/s | 2 | 26.41 s | 30.9 s | 9,709 events/s | 1.39 GiB |
 <!-- /bench:cap -->
 
 ### Freshness during the fault runs
 
 <!-- bench:freshness -->
+No freshness run recorded yet.
 <!-- /bench:freshness -->
 
 ## To measure
