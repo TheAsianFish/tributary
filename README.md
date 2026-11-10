@@ -229,11 +229,14 @@ so `make bench` aims each SIGKILL at that window. It polls PostgreSQL every
 catalog has committed it, then kills the container through its cgroup
 (`docker kill` was too slow: Spark committed first every time) and reads the
 checkpoint afterwards to prove the batch was logged but not committed. Over
-nine 50,000-event runs, with the job killed nine times and the broker nine
-times:
-- every acknowledged event landed exactly once in PostgreSQL and in Iceberg;
+nine 50,000-event runs, with the job killed nine times (six aimed and
+confirmed in the checkpoint, three at an arbitrary point in a batch) and the
+broker nine times:
+- no acknowledged event was lost in PostgreSQL or in Iceberg, and none was
+  duplicated in Iceberg (in PostgreSQL the primary key makes a duplicate
+  impossible, so the test there is loss and the replay);
 - each replay of an already-written batch was absorbed by the primary key
-  (996–3,103 rows per run);
+  (about 1,000 rows per replay);
 - each replay of an already-committed lake batch was skipped by Iceberg:
   exactly one snapshot carries its batch id.
 
@@ -350,7 +353,7 @@ model sees it.
 | Sink write | `COPY` into a temp table, then `INSERT ... ON CONFLICT DO NOTHING`, one connection per Spark partition | Spark JDBC writer | The JDBC writer cannot express `ON CONFLICT`, so a replayed batch would fail or duplicate. Per-partition connections give P parallel writers, which the scaling benchmark needs. |
 | Warehouse trigger and cap | 2 s trigger, `maxOffsetsPerTrigger` 100,000 (chosen by `make bench`) | The earlier 5 s and 20,000 | cap / trigger is the most the job can ever ingest: 20,000 per 5 s capped it at 4,000 events/s, and at 5,000 events/s it fell behind for good. 2 s has the same p95 as 1 s at the replay rate (2.9 s) for two thirds of the CPU, and 100,000 cleared a backlog fastest. |
 | Benchmark kills | Aimed at the window between a sink's write and Spark's commit, detected in PostgreSQL and delivered through `cgroup.kill` | `docker kill` at random times | Random kills land between batches and test nothing; `docker kill` arrived after the commit every time. The checkpoint read after each kill shows the batch was replayed. |
-| Naming the bottleneck | Per-event time of each serial stage, from drains with the `noop` and `python` sinks and a sink replay without Spark | The lowest ceiling | One task runs the stages one after another, so their times add; the sum predicts the measured drain within 1–9% at every P, which a minimum would not. |
+| Naming the bottleneck | Per-event time of each serial stage, from drains with the `noop` and `python` sinks and a sink replay without Spark | The lowest ceiling | One task runs the stages one after another, so their times add; the sum predicts the measured drain within 1–9% at every P, which a minimum would not. The largest share is a plurality (41–55%), not a single dominant stage. |
 | Dedup state store | RocksDB with changelog checkpointing | The default heap store | State spans twice the delay of event time (27,952 keys once the sample replay has settled, 30,827 at peak); RocksDB keeps it off the JVM heap and checkpoints only each batch's changes. The provider cannot change without a new checkpoint, so it is chosen up front. |
 | Stream image | The official `apache/spark:4.1.3-python3` with the Kafka connector jars baked in (sha256-pinned) and a Python 3.12 venv | `--packages` at start-up | Nothing is downloaded when the job starts, so a restart works offline and the jars cannot change underneath it. |
 | One image for producer and job | Shared | Separate slim producer image | One build in CI. The API milestone adds a slim app image. |
@@ -399,10 +402,10 @@ runs are listed there under "To measure", with their estimated cost.
 | BIRD's own scorer against the harness's | `calculate_ex` agrees on 449 / 449 gold pairs and 134 / 134 live pairs |
 | BIRD's PostgreSQL dump | `codebase_community` timestamps stored 8 h early (all 40,325 user rows); 2 official gold queries return no rows because of it |
 | Schema linking without a model (`make eval-link`, 500 questions) | bm25 at k = 4 links every gold table for 82.0% of questions with half the tables; 59 of its 98 misses are hub tables the question names |
-| Exactly-once under SIGKILL (`make bench`, 9 runs of 50,000 events) | 0 lost and 0 duplicated in PostgreSQL and in Iceberg, with 9 kills of the job, all landing between a sink's write and Spark's commit, and 9 kills of the broker; no Iceberg batch committed twice |
+| Exactly-once under SIGKILL (`make bench`, 9 runs of 50,000 events) | 0 lost in PostgreSQL and in Iceberg, 0 duplicated in Iceberg (PostgreSQL's key rules duplicates out), with 9 kills of the job (6 confirmed between a sink's write and Spark's commit) and 9 of the broker; no Iceberg batch committed twice |
 | End-to-end latency at 500 events/s (warm) | p50 1.6–1.7 s, p95 2.6–3.1 s (2 s trigger, both sinks, Airflow and Trino running) |
-| Sustained throughput, 4 vCPU (`make bench-scale`) | 18,500 / 29,800 / 28,800 events/s at P = 1 / 3 / 6 (medians of 3); the bottleneck is Spark's Kafka read, parse and dedup, CPU-bound from P = 3; the PostgreSQL sink alone takes 88,000–116,000 rows/s |
-| Cost of the Iceberg sink at P = 3 | Sustained 29,800 → 25,900 events/s (−13%); p95 at 80% load 14 → 42 s |
+| Sustained throughput, 4 vCPU (`make bench-scale`) | 18,500 / 29,800 / 28,800 events/s at P = 1 / 3 / 6 (medians of 3, 15% resolution); the largest share of per-event time is Spark's Kafka read, parse and dedup (41–55%), and the box is CPU-bound from P = 3; the PostgreSQL sink alone takes 88,000–116,000 rows/s |
+| Cost of the Iceberg sink at P = 3 | Sustained 29,800 → 25,900 events/s (one 15% ladder step); p95 at 80% load 14 → 42 s (medians; latency was still rising at that load) |
 | The shipped trigger and cap (found by `make bench`) | 20,000 offsets per 5 s trigger capped ingest at 4,000 events/s; now 2 s and 100,000 (ceiling 50,000) |
 | Freshness during the fault runs | 4 / 4 refreshes all checks passing; `fct_edits` 6–7.5 min behind at check time, set by dbt's ~7 min refresh rather than the stream |
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
@@ -420,8 +423,8 @@ PostgreSQL; `make test-integration` runs against Compose.
 M3 the guarded agent and API (done on local-model recordings; the Claude
 run of the 40 questions waits for a key); M4 BIRD harness and schema
 linking (done on local-model recordings; the Claude runs are costed in
-RESULTS.md); M5 fault-injection and scaling benchmarks (done: exactly once under
-18 kills, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
+RESULTS.md); M5 fault-injection and scaling benchmarks (done: no loss under 18 kills
+and no Iceberg duplicate, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
 over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.
