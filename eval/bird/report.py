@@ -213,20 +213,21 @@ def render_all(results: Path = RESULTS) -> dict[str, str]:
         "gold": gold_table(json.loads((results / "bird-gold.json").read_text())),
         "link": link_table(json.loads((results / "bird-link.json").read_text())),
     }
-    if reports:
-        tables["ex"] = ex_table(reports)
-        tables["ledger"] = ledger_table(reports)
+    none = "No recorded run yet: `make eval PROVIDER=ollama RECORD=1` after `make bird`."
+    tables["ex"] = ex_table(reports) if reports else none
+    tables["ledger"] = ledger_table(reports) if reports else none
     return tables
 
 
 def _splice(table: str, match: re.Match[str]) -> str:
-    return match.group(1) + table + match.group(2)
+    return match.group(1) + table + "\n" + match.group(2)
 
 
 def apply(text: str, tables: dict[str, str]) -> str:
+    """Each table between its markers; an empty block (markers on adjacent lines) works too."""
     for name, table in tables.items():
         pattern = re.compile(
-            rf"(<!-- bird:{name} -->\n).*?(\n<!-- /bird:{name} -->)", flags=re.DOTALL
+            rf"(<!-- bird:{name} -->\n).*?(<!-- /bird:{name} -->)", flags=re.DOTALL
         )
         if not pattern.search(text):
             raise ValueError(f"RESULTS.md has no <!-- bird:{name} --> block")

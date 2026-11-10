@@ -283,8 +283,10 @@ def subset_ids(
     """A fixed stratified sample: per difficulty, the ids with the smallest seeded hash.
 
     No random generator is involved, so the subset is the same on every
-    machine and Python version; ``also_in`` restricts it to ids another track
-    has too, so both tracks grade the same questions.
+    machine and Python version. ``also_in`` restricts it to ids the corrected
+    source covers (Arcwise's 498), a fixed input: the subset does not move
+    when the transpiler improves. The corrected track then grades the
+    subset's questions whose transpiled gold verified (45 of dev50's 50).
     """
     quota = SUBSETS[name]
     allowed = set(also_in)

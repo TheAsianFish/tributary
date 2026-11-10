@@ -33,6 +33,7 @@ this scorer.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import platform
@@ -63,7 +64,13 @@ from tributary.agent.execute import ExecutionError, Executor, PostgresExecutor, 
 from tributary.agent.guard import Guard
 from tributary.agent.linker import DEFAULT_K, Link, LinkerUnavailable
 from tributary.agent.planner import Planner, PlanOutcome
-from tributary.agent.provider import Provider, Usage
+from tributary.agent.provider import (
+    ModelRequest,
+    ModelResponse,
+    Provider,
+    RecordingMissing,
+    Usage,
+)
 from tributary.agent.providers import pricing
 from tributary.agent.service import linker_for
 from tributary.config import REPO_ROOT, Settings, get_settings
@@ -98,8 +105,8 @@ class Variant:
             raise ValueError(f"unknown variant {text!r}: full, bm25-k<N> or core[-k<N>]")
         if linker == "full" and k:
             raise ValueError(f"unknown variant {text!r}: full takes no k")
-        if k and not k.isdigit():
-            raise ValueError(f"unknown variant {text!r}: k must be a number")
+        if k and (not k.isdigit() or int(k) < 1):
+            raise ValueError(f"unknown variant {text!r}: k must be a positive number")
         return cls(linker, int(k) if k else (DEFAULT_K if linker == "bm25" else None))
 
     def linker_fn(self) -> Callable[[str, Catalog], Link] | None:
@@ -117,7 +124,9 @@ class Prediction:
     outcome: PlanOutcome
     rows: tuple[tuple[object, ...], ...] | None
     first_ok: bool  # the first attempt's query ran (so the no-repair variant has these rows)
-    linked: tuple[str, ...]
+    # Variants that have counted this prediction's cost: a variant pays once per prediction
+    # (as if run alone), however many tracks grade it.
+    paid_by: set[str] = field(default_factory=set)
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,7 +147,9 @@ class Verdict:
     input_tokens_r0: int
     output_tokens_r0: int
     cost_usd: float
+    cost_usd_r0: float
     model_ms: float
+    model_ms_r0: float
     predicted_rows: int | None
     gold_rows: int
     linked: tuple[str, ...]
@@ -168,6 +179,7 @@ class Harness:
     official: Callable[[Any, Any], int] | None = None
     _planners: dict[tuple[str, str], Planner] = field(default_factory=dict)
     _gold: dict[str, Executor] = field(default_factory=dict)
+    _gold_results: dict[tuple[str, str], QueryResult] = field(default_factory=dict)
     _memo: dict[tuple[str, str, str], Prediction] = field(default_factory=dict)
     pairs: list[tuple[str, Any, Any]] = field(default_factory=list)
 
@@ -181,6 +193,9 @@ class Harness:
             row_cap=ROW_CAP,
             cost_ceiling=None,
             search_path=database if gold else "",
+            # Serial plans: a parallel float4 SUM can differ in its last bits from run to
+            # run, and BIRD compares values exactly.
+            parallel=False,
         )
         return RecordingExecutor(live, key, self.recorder) if self.recorder else live
 
@@ -201,28 +216,45 @@ class Harness:
         return self._planners[key]
 
     def gold(self, q: data.BirdQuestion) -> QueryResult:
-        executor = self._gold.get(q.db_id)
-        if executor is None:
-            executor = self._gold[q.db_id] = self._executor(q.db_id, gold=True)
-        return executor.run(q.sql)
+        """The gold result, run once per run: every variant is graded on the same rows."""
+        key = (q.db_id, q.sql)
+        if key not in self._gold_results:
+            executor = self._gold.get(q.db_id)
+            if executor is None:
+                executor = self._gold[q.db_id] = self._executor(q.db_id, gold=True)
+            self._gold_results[key] = executor.run(q.sql)
+        return self._gold_results[key]
 
-    def predict(self, q: data.BirdQuestion, variant: Variant) -> tuple[Prediction, bool]:
-        key = (variant.name, q.db_id, q.prompt)
-        if key in self._memo:
-            return self._memo[key], True
-        outcome = self.planner(q.db_id, variant).run(q.prompt)
-        rows = outcome.result.rows if outcome.result is not None else None
-        first = outcome.attempts[0] if outcome.attempts else None
-        first_ok = bool(first and first.error is None and outcome.status == "answered")
-        first_ok = first_ok and len(outcome.attempts) == 1
-        linked = outcome.link.tables if outcome.link else self.catalogs[q.db_id].relations()
-        prediction = Prediction(outcome, rows, first_ok, tuple(linked))
-        self._memo[key] = prediction
-        return prediction, False
+    def predict(
+        self, q: data.BirdQuestion, variant: Variant
+    ) -> tuple[Prediction, bool, tuple[str, ...]]:
+        """The planner's answer, the model asked once per distinct request.
+
+        Keyed by the system prompt and the question, not by variant or track: on a
+        database with at most k tables bm25 shows exactly what full shows, and a
+        second, identical request could get a different reply than the first while
+        the recording keeps only one. Returns the prediction, whether this variant
+        has already counted its cost, and the tables the variant linked.
+        """
+        planner = self.planner(q.db_id, variant)
+        system, link = planner.system_for(q.prompt)
+        key = (q.db_id, hashlib.sha256(system.encode()).hexdigest(), q.prompt)
+        prediction = self._memo.get(key)
+        if prediction is None:
+            outcome = planner.run(q.prompt)
+            rows = outcome.result.rows if outcome.result is not None else None
+            first = outcome.attempts[0] if outcome.attempts else None
+            first_ok = bool(first and first.error is None and outcome.status == "answered")
+            first_ok = first_ok and len(outcome.attempts) == 1
+            prediction = self._memo[key] = Prediction(outcome, rows, first_ok)
+        reused = variant.name in prediction.paid_by
+        prediction.paid_by.add(variant.name)
+        linked = link.tables if link else self.catalogs[q.db_id].relations()
+        return prediction, reused, tuple(linked)
 
     def grade(self, q: data.BirdQuestion, variant: Variant) -> Verdict:
         gold = self.gold(q)
-        prediction, reused = self.predict(q, variant)
+        prediction, reused, linked = self.predict(q, variant)
         outcome = prediction.outcome
         rows = prediction.rows
         correct = rows is not None and execution_match(rows, gold.rows)
@@ -232,7 +264,8 @@ class Harness:
             self.pairs.append((label, rows, gold.rows))
             if self.official is not None:
                 official_ex = bool(self.official(raw_rows(rows), raw_rows(gold.rows)))
-        first = outcome.attempts[0].usage if outcome.attempts else Usage()
+        first = outcome.attempts[0] if outcome.attempts else None
+        first_usage = first.usage if first else Usage()
         return Verdict(
             id=q.id,
             db_id=q.db_id,
@@ -247,16 +280,39 @@ class Harness:
             error=outcome.error,
             input_tokens=outcome.usage.input_tokens,
             output_tokens=outcome.usage.output_tokens,
-            input_tokens_r0=first.input_tokens,
-            output_tokens_r0=first.output_tokens,
+            input_tokens_r0=first_usage.input_tokens,
+            output_tokens_r0=first_usage.output_tokens,
             cost_usd=round(outcome.usage.cost_usd, 6),
+            cost_usd_r0=round(first_usage.cost_usd, 6),
             model_ms=round(sum(a.model_ms for a in outcome.attempts), 1),
+            model_ms_r0=round(first.model_ms, 1) if first else 0.0,
             predicted_rows=None if rows is None else len(rows),
             gold_rows=len(gold.rows),
-            linked=prediction.linked,
+            linked=linked,
             reused=reused,
             official_ex=official_ex,
         )
+
+
+class Resume:
+    """Recorded replies where they exist, the live (recording) provider for the rest."""
+
+    def __init__(self, recorded: Provider, live: Provider) -> None:
+        self.recorded = recorded
+        self.live = live
+        self.name = live.name
+        self.model = live.model
+        self.recorded_calls = 0
+        self.live_calls = 0
+
+    def complete(self, request: ModelRequest) -> ModelResponse:
+        try:
+            response = self.recorded.complete(request)
+        except RecordingMissing:
+            self.live_calls += 1
+            return self.live.complete(request)
+        self.recorded_calls += 1
+        return response
 
 
 # --- summaries --------------------------------------------------------------------------------
@@ -283,7 +339,7 @@ def summarise(verdicts: Sequence[Verdict], *, repairs: bool) -> dict[str, Any]:
     fresh = [v for v in verdicts if not v.reused]
     tokens_in = sum(v.input_tokens if repairs else v.input_tokens_r0 for v in fresh)
     tokens_out = sum(v.output_tokens if repairs else v.output_tokens_r0 for v in fresh)
-    latencies = [v.model_ms for v in verdicts]
+    latencies = [v.model_ms if repairs else v.model_ms_r0 for v in verdicts]
     return {
         "correct": correct,
         "total": n,
@@ -302,7 +358,7 @@ def summarise(verdicts: Sequence[Verdict], *, repairs: bool) -> dict[str, Any]:
         "model_calls": sum(v.attempts if repairs else 1 for v in fresh),
         "input_tokens": tokens_in,
         "output_tokens": tokens_out,
-        "cost_usd": round(sum(v.cost_usd for v in fresh), 6) if repairs else None,
+        "cost_usd": round(sum(v.cost_usd if repairs else v.cost_usd_r0 for v in fresh), 6),
         "model_ms_p50": round(statistics.median(latencies), 1) if latencies else 0.0,
         "model_ms_p95": round(_percentile(latencies, 0.95), 1),
     }
@@ -370,7 +426,7 @@ def ledger(report: dict[str, Any]) -> list[dict[str, Any]]:
                 calls += s["model_calls"]
                 tokens_in += s["input_tokens"]
                 tokens_out += s["output_tokens"]
-                cost += s["cost_usd"] or 0.0
+                cost += s["cost_usd"]
             rows.append(
                 {
                     "variant": f"{name}-{repairs}",
@@ -432,6 +488,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--executions", type=Path, default=EXECUTIONS)
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--limit", type=int, default=None, help="first N questions per track")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="with --record: answer from the recordings where they exist, call the model "
+        "only for requests never recorded (an interrupted or extended run)",
+    )
     args = parser.parse_args(argv)
     variants = [Variant.parse(v) for v in args.variants.split(",") if v]
     for variant in variants:
@@ -461,6 +523,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     from tributary.agent.providers import make_provider
 
     provider = make_provider(settings, record=args.record)
+    resuming: Resume | None = None
+    if args.resume:
+        if replay or not args.record:
+            parser.error("--resume continues a live recording: use it with --record")
+        from tributary.agent.providers.fake import FakeProvider
+
+        provider = resuming = Resume(FakeProvider(settings.recordings_path), provider)
     harness = Harness(settings, provider, load_catalogs(), replay=replay)
     if replay:
         harness.executions = load_executions(args.executions)
@@ -507,6 +576,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "wall_seconds": wall,
             "machine": f"{platform.system()} {platform.machine()}, {_cpus()} CPUs",
         }
+        if resuming is not None:
+            report["run"]["model_calls_from_recordings"] = resuming.recorded_calls
+            report["run"]["model_calls_live"] = resuming.live_calls
     out = args.out or (
         RESULTS / "bird-replay.json" if replay else report_path(args.provider, model, args.subset)
     )

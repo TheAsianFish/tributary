@@ -29,7 +29,9 @@ def verdict(**changes: Any) -> Verdict:
         input_tokens_r0=1000,
         output_tokens_r0=100,
         cost_usd=0.0,
+        cost_usd_r0=0.0,
         model_ms=2000.0,
+        model_ms_r0=2000.0,
         predicted_rows=1,
         gold_rows=1,
         linked=("toxicology.atom",),
@@ -86,6 +88,10 @@ def test_the_no_repair_view_counts_only_first_attempts() -> None:
             attempts=2,
             input_tokens=2500,
             output_tokens=250,
+            cost_usd=0.03,
+            cost_usd_r0=0.01,
+            model_ms=9000.0,
+            model_ms_r0=3000.0,
         ),
         verdict(id=3, difficulty="challenging", correct=False, correct_r0=False, status="failed"),
     ]
@@ -95,6 +101,9 @@ def test_the_no_repair_view_counts_only_first_attempts() -> None:
     assert r2["repaired_into_correct"] == 1
     assert (r2["model_calls"], r0["model_calls"]) == (4, 3)
     assert (r2["input_tokens"], r0["input_tokens"]) == (4500, 3000)
+    # The no-repair view prices and times only the first call of each question.
+    assert (r2["cost_usd"], r0["cost_usd"]) == (0.03, 0.01)
+    assert (r2["model_ms_p95"], r0["model_ms_p95"]) == (9000.0, 3000.0)
     assert r2["by_difficulty"]["moderate"] == {"correct": 1, "total": 1}
     assert list(r2["by_difficulty"]) == ["simple", "moderate", "challenging"]
 
@@ -148,3 +157,60 @@ def test_results_tables_replace_only_their_own_block() -> None:
     )
     with pytest.raises(ValueError, match="no <!-- bird:ex -->"):
         report.apply(text, {"ex": "x"})
+
+
+# --- the harness: one model call per distinct request, one gold run per query -------------------
+
+
+def _harness_case() -> tuple[Any, Any, list[Any]]:
+    from eval.bird.data import BirdQuestion
+    from eval.bird.recorded import to_record
+    from eval.bird.run import Harness
+    from tests.unit.agent_doubles import ScriptedProvider, draft, result
+    from tributary.agent.catalog import Catalog, Column, Table
+    from tributary.agent.guard import Guard
+    from tributary.config import Settings
+
+    table = Table("tox", "atom", "", (Column("element", "text", ""),), (), (), ())
+    catalog = Catalog((table,), "information_schema")
+    predicted = Guard(catalog.relations(), max_rows=100_000).check("SELECT element FROM tox.atom")
+    gold_sql = "SELECT element FROM atom"
+    rows = result(("element",), (("cl",), ("c",)))
+    executions = {
+        r["key"]: r
+        for r in (to_record("tox", predicted.sql, rows), to_record("gold/tox", gold_sql, rows))
+    }
+    provider = ScriptedProvider([draft("SELECT element FROM tox.atom", tables=("tox.atom",))])
+    harness = Harness(Settings(), provider, {"tox": catalog}, replay=True, executions=executions)
+
+    def question(track: Any) -> BirdQuestion:
+        return BirdQuestion(1, "tox", "Which elements?", "", gold_sql, "simple", track, gold_sql)
+
+    return harness, provider, [question("official"), question("corrected")]
+
+
+def test_an_identical_request_reaches_the_model_once_and_each_variant_pays_once() -> None:
+    harness, provider, (official, corrected) = _harness_case()
+    # One table: bm25 with k=4 shows exactly what full shows, so the request is identical.
+    full_official = harness.grade(official, Variant("full"))
+    full_corrected = harness.grade(corrected, Variant("full"))
+    bm25_official = harness.grade(official, Variant("bm25", 4))
+
+    assert len(provider.requests) == 1
+    assert (full_official.correct, full_corrected.correct, bm25_official.correct) == (
+        True,
+        True,
+        True,
+    )
+    assert full_official.reused is False
+    assert full_corrected.reused is True  # the second track does not pay again
+    assert bm25_official.reused is False  # but another variant counts its own cost
+    assert bm25_official.linked == ("tox.atom",)
+    assert len(harness._gold_results) == 1
+
+
+def test_an_empty_marker_block_is_filled() -> None:
+    text = "<!-- bird:gold -->\n<!-- /bird:gold -->\n"
+    once = report.apply(text, {"gold": "| a |"})
+    assert once == "<!-- bird:gold -->\n| a |\n<!-- /bird:gold -->\n"
+    assert report.apply(once, {"gold": "| a |"}) == once

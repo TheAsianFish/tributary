@@ -84,7 +84,7 @@ bird: ## Download BIRD Mini-Dev, load it into PostgreSQL, verify every gold quer
 
 eval: ## BIRD execution accuracy (PROVIDER=fake replays; ollama|anthropic run live, RECORD=1 stores)
 	uv run python -m eval.bird.run --provider $(PROVIDER) --variants $(VARIANTS) \
-		--tracks $(TRACKS) --subset $(SUBSET) $(if $(MODEL),--model $(MODEL)) $(if $(RECORD),--record)
+		--tracks $(TRACKS) --subset $(SUBSET) $(if $(MODEL),--model $(MODEL)) $(if $(RECORD),--record) $(if $(RESUME),--resume)
 	uv run python -m eval.bird.report $(if $(filter fake,$(PROVIDER)),--check)
 
 eval-link: ## Schema-linking recall and precision on BIRD, full vs bm25 (offline)
