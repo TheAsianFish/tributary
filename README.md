@@ -11,8 +11,8 @@ on BIRD Mini-Dev (execution accuracy, PostgreSQL) and guarded against unsafe
 queries. The demo data is the live Wikipedia edit stream; one
 `docker compose up` brings the pipeline up with a committed sample.
 
-**Status: the pipeline, the guarded agent and its benchmark harness work
-(milestone 4 of 8).**
+**Status: the pipeline, the guarded agent and its benchmark harness work, and
+the ingest path is measured under failure and at scale (milestone 5 of 8).**
 Kafka feeds one Spark application with two streaming queries: one into the
 PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
 MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
@@ -24,9 +24,10 @@ guard and a read-only database role, and answer with the rows, the SQL and
 each table's freshness and quality status. `make bird` loads BIRD
 Mini-Dev into PostgreSQL and `make eval` grades the agent on it by
 execution accuracy, on the official and the corrected labels, from
-recordings that CI replays without a model or a database. The ingest
-benchmarks are planned in [PLAN.md](PLAN.md); measured numbers live in
-[RESULTS.md](RESULTS.md).
+recordings that CI replays without a model or a database. `make bench` kills
+the stream job and the broker mid-batch and checks every event landed once in
+both stores; `make bench-scale` measures throughput at 1, 3 and 6 partitions
+and names what limits it. Measured numbers live in [RESULTS.md](RESULTS.md).
 
 ## Why
 
@@ -135,6 +136,15 @@ Airflow profile as well, because the API reads the catalog that
 `warehouse_refresh` publishes: until that DAG has run once (or `uv run
 tributary warehouse refresh` has), `/query` answers 503.
 
+Benchmark the ingest path (each run recreates containers and wipes the landing
+table, so use a stack you can throw away; results go to `bench/results/`):
+
+```bash
+make bench          # SIGKILL the job and the broker, check exactly-once in both stores, tune, freshness (~1 h)
+make bench-scale    # sustained events/s, p95 and the bottleneck at 1, 3 and 6 partitions (~2 h)
+make bench-results  # re-render RESULTS.md's ingest tables from bench/results/
+```
+
 Grade the agent on BIRD Mini-Dev (PostgreSQL alone is enough):
 
 ```bash
@@ -210,8 +220,22 @@ different failure:
 | A poison message (bad JSON, bad UUID, a timestamp past year 9999, a NUL byte in a text field) | Counted as malformed and filtered before the sink, so one bad record cannot fail every replay of its batch. |
 
 Kafka transactions cannot reach PostgreSQL, so end-to-end exactly-once here
-means at-least-once delivery into an idempotent sink. The fault-injection
-benchmark that kills the job and the broker mid-stream is milestone 5.
+means at-least-once delivery into an idempotent sink. **That claim is tested
+where it can break.** A Spark micro-batch logs its offsets before it runs and
+its commit after the sink returns; a restart re-runs any batch in between.
+Killing the job at random mostly lands between batches and proves nothing,
+so `make bench` aims each SIGKILL at that window. It polls PostgreSQL every
+2 ms for the moment the warehouse sink has written batch N, or the Iceberg
+catalog has committed it, then kills the container through its cgroup
+(`docker kill` was too slow: Spark committed first every time) and reads the
+checkpoint afterwards to prove the batch was logged but not committed. Over
+nine 50,000-event runs, with the job killed nine times and the broker nine
+times:
+- every acknowledged event landed exactly once in PostgreSQL and in Iceberg;
+- each replay of an already-written batch was absorbed by the primary key
+  (996–3,103 rows per run);
+- each replay of an already-committed lake batch was skipped by Iceberg:
+  exactly one snapshot carries its batch id.
 
 **The lake copy has no primary key, so it is checked instead.** The Iceberg
 query runs the same parser and dedup with its own checkpoint, and Iceberg's
@@ -324,12 +348,15 @@ model sees it.
 | Event time | MediaWiki `timestamp` (when the change happened) | `meta.dt` (when EventGate emitted it) | Questions are about when edits happened. `meta.dt` trails the change (p50 1.5 s, max 144 s in the sample); it is kept as `emitted_at`. |
 | What enters Kafka | An allowlist of factual fields | The full event | Editor comments are free text under CC BY-SA; nothing downstream needs them, and an allowlist cannot leak a new field by accident. |
 | Sink write | `COPY` into a temp table, then `INSERT ... ON CONFLICT DO NOTHING`, one connection per Spark partition | Spark JDBC writer | The JDBC writer cannot express `ON CONFLICT`, so a replayed batch would fail or duplicate. Per-partition connections give P parallel writers, which the scaling benchmark needs. |
+| Warehouse trigger and cap | 2 s trigger, `maxOffsetsPerTrigger` 100,000 (chosen by `make bench`) | The earlier 5 s and 20,000 | cap / trigger is the most the job can ever ingest: 20,000 per 5 s capped it at 4,000 events/s, and at 5,000 events/s it fell behind for good. 2 s has the same p95 as 1 s at the replay rate (2.9 s) for two thirds of the CPU, and 100,000 cleared a backlog fastest. |
+| Benchmark kills | Aimed at the window between a sink's write and Spark's commit, detected in PostgreSQL and delivered through `cgroup.kill` | `docker kill` at random times | Random kills land between batches and test nothing; `docker kill` arrived after the commit every time. The checkpoint read after each kill shows the batch was replayed. |
+| Naming the bottleneck | Per-event time of each serial stage, from drains with the `noop` and `python` sinks and a sink replay without Spark | The lowest ceiling | One task runs the stages one after another, so their times add; the sum predicts the measured drain within 1–9% at every P, which a minimum would not. |
 | Dedup state store | RocksDB with changelog checkpointing | The default heap store | State spans twice the delay of event time (27,952 keys once the sample replay has settled, 30,827 at peak); RocksDB keeps it off the JVM heap and checkpoints only each batch's changes. The provider cannot change without a new checkpoint, so it is chosen up front. |
 | Stream image | The official `apache/spark:4.1.3-python3` with the Kafka connector jars baked in (sha256-pinned) and a Python 3.12 venv | `--packages` at start-up | Nothing is downloaded when the job starts, so a restart works offline and the jars cannot change underneath it. |
 | One image for producer and job | Shared | Separate slim producer image | One build in CI. The API milestone adds a slim app image. |
 | Writing the lake | A second streaming query with Iceberg's native sink, own checkpoint | Both sinks in one `foreachBatch` | Iceberg's sink skips a batch it already committed, so replays stay idempotent without a `MERGE` on `event_id`, and one sink's failure does not block the other's commit. Kafka is read twice; M5 measures what that costs. |
 | Iceberg catalog | JDBC catalog in the existing PostgreSQL (schema `iceberg_catalog`) | REST catalog (Polaris, Lakekeeper), Hive Metastore | Spark and Trino both speak it and it adds no service: a commit is a row update under PostgreSQL's transactions. A REST catalog is the production direction (credential vending) and is on the roadmap. |
-| Lake trigger | 1 minute, 200,000 offsets per trigger | The warehouse's 5 s | Every trigger commits a snapshot and at least one file per hour it touches; a slower trigger means fewer, larger files. The cap is separate because the warehouse's 20,000 per trigger would limit a one-minute trigger to 333 events/s. |
+| Lake trigger | 1 minute, 2,000,000 offsets per trigger | The warehouse's 2 s | Every trigger commits a snapshot and at least one file per hour it touches; a slower trigger means fewer, larger files. The cap is the lake's ceiling (cap per minute): the earlier 200,000 stopped it at 3,333 events/s, and 2,000,000 (33,000) sits above what the warehouse sustains. |
 | Snapshot retention | 1 day (Trino's floor lowered to match) | Trino's default 7 days | A data batch commits twice (data, then an empty no-data batch that evicts dedup state), so a week of minute triggers is ~20,000 snapshots in every rewritten `metadata.json`. The sink finds its last committed batch by walking snapshot ancestry, so expiry is skipped while the newest streaming snapshot is older than half the retention: an outage longer than a day cannot expire the sink's last commit and duplicate the batch replayed on restart. |
 | MinIO image | Built from the last release tag, in a multi-stage Dockerfile | `minio/minio` from Docker Hub | The upstream repository was archived and the image is no longer published. The store is reached only through S3 settings, so another S3-compatible store is a config change. |
 | `fct_edits` loading | Incremental on arrival time (`ingested_at`) with a 60-minute lookback, `merge` on `event_id` | Incremental on event time; full rebuild | A late event has an old `event_ts` but a fresh `ingested_at`, so filtering on event time would miss it forever. The lookback covers a sink transaction that stamped its rows earlier but committed later. Rows already loaded are filtered out before the `merge` (which would otherwise rewrite every matched row: 25,901 updates per run on the sample, 0 now); `merge` stays as the safety net. |
@@ -372,6 +399,12 @@ runs are listed there under "To measure", with their estimated cost.
 | BIRD's own scorer against the harness's | `calculate_ex` agrees on 449 / 449 gold pairs and 134 / 134 live pairs |
 | BIRD's PostgreSQL dump | `codebase_community` timestamps stored 8 h early (all 40,325 user rows); 2 official gold queries return no rows because of it |
 | Schema linking without a model (`make eval-link`, 500 questions) | bm25 at k = 4 links every gold table for 82.0% of questions with half the tables; 59 of its 98 misses are hub tables the question names |
+| Exactly-once under SIGKILL (`make bench`, 9 runs of 50,000 events) | 0 lost and 0 duplicated in PostgreSQL and in Iceberg, with 9 kills of the job, all landing between a sink's write and Spark's commit, and 9 kills of the broker; no Iceberg batch committed twice |
+| End-to-end latency at 500 events/s (warm) | p50 1.6–1.7 s, p95 2.6–3.1 s (2 s trigger, both sinks, Airflow and Trino running) |
+| Sustained throughput, 4 vCPU (`make bench-scale`) | 18,500 / 29,800 / 28,800 events/s at P = 1 / 3 / 6 (medians of 3); the bottleneck is Spark's Kafka read, parse and dedup, CPU-bound from P = 3; the PostgreSQL sink alone takes 88,000–116,000 rows/s |
+| Cost of the Iceberg sink at P = 3 | Sustained 29,800 → 25,900 events/s (−13%); p95 at 80% load 14 → 42 s |
+| The shipped trigger and cap (found by `make bench`) | 20,000 offsets per 5 s trigger capped ingest at 4,000 events/s; now 2 s and 100,000 (ceiling 50,000) |
+| Freshness during the fault runs | 4 / 4 refreshes all checks passing; `fct_edits` 6–7.5 min behind at check time, set by dbt's ~7 min refresh rather than the stream |
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
 | Replay of the BIRD run (what CI tests) | All 190 verdicts in 0.4 s, no model and no database, against 69 min live |
 
@@ -387,7 +420,8 @@ PostgreSQL; `make test-integration` runs against Compose.
 M3 the guarded agent and API (done on local-model recordings; the Claude
 run of the 40 questions waits for a key); M4 BIRD harness and schema
 linking (done on local-model recordings; the Claude runs are costed in
-RESULTS.md); M5 fault-injection and scaling benchmarks (with the lake sink's cost measured); M6 Postgres vs Trino
+RESULTS.md); M5 fault-injection and scaling benchmarks (done: exactly once under
+18 kills, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
 over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.

@@ -102,12 +102,12 @@ serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 # (`make down` afterwards). A rerun skips every unit whose result file exists.
 BENCH_REPS ?= 3
 
-bench: ## Exactly-once under SIGKILL, latency, trigger/backpressure tuning, freshness (~75 min)
+bench: ## Exactly-once under SIGKILL, latency, trigger/backpressure tuning, freshness (~1 h)
 	$(MAKE) up-lakehouse up-airflow
 	uv run python -m bench.ingest --reps $(BENCH_REPS)
 	uv run python -m bench.report
 
-bench-scale: ## Sustained events/s, p95 and the bottleneck at 1, 3 and 6 partitions (~3 h)
+bench-scale: ## Sustained events/s, p95 and the bottleneck at 1, 3 and 6 partitions (~2 h)
 	$(MAKE) up
 	uv run python -m bench.scale --reps $(BENCH_REPS)
 	uv run python -m bench.report
