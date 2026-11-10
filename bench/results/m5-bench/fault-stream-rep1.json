@@ -1,0 +1,136 @@
+{
+ "scenario": "stream",
+ "rep": 1,
+ "prefix": "0fdd83a2-1fa8-4169-c132",
+ "config": {
+  "events": 50000,
+  "rate": 500.0,
+  "points": [
+   0.2,
+   0.5,
+   0.8
+  ],
+  "downtime_s": 10.0,
+  "in_flight_timeout_s": 75.0,
+  "land_timeout_s": 600.0,
+  "targets": [
+   "warehouse-written",
+   "lake-committed",
+   "warehouse"
+  ]
+ },
+ "produced": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 106.6
+ },
+ "faults": [
+  {
+   "service": "stream",
+   "point": 0.2,
+   "sent": 10044,
+   "kill_method": "cgroup.kill",
+   "target": "warehouse-written",
+   "in_flight": true,
+   "batch_id": 132,
+   "killed_at": 1794329127.6222444,
+   "offsets_after_kill": 132,
+   "commits_after_kill": 131,
+   "started_at": 1794329138.4341717,
+   "healthy_after_s": 8.9,
+   "waited_s": 6.897913376998986
+  },
+  {
+   "service": "stream",
+   "point": 0.5,
+   "sent": 25116,
+   "kill_method": "cgroup.kill",
+   "target": "lake-committed",
+   "in_flight": true,
+   "killed_at": 1794329170.5246813,
+   "offsets_after_kill": 18,
+   "commits_after_kill": 17,
+   "batch_id": 18,
+   "started_at": 1794329181.868165,
+   "healthy_after_s": 9.5,
+   "waited_s": 7.575773259999551,
+   "snapshots_with_batch_id": 1
+  },
+  {
+   "service": "stream",
+   "point": 0.8,
+   "sent": 42691,
+   "kill_method": "cgroup.kill",
+   "target": "warehouse",
+   "in_flight": true,
+   "batch_id": 136,
+   "killed_at": 1794329192.3454432,
+   "started_at": 1794329203.1219711,
+   "healthy_after_s": 9.4,
+   "waited_s": 7.020828321001318
+  }
+ ],
+ "postgres": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 24.4,
+  "count": 50000
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 49.0,
+  "count": 50000,
+  "batches_committed_twice": []
+ },
+ "latency": {
+  "rows": 50000,
+  "p50_ms": 27546.8,
+  "p95_ms": 60726.9,
+  "p99_ms": 63260.4,
+  "max_ms": 64723.4,
+  "produced_per_s": 500.0,
+  "landed_per_s": 426.1
+ },
+ "latency_after_30s": {
+  "rows": 35000,
+  "p50_ms": 31522.9,
+  "p95_ms": 61441.0,
+  "p99_ms": 63592.1,
+  "max_ms": 64723.4,
+  "produced_per_s": 500.0,
+  "landed_per_s": 504.2
+ },
+ "lake_latency": {
+  "rows": 50000,
+  "p50_ms": 66631,
+  "p95_ms": 120407,
+  "p99_ms": 124405,
+  "max_ms": 125411
+ },
+ "stream_log": {
+  "starts": 6,
+  "terminated_with_error": [],
+  "sink_batches": 10,
+  "sink_rows": 74862,
+  "sink_inserted": 71759,
+  "duplicates_skipped": 3103,
+  "batches_written_twice": [
+   132
+  ],
+  "lake_batches": 3,
+  "dropped_by_watermark": 0
+ },
+ "stream_restarts_by_docker": 0
+}

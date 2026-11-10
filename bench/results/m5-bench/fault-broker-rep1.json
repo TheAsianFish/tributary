@@ -1,0 +1,117 @@
+{
+ "scenario": "broker",
+ "rep": 1,
+ "prefix": "6af2ed9e-e9c2-f9be-573f",
+ "config": {
+  "events": 50000,
+  "rate": 500.0,
+  "points": [
+   0.2,
+   0.5,
+   0.8
+  ],
+  "downtime_s": 10.0,
+  "in_flight_timeout_s": 75.0,
+  "land_timeout_s": 600.0,
+  "targets": [
+   "warehouse",
+   "lake",
+   "warehouse"
+  ]
+ },
+ "produced": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 115.4
+ },
+ "faults": [
+  {
+   "service": "kafka",
+   "point": 0.2,
+   "sent": 10039,
+   "killed_at": 1794328719.1011548,
+   "started_at": 1794328729.3845549,
+   "healthy_after_s": 22.5,
+   "waited_s": 22.049257371998465
+  },
+  {
+   "service": "kafka",
+   "point": 0.5,
+   "sent": 26360,
+   "killed_at": 1794328751.9497874,
+   "started_at": 1794328762.9665573,
+   "healthy_after_s": 22.0,
+   "waited_s": 21.62693179100097
+  },
+  {
+   "service": "kafka",
+   "point": 0.8,
+   "sent": 42944,
+   "killed_at": 1794328785.0455508,
+   "started_at": 1794328795.3449416,
+   "healthy_after_s": 16.4,
+   "waited_s": 15.438446496000324
+  }
+ ],
+ "postgres": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 2.1,
+  "count": 50000
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 49.3,
+  "count": 50000,
+  "batches_committed_twice": []
+ },
+ "latency": {
+  "rows": 50000,
+  "p50_ms": 22132.8,
+  "p95_ms": 55369.1,
+  "p99_ms": 59387.1,
+  "max_ms": 60441.4,
+  "produced_per_s": 500.0,
+  "landed_per_s": 434.4
+ },
+ "lake_latency": {
+  "rows": 50000,
+  "p50_ms": 57144,
+  "p95_ms": 87090,
+  "p99_ms": 91103,
+  "max_ms": 92115
+ },
+ "stream_log": {
+  "starts": 0,
+  "terminated_with_error": [],
+  "sink_batches": 18,
+  "sink_rows": 50000,
+  "sink_inserted": 50000,
+  "duplicates_skipped": 0,
+  "batches_written_twice": [],
+  "lake_batches": 3,
+  "dropped_by_watermark": 0
+ },
+ "stream_restarts_by_docker": 0,
+ "latency_after_30s": {
+  "rows": 35000,
+  "p50_ms": 24169.2,
+  "p95_ms": 47134.1,
+  "p99_ms": 49931.1,
+  "max_ms": 50697.2,
+  "produced_per_s": 500.0,
+  "landed_per_s": 965.5
+ }
+}

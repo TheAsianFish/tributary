@@ -1,0 +1,117 @@
+{
+ "scenario": "broker",
+ "rep": 2,
+ "prefix": "1b51db90-8569-caba-d9cb",
+ "config": {
+  "events": 50000,
+  "rate": 500.0,
+  "points": [
+   0.2,
+   0.5,
+   0.8
+  ],
+  "downtime_s": 10.0,
+  "in_flight_timeout_s": 75.0,
+  "land_timeout_s": 600.0,
+  "targets": [
+   "warehouse-written",
+   "lake-committed",
+   "warehouse"
+  ]
+ },
+ "produced": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 121.4
+ },
+ "faults": [
+  {
+   "service": "kafka",
+   "point": 0.2,
+   "sent": 10051,
+   "killed_at": 1794329613.043889,
+   "started_at": 1794329623.4732277,
+   "healthy_after_s": 25.0,
+   "waited_s": 24.056960287998663
+  },
+  {
+   "service": "kafka",
+   "point": 0.5,
+   "sent": 27765,
+   "killed_at": 1794329648.807011,
+   "started_at": 1794329659.6034315,
+   "healthy_after_s": 22.6,
+   "waited_s": 22.08678189099919
+  },
+  {
+   "service": "kafka",
+   "point": 0.8,
+   "sent": 44596,
+   "killed_at": 1794329682.422378,
+   "started_at": 1794329693.1626565,
+   "healthy_after_s": 21.0,
+   "waited_s": 20.601744704999874
+  }
+ ],
+ "postgres": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 2.1,
+  "count": 50000
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 47.8,
+  "count": 50000,
+  "batches_committed_twice": []
+ },
+ "latency": {
+  "rows": 50000,
+  "p50_ms": 25887.7,
+  "p95_ms": 62296.9,
+  "p99_ms": 66292.9,
+  "max_ms": 67399.5,
+  "produced_per_s": 500.0,
+  "landed_per_s": 414.7
+ },
+ "latency_after_30s": {
+  "rows": 35000,
+  "p50_ms": 27780.0,
+  "p95_ms": 54157.3,
+  "p99_ms": 56949.5,
+  "max_ms": 57726.8,
+  "produced_per_s": 500.0,
+  "landed_per_s": 999.6
+ },
+ "lake_latency": {
+  "rows": 50000,
+  "p50_ms": 55343,
+  "p95_ms": 90205,
+  "p99_ms": 94209,
+  "max_ms": 95222
+ },
+ "stream_log": {
+  "starts": 0,
+  "terminated_with_error": [],
+  "sink_batches": 16,
+  "sink_rows": 50000,
+  "sink_inserted": 50000,
+  "duplicates_skipped": 0,
+  "batches_written_twice": [],
+  "lake_batches": 3,
+  "dropped_by_watermark": 0
+ },
+ "stream_restarts_by_docker": 0
+}

@@ -1,0 +1,33 @@
+{
+ "window": [
+  1794328418.8112822,
+  1794330186.0565746
+ ],
+ "quality_rows": 196,
+ "refresh_runs": 4,
+ "refresh_runs_all_pass": 4,
+ "freshness_polls": 0,
+ "statuses": {
+  "pass": 196
+ },
+ "lag_seconds": {
+  "marts.fct_edits": {
+   "checks": 4,
+   "p50": 380.2355,
+   "p95": 441.28895,
+   "max": 449.345
+  },
+  "raw.recentchange": {
+   "checks": 4,
+   "p50": 29.825499999999998,
+   "p95": 60.98694999999999,
+   "max": 65.137
+  }
+ },
+ "fct_edits_rebuilds": 4,
+ "rebuild_gap_s": {
+  "p50": 413.0909698009491,
+  "p95": 420.4499722242355,
+  "max": 421.26763916015625
+ }
+}

@@ -50,28 +50,67 @@ def _median(values: Sequence[float]) -> float | None:
 # ---------------------------------------------------------------- make bench
 
 
+def window_hit(fault: Mapping[str, Any]) -> bool | None:
+    """Did a stream kill land where it was aimed? None for a broker kill.
+
+    For the targeted kills, the checkpoint read after the kill must show the
+    batch planned and not committed (so the restart re-runs it); for the
+    untargeted one, a batch must have been in flight.
+    """
+    if fault.get("service") != "stream":
+        return None
+    if "offsets_after_kill" in fault:
+        offsets, commits = fault.get("offsets_after_kill"), fault.get("commits_after_kill")
+        return offsets is not None and (commits is None or offsets > commits)
+    return bool(fault.get("in_flight"))
+
+
 def faults_table(results: Path = BENCH) -> str:
     lines = [
-        "| Scenario | Run | Kills (in flight) | Acked | PostgreSQL missing / dup | "
-        "Iceberg missing / dup | Batches committed twice | Rows the key absorbed | "
-        "p50 / p95 / max latency |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Scenario | Run | Kills (window hit) | Acked | PostgreSQL missing / dup | "
+        "Iceberg missing / dup | Iceberg batches committed twice | Rows the key absorbed | "
+        "Latency p50 / p95 / max, whole run | p50 / p95 after the first 30 s |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for path in sorted(results.glob("fault-*-rep*.json"), key=_fault_order):
         doc = _read(path)
         faults = doc["faults"]
         kills = DASH
         if faults:
-            flight = sum(1 for f in faults if f.get("in_flight"))
-            kills = f"{len(faults)} ({flight})" if doc["scenario"] == "stream" else str(len(faults))
+            hits = [h for f in faults if (h := window_hit(f)) is not None]
+            kills = f"{len(faults)} ({sum(hits)})" if hits else str(len(faults))
         pg, lake, lat = doc["postgres"], doc["iceberg"], doc["latency"]
+        steady = doc.get("latency_after_30s") or {}
         lines.append(
             f"| {doc['scenario']} | {doc['rep']} | {kills} | {doc['produced']['delivered']:,} | "
             f"{pg['missing']} / {pg['duplicates']} | {lake['missing']} / {lake['duplicates']} | "
             f"{len(lake['batches_committed_twice'])} | "
             f"{doc['stream_log']['duplicates_skipped']:,} | "
-            f"{_ms_as_s(lat['p50_ms'])} / {_ms_as_s(lat['p95_ms'])} / {_ms_as_s(lat['max_ms'])} |"
+            f"{_ms_as_s(lat['p50_ms'])} / {_ms_as_s(lat['p95_ms'])} / {_ms_as_s(lat['max_ms'])} | "
+            f"{_ms_as_s(steady.get('p50_ms'))} / {_ms_as_s(steady.get('p95_ms'))} |"
         )
+    return "\n".join(lines)
+
+
+def kills_table(results: Path = BENCH) -> str:
+    """Every stream kill: where it was aimed, what the checkpoint showed, what the stores did."""
+    lines = [
+        "| Run | Aimed at | Method | Batch | Checkpoint after the kill: offsets / commits | "
+        "Window hit | Iceberg snapshots carrying that batch id |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for path in sorted(results.glob("fault-stream-rep*.json"), key=_fault_order):
+        doc = _read(path)
+        for fault in doc["faults"]:
+            offsets = fault.get("offsets_after_kill")
+            commits = fault.get("commits_after_kill")
+            ckpt = DASH if offsets is None and commits is None else f"{offsets} / {commits}"
+            hit = window_hit(fault)
+            lines.append(
+                f"| {doc['rep']} | {fault.get('target')} | {fault.get('kill_method', DASH)} | "
+                f"{fault.get('batch_id', DASH)} | {ckpt} | {'yes' if hit else 'no'} | "
+                f"{fault.get('snapshots_with_batch_id', DASH)} |"
+            )
     return "\n".join(lines)
 
 
@@ -345,6 +384,7 @@ def render_all() -> dict[str, str]:
     if BENCH.exists():
         tables.update(
             faults=faults_table(),
+            kills=kills_table(),
             trigger=trigger_table(),
             cap=cap_table(),
             freshness=freshness_table(),
