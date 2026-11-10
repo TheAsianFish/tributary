@@ -46,6 +46,7 @@ import time
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -138,6 +139,34 @@ def wait_for_change(conninfo: str, sql: str, timeout: float) -> tuple[bool, obje
     return False, None
 
 
+FUTURE_EVENTS_SQL = (
+    "SELECT count(*), max(event_ts) FROM raw.recentchange WHERE event_ts > clock_timestamp() + %s"
+)
+
+
+def refuse_future_watermark(conninfo: str, slack_s: float = 60.0) -> None:
+    """Raise if the landing table holds events stamped in the future.
+
+    The job's watermark follows the newest event time it has seen, and the
+    parser accepts event times up to a day ahead. A sample replayed at full speed
+    (``tributary produce``, ``make test-integration``) stamps events hours ahead,
+    so the watermark runs past the wall clock and every benchmark event, timed
+    by the wall clock, is dropped as late: a fault run would report all of them
+    missing. Better to refuse before producing than to record that run.
+    """
+    import psycopg
+
+    with psycopg.connect(conninfo) as conn:
+        row = conn.execute(FUTURE_EVENTS_SQL, (timedelta(seconds=slack_s),)).fetchone()
+    count, newest = (int(row[0]), row[1]) if row is not None else (0, None)
+    if count:
+        raise RuntimeError(
+            f"{count} landed events are stamped in the future (newest {newest}); the stream's "
+            "watermark is ahead of the wall clock and would drop every benchmark event. "
+            "Run `make down` and start a fresh stack."
+        )
+
+
 def _restart_count(cid: str) -> int:
     out = stack.subprocess_run(["docker", "inspect", "-f", "{{.RestartCount}}", cid])
     return int(out.strip() or 0)
@@ -149,6 +178,7 @@ def run_scenario(
     """One 50,000-event run; returns the result document for ``bench/results/``."""
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario {scenario}")
+    refuse_future_watermark(settings.pg_conninfo)
     ensure_topic(BOOTSTRAP, settings.topic, settings.topic_partitions)
     stack.wait_healthy("stream")
     stream_cid = stack.container_id("stream")
