@@ -41,6 +41,7 @@ from tributary.warehouse.quality import (
     CheckResult,
     RefreshRow,
     failed_checks,
+    measure_freshness,
     quality_checks,
     record_checks,
     record_refreshes,
@@ -106,7 +107,7 @@ def _run_tests(settings: Settings, run_id: str, args: Sequence[str]) -> list[Che
         result = run_dbt(settings, args, Path(work))
         run_results = result.require_results()
         manifest = read_json(result.target_path / "manifest.json")
-    checks = quality_checks(run_results, manifest)
+    checks = measure_freshness(settings.pg_conninfo, quality_checks(run_results, manifest))
     record_checks(settings.pg_conninfo, run_id, checks, source=DBT_SOURCE)
     failed = failed_checks(checks)
     if failed:

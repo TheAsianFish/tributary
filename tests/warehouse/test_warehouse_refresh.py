@@ -151,6 +151,23 @@ def test_one_quality_row_per_dbt_test(refresh_run: Any, conninfo: str, settings:
     assert "unknown" not in {r[2] for r in rows}
 
 
+def test_freshness_checks_record_the_measured_lag(refresh_run: Any, conninfo: str) -> None:
+    with psycopg.connect(conninfo) as conn:
+        rows = conn.execute(
+            "SELECT target, (details->>'lag_seconds')::float, details->>'newest'"
+            " FROM ops.quality_runs WHERE run_id = %s AND check_type = 'freshness'",
+            (refresh_run.run_id,),
+        ).fetchall()
+        newest = conn.execute("SELECT max(ingested_at) FROM marts.fct_edits").fetchone()
+    by_target = {r[0]: r for r in rows}
+    assert set(by_target) == {"raw.recentchange", "marts.fct_edits"}
+    assert newest is not None
+    _target, lag, stamp = by_target["marts.fct_edits"]
+    assert lag is not None
+    assert lag >= 0
+    assert stamp == newest[0].isoformat()
+
+
 def test_every_mart_refreshed(refresh_run: Any, conninfo: str) -> None:
     with psycopg.connect(conninfo) as conn:
         rows = conn.execute(
