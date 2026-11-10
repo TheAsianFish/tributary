@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -32,6 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from tributary.agent.catalog import Catalog
 from tributary.agent.execute import ExecutionError, Executor, QueryResult
 from tributary.agent.guard import Guard, GuardResult
+from tributary.agent.linker import Link
 from tributary.agent.provider import (
     InvalidOutput,
     Message,
@@ -119,6 +120,9 @@ class Attempt:
     draft: SQLDraft | None
     guard: GuardResult | None
     error: str | None
+    # The model call that produced this draft: what it cost and how long it took.
+    usage: Usage = field(default_factory=Usage)
+    model_ms: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +137,7 @@ class PlanOutcome:
     error: str | None = None
     calls: int = 0
     extra: dict[str, object] = field(default_factory=dict)
+    link: Link | None = None
 
     @property
     def draft(self) -> SQLDraft | None:
@@ -151,8 +156,15 @@ class PlanOutcome:
         return guard.sql if self.status == "answered" and guard else None
 
 
-def system_prompt(catalog: Catalog, *, row_cap: int, relations: Sequence[str] | None = None) -> str:
-    return RULES.format(row_cap=row_cap, schema=catalog.render(relations))
+def system_prompt(
+    catalog: Catalog,
+    *,
+    row_cap: int,
+    relations: Sequence[str] | None = None,
+    rules: str = RULES,
+) -> str:
+    """``rules`` with the schema filled in (all of it, or only ``relations``)."""
+    return rules.format(row_cap=row_cap, schema=catalog.render(relations))
 
 
 def repair_message(error: str) -> str:
@@ -176,18 +188,37 @@ class Planner:
         # against max_tokens and cannot be switched off, so the budget leaves room for
         # it; a reply cut short is an InvalidOutput, not a repair. Ollama ignores this.
         max_tokens: int = 16_000,
+        rules: str = RULES,
+        linker: Callable[[str, Catalog], Link] | None = None,
     ) -> None:
         self.provider = provider
         self.guard = guard
         self.executor = executor
         self.catalog = catalog
         self.max_repairs = max_repairs
-        self.system = system_prompt(catalog, row_cap=row_cap)
+        self.row_cap = row_cap
+        self.rules = rules
+        # Without a linker the prompt shows the whole catalog and is built once, so the
+        # provider's cache sees one prefix; with one, the prefix follows each question.
+        self.linker = linker
+        self.system = system_prompt(catalog, row_cap=row_cap, rules=rules)
         self.max_tokens = max_tokens
 
-    def request(self, messages: Sequence[Message]) -> ModelRequest:
+    def system_for(self, question: str) -> tuple[str, Link | None]:
+        """The system prompt for ``question``, and the link that chose its tables."""
+        if self.linker is None:
+            return self.system, None
+        link = self.linker(question, self.catalog)
+        return (
+            system_prompt(
+                self.catalog, row_cap=self.row_cap, relations=link.tables, rules=self.rules
+            ),
+            link,
+        )
+
+    def request(self, messages: Sequence[Message], system: str | None = None) -> ModelRequest:
         return ModelRequest(
-            system=self.system,
+            system=self.system if system is None else system,
             messages=tuple(messages),
             schema=SQL_DRAFT_SCHEMA,
             schema_name=SCHEMA_NAME,
@@ -196,6 +227,7 @@ class Planner:
 
     def run(self, question: str) -> PlanOutcome:
         started = time.perf_counter()
+        system, link = self.system_for(question)
         messages = [Message("user", f"Question: {question.strip()}")]
         attempts: list[Attempt] = []
         usage = Usage()
@@ -203,14 +235,14 @@ class Planner:
         result: QueryResult | None = None
         status: Status = "failed"
         for n in range(1 + self.max_repairs):
-            response = self.provider.complete(self.request(messages))
+            response = self.provider.complete(self.request(messages, system))
             usage = usage + response.usage
             model = response.model
             try:
                 draft = SQLDraft.model_validate(response.data)
             except ValidationError as exc:
                 error = f"The reply did not match the JSON schema: {exc.errors()[0]['msg']}"
-                attempts.append(Attempt(None, None, error))
+                attempts.append(Attempt(None, None, error, response.usage, response.latency_ms))
                 status = "failed"
                 messages += [
                     Message("assistant", response.text),
@@ -218,13 +250,13 @@ class Planner:
                 ]
                 continue
             if not draft.answerable:
-                attempts.append(Attempt(draft, None, None))
+                attempts.append(Attempt(draft, None, None, response.usage, response.latency_ms))
                 status = "unanswerable"
                 break
             guard = self.guard.check(draft.sql)
             if not guard.allowed:
                 error = "The query was blocked by the safety policy: " + "; ".join(guard.reasons)
-                attempts.append(Attempt(draft, guard, error))
+                attempts.append(Attempt(draft, guard, error, response.usage, response.latency_ms))
                 status = "blocked"
             else:
                 try:
@@ -241,10 +273,14 @@ class Planner:
                         )
                         raise
                     error = exc.feedback()
-                    attempts.append(Attempt(draft, guard, error))
+                    attempts.append(
+                        Attempt(draft, guard, error, response.usage, response.latency_ms)
+                    )
                     status = "failed"
                 else:
-                    attempts.append(Attempt(draft, guard, None))
+                    attempts.append(
+                        Attempt(draft, guard, None, response.usage, response.latency_ms)
+                    )
                     status = "answered"
                     break
             log.info("planner.repair", attempt=n + 1, error=error[:200])
@@ -271,6 +307,7 @@ class Planner:
             model=model,
             error=last_error,
             calls=len(attempts),
+            link=link,
         )
 
 

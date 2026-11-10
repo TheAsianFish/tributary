@@ -113,6 +113,10 @@ class Settings(BaseSettings):
     recordings_path: Path = REPO_ROOT / "tests/recordings/warehouse.jsonl"
     # Relations the agent may read, as dbt schemas; everything else is blocked.
     agent_schemas: tuple[str, ...] = ("marts",)
+    # Schema linking: which tables the planner sees per question (tributary/agent/linker.py).
+    # full = every table; bm25 = the k best lexical matches; core is not implemented yet.
+    agent_linker: Literal["full", "bm25", "core"] = "full"
+    agent_link_k: int = Field(default=4, ge=1)
     agent_max_repairs: int = Field(default=2, ge=0, le=5)
     agent_row_cap: int = Field(default=1000, ge=1)
     agent_statement_timeout_ms: int = Field(default=10_000, ge=100)

@@ -14,6 +14,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from pathlib import Path
 
 import structlog
@@ -22,6 +23,7 @@ from tributary.agent.answer import Answer, compose, provenance_warnings, result_
 from tributary.agent.catalog import Catalog, load_dbt
 from tributary.agent.execute import ExecutionError, Executor, PostgresExecutor
 from tributary.agent.guard import Guard
+from tributary.agent.linker import DEFAULT_K, Link, link_schema
 from tributary.agent.planner import Planner, PlanOutcome
 from tributary.agent.provenance import PostgresProvenance, ProvenanceSource, TableProvenance
 from tributary.agent.provider import Provider, Usage
@@ -62,6 +64,8 @@ class Limits:
     max_repairs: int = 2
     row_cap: int = 1000
     stale_after: timedelta = timedelta(minutes=120)
+    linker: str = "full"
+    link_k: int = DEFAULT_K
 
 
 class Agent:
@@ -110,6 +114,7 @@ class Agent:
                 catalog,
                 max_repairs=self.limits.max_repairs,
                 row_cap=self.limits.row_cap,
+                linker=linker_for(self.limits.linker, self.limits.link_k),
             )
             self._planners = {catalog.version: planner}
         return planner
@@ -167,6 +172,22 @@ class Agent:
         return self.provenance.lookup(list(catalog.tables))
 
 
+def linker_for(strategy: str, k: int) -> Callable[[str, Catalog], Link] | None:
+    """The planner's linker for a strategy; ``None`` for ``full`` (one cached prefix).
+
+    An unavailable strategy is refused here, when the agent is built, rather
+    than on the first question.
+    """
+    if strategy == "full":
+        return None
+    link_schema("", Catalog(tables=(), source="dbt"), strategy=strategy, k=k)
+    return partial(_link, strategy=strategy, k=k)
+
+
+def _link(question: str, catalog: Catalog, *, strategy: str, k: int) -> Link:
+    return link_schema(question, catalog, strategy=strategy, k=k)
+
+
 def guard_error(reasons: tuple[str, ...]) -> str:
     return "blocked by the safety policy: " + "; ".join(reasons)
 
@@ -194,6 +215,7 @@ def build_agent(settings: Settings, provider: Provider | None = None) -> Agent:
     """The agent wired from settings: published catalog, agent role, ops provenance."""
     from tributary.agent.providers import make_provider
 
+    linker_for(settings.agent_linker, settings.agent_link_k)  # refuse an unavailable one now
     executor = PostgresExecutor(
         settings.agent_conninfo,
         statement_timeout_ms=settings.agent_statement_timeout_ms,
@@ -210,6 +232,8 @@ def build_agent(settings: Settings, provider: Provider | None = None) -> Agent:
             max_repairs=settings.agent_max_repairs,
             row_cap=settings.agent_row_cap,
             stale_after=stale_after,
+            linker=settings.agent_linker,
+            link_k=settings.agent_link_k,
         ),
     )
 
