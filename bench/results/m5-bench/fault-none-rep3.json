@@ -1,0 +1,89 @@
+{
+ "scenario": "none",
+ "rep": 3,
+ "prefix": "532e6789-b78c-61d0-4cf3",
+ "config": {
+  "events": 50000,
+  "rate": 500.0,
+  "points": [
+   0.2,
+   0.5,
+   0.8
+  ],
+  "downtime_s": 10.0,
+  "in_flight_timeout_s": 75.0,
+  "land_timeout_s": 600.0,
+  "targets": [
+   "warehouse-written",
+   "lake-committed",
+   "warehouse"
+  ]
+ },
+ "produced": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 100.1
+ },
+ "faults": [],
+ "postgres": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 3.1,
+  "count": 50000
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 50000,
+  "distinct": 50000,
+  "missing": 0,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": true,
+  "wait_s": 11.0,
+  "count": 50000,
+  "batches_committed_twice": []
+ },
+ "latency": {
+  "rows": 50000,
+  "p50_ms": 1639.6,
+  "p95_ms": 2631.4,
+  "p99_ms": 3111.4,
+  "max_ms": 3619.4,
+  "produced_per_s": 500.0,
+  "landed_per_s": 496.9
+ },
+ "latency_after_30s": {
+  "rows": 35000,
+  "p50_ms": 1676.8,
+  "p95_ms": 2727.6,
+  "p99_ms": 3218.6,
+  "max_ms": 3619.4,
+  "produced_per_s": 500.0,
+  "landed_per_s": 497.2
+ },
+ "lake_latency": {
+  "rows": 50000,
+  "p50_ms": 30329,
+  "p95_ms": 55004,
+  "p99_ms": 59009,
+  "max_ms": 60016
+ },
+ "stream_log": {
+  "starts": 0,
+  "terminated_with_error": [],
+  "sink_batches": 51,
+  "sink_rows": 50000,
+  "sink_inserted": 50000,
+  "duplicates_skipped": 0,
+  "batches_written_twice": [],
+  "lake_batches": 2,
+  "dropped_by_watermark": 0
+ },
+ "stream_restarts_by_docker": 0
+}

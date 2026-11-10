@@ -615,14 +615,230 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 | all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
 <!-- /bird:ledger -->
 
+## Ingest under faults and at scale (M5)
+
+These numbers come from `make bench` and `make bench-scale`. They make no model calls and cost $0. Raw output for every
+run (one JSON file per unit of work, with the progress lines, samples and
+settings it was judged on) is under
+[`bench/results/m5-bench/`](bench/results/m5-bench/) and
+[`bench/results/m5-scale/`](bench/results/m5-scale/). The tables between the
+`bench:` markers are rendered from those files by `make bench-results`, and a
+unit test fails if they drift apart.
+
+Machine: the same class as the rest of this file (4 vCPU, 15 GB). Every service shares the four cores; there are no CPU limits, so CPU taken by the load generator, the broker or PostgreSQL is CPU the stream job does not get:
+
+<!-- bench:environment -->
+4 vCPU (AMD EPYC 9V74 80-Core Processor), 15.6 GiB RAM, Linux 7.0.0-1019-azure, Docker 29.4.2, Compose 5.1.3. Memory limits: kafka 1 GiB, minio 0.5 GiB, postgres 1 GiB, stream 3 GiB. CPU limits: none (every container may use all cores).
+<!-- /bench:environment -->
+
+### Throughput at 1, 3 and 6 partitions
+
+`make bench-scale` (1 h 50 min). For each partition count P the topic has P partitions, Spark runs `local[P]` with `spark.sql.shuffle.partitions = P`, and the sink opens P connections. Every run starts from an empty checkpoint and an empty `raw.recentchange`, with the lake off except in the Iceberg row. Settings: 5 s trigger, `maxOffsetsPerTrigger` 200,000. These are the M4 trigger and a raised cap; the tuning below changed the shipped defaults afterwards, and the ladder was not re-run on them. Both settings shape these numbers:
+- **The cap.** cap / trigger is 40,000 events/s, above every rate reached, but that ceiling only holds while batches finish inside the trigger, and near saturation they do not. 8 of the 12 failing steps ran at a median batch of 200,000 rows (6.7–10.0 s each), and at 5 of the 12 top sustained steps at least one batch hit the cap. There the cap sets the batch size, and the sustained rate is about 200,000 rows over the batch time. A different cap would move it. The tuning's 250,000 drained a backlog more slowly than 100,000, but that is the only evidence on which direction.
+- **The trigger.** At the top sustained steps the median batch took 4.2–6.8 s. Where it was under 5 s (P = 1 reps 1 and 3, P = 6 rep 3), batches waited for the trigger. So the trigger is part of the sustained rate and of the p95 below, and a 2 s trigger would change both.
+
+**How each number is measured.**
+- **Sustained** is the highest step of an open-loop ladder the job kept up with. Steps are 90 s and start at 0.75 times the full drain rate, rising 15% until a step fails or falling 15% until one passes. A step passes when the queue each micro-batch finds (the broker's latest offsets minus the batch's start offsets) grows by at most 5% of the offered rate per second over the step's last 60 s (`bench/rules.py`). The resolution is therefore 15%, and the range across the three repetitions shows it.
+- **p95** is end-to-end latency (`ingested_at` minus the producer's Kafka timestamp, one host clock) over a separate 3-minute run at 80% of that repetition's sustained rate, after a 30 s warm-up.
+- **The stage ceilings** are drain rates of one 1.2M-event backlog, measured from an empty checkpoint each time: Spark with the `noop` sink (Kafka read, parse and dedup only), Spark with the `python` sink (rows also handed to the Python workers, then dropped), and the full job.
+- **The PostgreSQL sink alone** replays the full job's batch shapes from P processes through the same `write_rows`, with no Spark.
+- **The broker** is measured with Kafka's own `kafka-consumer-perf-test` and `kafka-producer-perf-test` (sample events, `acks=all`, idempotent, lz4), run inside its container.
+
+<!-- bench:scale -->
+| P | Sustained events/s, median (range) | p95 at 80% of it, median | Full drain | Spark `noop` | Spark + Python | PostgreSQL sink alone | Broker (consume / produce) | Bottleneck |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 18,524 (18,524–21,303) | 17.18 s | 24,699 | 44,998 | 34,734 | 88,027 | 821,918 / 212,465 | spark (JVM) |
+| 3 | 29,765 (25,882–29,765) | 14.12 s | 34,510 | 73,926 | 48,414 | 91,387 | 329,308 / 265,604 | spark (JVM), CPU-bound (host 3.5 of 4 cores busy) |
+| 3 + Iceberg | 25,882 (22,506–25,882) | 42.07 s | – | – | – | – | – | see below |
+| 6 | 28,753 (21,742–28,753) | 14.89 s | 33,337 | 77,796 | 44,600 | 115,868 | 950,872 / 204,255 | spark (JVM), CPU-bound (host 3.7 of 4 cores busy) |
+<!-- /bench:scale -->
+
+The bottleneck is named by the rule fixed in `bench/rules.py`. Within one Spark task the stages run one after another on the same rows, so their per-event times add up:
+- JVM time is 1 / `noop`;
+- the trip to Python is 1 / `python` minus 1 / `noop`;
+- the database's time is 1 / its replay rate.
+
+The biggest share is named the bottleneck. It is the largest single share, not a majority: the JVM is 55%, 43% and 41% of per-event time at P = 1, 3 and 6. At P = 3 and P = 6 the trip to Python and the write together outweigh it. The database term is the replay measured on an otherwise idle box, so under Spark's CPU contention the real write is somewhat slower; the model's prediction lands within 9% regardless. The broker runs in parallel in its own process, so it would be named only if its own ceiling were below the pipeline's, and it is 10 to 30 times above it. The table below is the evidence for each attribution. Its second column checks the model: the stage times, added up, predict the full drain within 1–9% at every P.
+
+
+<!-- bench:evidence -->
+| P | Per-event time: JVM / transfer / database (µs) | Predicted vs measured drain | Database share of the sink's time | CPU at the top sustained step: stream / PostgreSQL / whole host (cores of nproc) | PostgreSQL backends, busy share and top wait |
+|---|---|---|---|---|---|
+| 1 | 22.2 / 6.6 / 11.4 | 24,906 vs 24,699 | 29% | 1.17 / 0.23 / 2.16 | 13% busy; CPU:active 53% |
+| 3 | 13.5 / 7.1 / 10.9 | 31,648 vs 34,510 | 29% | 2.15 / 0.42 / 3.53 | 16% busy; CPU:active 43% |
+| 3 + Iceberg | – | – | – | 2.24 / 0.31 / 3.48 | 9% busy; CPU:active 47% |
+| 6 | 12.8 / 9.6 / 8.6 | 32,204 vs 33,337 | 32% | 2.34 / 0.41 / 3.72 | 16% busy; CPU:active 33% |
+<!-- /bench:evidence -->
+
+**What it means.**
+
+*The bottleneck.* The largest single cost is the Spark side of the job: reading Kafka, parsing the JSON, and keeping the dedup state in RocksDB. At every P it is the biggest share of per-event time. It is not a dominant stage, though. From P = 3 the Python transfer and the write together cost more, so no single fix to one stage would double throughput. It is not the broker, which reads 330,000–950,000 events/s. It is not the database either:
+- PostgreSQL alone takes the same batches at 88,000–116,000 rows/s.
+- During the sustained steps its backends were busy 13–16% of the time, and when busy they were mostly running on CPU, not waiting on locks or I/O.
+
+*From P = 1 to P = 3.* At P = 1, one task does everything in sequence. The host is half idle (2.2 of 4 cores busy), and the job sustains 18,500–21,300 events/s.
+
+Three partitions give three tasks:
+- The JVM's per-event time falls from 22 to 13.5 µs.
+- The sustained rate rises to 25,900–29,800.
+- The host reaches 3.5 of 4 cores. That is the stream job 2.2, the broker 0.4, PostgreSQL 0.4 and the load generator about 0.35, measured from its own `getrusage`.
+
+*From P = 3 to P = 6.* There are no more cores to use:
+- The `noop` ceiling barely moves (73,900 to 77,800).
+- The Python transfer gets slower, as six Python workers compete for four cores.
+- The sustained rate does not improve (21,700–28,800 events/s).
+
+So on this machine class the scaling curve stops at three partitions because the box is CPU-bound, as PLAN.md's risk table anticipated. The 3.5% between P = 3 and P = 6 is inside the ladder's 15% resolution, so it is "no gain", not a decline. "CPU-bound" is host-level evidence: the stream container's CPU includes its Python workers (2.0 cores on the P = 6 `noop` drain, 3.3 with the `python` sink), so the cores are split between the JVM and Python, not taken by the JVM alone. More partitions would help only with more cores.
+
+*Latency at 80% load is not a steady state.* The medians are 14–17 s, but within one P the three repetitions spread 2–3× (p95 10.6–26.1 s at P = 3, 11.8–25.1 s at P = 1). In all 12 runs rows landed more slowly than they were produced: the events sent over the 150 s window took 151–168 s to land, and 164–192 s with Iceberg. So latency was still rising when the window closed, and the p95 is a snapshot of a slowly growing queue. That means one of two things: 80% of a 90 s-step sustained rate is not quite sustainable for 3 minutes, or 15% steps are too coarse to find the true limit. Read these p95s as "about 10–25 s near saturation" and the sustained rates as upper bounds. Latency at ordinary rates is in the fault and tuning tables below: p95 under 3 s at 500 events/s.
+
+
+### What the Iceberg sink costs at P = 3
+
+<!-- bench:iceberg -->
+| P = 3 | Sustained events/s, median | p95 at 80% | Stream job CPU at the top step | Lake batch time at the top step, max |
+|---|---|---|---|---|
+| warehouse only | 29,765 (25,882–29,765) | 14.12 s | 2.15 | – |
+| warehouse + Iceberg | 25,882 (22,506–25,882) | 42.07 s | 2.24 | 32.18 s |
+<!-- /bench:iceberg -->
+
+Same ladder at P = 3, with the lake query running beside the warehouse query: a one-minute trigger, and a cap of 5,000,000 so the cap does not limit it.
+
+The second sink costs one step of the ladder: the median sustained rate falls from 29,800 to 25,900 events/s, about 13%. One step is the ladder's resolution, and the two ranges touch at 25,882, so "about one step" is as precise as this gets. It also roughly triples p95 at 80% load, from 14 s to 42 s, for three reasons:
+- the lake reads Kafka a second time;
+- it parses and deduplicates everything again;
+- it writes Parquet to MinIO in batches of up to 32 s.
+
+Those batches compete for the same cores and stretch the warehouse batches that overlap them. The lake kept up: every lake batch finished well inside its one-minute trigger. The second Kafka read is the price PLAN.md accepted for keeping the two sinks' failures independent, and this is its measured size on 4 vCPU.
+
+
+### Exactly-once with the job and the broker killed
+
+`make bench`, fault phase (30 min). Each run sends 50,000 events with fresh ids at 500 events/s (100 s) into the platform's own topic, with the stream job in its default configuration: both queries, the tuned defaults below, and Airflow and Trino running. Each kill is SIGKILL, followed by 10 s down and a restart on the same volumes.
+
+- Scenario `stream` kills the job three times, when 20%, 50% and 80% of the events have been sent.
+- Scenario `broker` kills Kafka at the same points.
+- Scenario `none` is the control.
+
+Afterwards every acknowledged id is fetched back by its run's id range from `raw.recentchange` and, through Trino, from the Iceberg table, and compared with the ids produced. Iceberg's `$snapshots` table is also checked for any streaming batch id committed twice.
+
+<!-- bench:faults -->
+| Scenario | Run | Kills (window hit) | Acked | PostgreSQL missing / dup | Iceberg missing / dup | Iceberg batches committed twice | Rows the key absorbed | Latency p50 / p95 / max, whole run | p50 / p95 after the first 30 s |
+|---|---|---|---|---|---|---|---|---|---|
+| none | 1 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 2.00 s / 11.20 s / 15.84 s | 1.72 s / 3.06 s |
+| none | 2 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 1.66 s / 2.62 s / 3.55 s | 1.64 s / 2.60 s |
+| none | 3 | – | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 1.64 s / 2.63 s / 3.62 s | 1.68 s / 2.73 s |
+| stream | 1 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 3,103 | 27.55 s / 60.73 s / 64.72 s | 31.52 s / 61.44 s |
+| stream | 2 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 996 | 22.11 s / 49.85 s / 53.40 s | 25.61 s / 50.60 s |
+| stream | 3 | 3 (2 of 2 checked) | 50,000 | 0 / 0 | 0 / 0 | 0 | 997 | 24.80 s / 53.97 s / 58.75 s | 27.81 s / 54.88 s |
+| broker | 1 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 22.13 s / 55.37 s / 60.44 s | 24.17 s / 47.13 s |
+| broker | 2 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 25.89 s / 62.30 s / 67.40 s | 27.78 s / 54.16 s |
+| broker | 3 | 3 | 50,000 | 0 / 0 | 0 / 0 | 0 | 0 | 12.69 s / 28.99 s / 31.76 s | 14.46 s / 29.16 s |
+<!-- /bench:faults -->
+
+A kill between two micro-batches proves nothing: the restarted job finds every batch committed and replays none. Each stream kill is therefore aimed at the window where a replay happens: the batch's offsets are logged, its commit is not. Each kill has its own target:
+
+- **`warehouse-written`** fires when the sink's row for batch N appears in `ops.stream_progress`. By then all of the batch's rows are committed in PostgreSQL, and Spark has not yet written its commit.
+- **`lake-committed`** fires when the Iceberg table's metadata pointer moves in the JDBC catalog. The snapshot is committed, Spark's commit is not.
+- **`warehouse`** fires anywhere inside a warehouse batch.
+
+Both detections poll PostgreSQL every 2 ms. The kill writes `1` to the container's `cgroup.kill` through an already-open `sudo tee`, which kills every process in the container at once. A first attempt with `docker kill` arrived after Spark had committed every time, because the CLI and the daemon take tens of milliseconds; the bench falls back to `docker kill` only where sudo is unavailable, and records the method used. The checkpoint, read from the stopped container's volume, shows each of the six aimed kills landed where it was aimed: the batch is logged in `offsets/` and missing from `commits/`, so the restart ran it again. The three untargeted `warehouse` kills saw a batch in flight before the kill, but the committed runs did not read the checkpoint after them, so they are marked "not checked". The driver now reads it after every stream kill.
+
+<!-- bench:kills -->
+| Run | Aimed at | Method | Batch | Checkpoint after the kill: offsets / commits | Window hit | Iceberg snapshots carrying that batch id |
+|---|---|---|---|---|---|---|
+| 1 | warehouse-written | cgroup.kill | 132 | 132 / 131 | yes | – |
+| 1 | lake-committed | cgroup.kill | 18 | 18 / 17 | yes | 1 |
+| 1 | warehouse | cgroup.kill | 136 | – | not checked | – |
+| 2 | warehouse-written | cgroup.kill | 201 | 201 / 200 | yes | – |
+| 2 | lake-committed | cgroup.kill | 22 | 22 / 21 | yes | 1 |
+| 2 | warehouse | cgroup.kill | 205 | – | not checked | – |
+| 3 | warehouse-written | cgroup.kill | 289 | 289 / 288 | yes | – |
+| 3 | lake-committed | cgroup.kill | 29 | 29 / 28 | yes | 1 |
+| 3 | warehouse | cgroup.kill | 292 | – | not checked | – |
+<!-- /bench:kills -->
+
+**What it means.** 18 kills across 9 runs (9 of the job, 9 of the broker), and 450,000 events landed exactly once in both stores.
+
+*What the PostgreSQL check can and cannot show.* `event_id` is the landing table's primary key, so a duplicate row in `raw.recentchange` cannot exist, and the PostgreSQL "dup" column is 0 by construction. In PostgreSQL the benchmark tests loss (every acknowledged id present) and that the replay happened (the sink's own `duplicates_skipped`). The duplicate check that could fail is Iceberg's, which has no key.
+
+*The `warehouse-written` kills.* Each one replayed a batch whose rows were already in PostgreSQL, and the primary key absorbed the replay. The "Rows the key absorbed" column is summed from the stream log over the run's time window, not per id. Runs 2 and 3 put exactly their 50,000 rows through the sink and absorbed 996 and 997. Run 1's sink inserted 71,759 rows in that window, so 21,759 came from outside the run (left over in the shared topic), and its 3,103 cannot be attributed to the run alone. That stray traffic also inflates run 1's latency.
+
+*The `lake-committed` kills.* Each one replayed a lake batch whose snapshot was already committed. Afterwards exactly one snapshot carries that batch id, so Iceberg's streaming sink recognised the batch and skipped the second append. This is the guarantee the lake relies on instead of a primary key, and it held all three times.
+
+*The broker kills.* None of them restarted the stream job: Spark's Kafka consumer waited for the broker to return. The idempotent producer buffered through each outage, at the cost of sending for 115–121 s instead of 100 s. Nothing was lost, so a broker that dies with its data still in the page cache comes back with every acknowledged write.
+
+*Latency during faults.* The p50 of 13–28 s and maximum of 32–67 s during fault runs are the outages. Each restart of the job takes 8–10 s to come back healthy (the broker 16–25 s), then catches up. In the control runs p95 is 2.6–3.1 s once the job is warm. The control's first run starts seconds after the job was recreated, which is the 11 s p95 over its whole run; the right-hand column leaves out the first 30 s.
+
+*What was not tested.* A broker that loses its page cache (a machine crash rather than a process kill) would lose writes that `acks=all` with one replica has not flushed. With one broker that is a known limit, not something this bench can show.
+
+
+### Trigger interval and backpressure
+
+`make bench`, tuning phase. These runs used the M4 defaults (5 s trigger, `maxOffsetsPerTrigger` 20,000) except for the setting under test.
+
+- **Trigger interval:** the stream job in its default configuration (both queries) on a fresh topic and checkpoint, at 500 and 5,000 events/s for 90 s each; latency after a 20 s warm-up.
+- **Cap:** a 300,000-event backlog drained from an empty checkpoint with the lake off, at the 5 s trigger.
+
+<!-- bench:trigger -->
+| Rate (events/s) | Trigger | p50 | p95 | p99 | Batch time p50 | Stream job CPU (cores) |
+|---|---|---|---|---|---|---|
+| 500 | 1 second | 1.34 s | 2.90 s | 3.51 s | 854 ms | 1.34 |
+| 500 | 2 seconds | 1.75 s | 2.95 s | 3.75 s | 743 ms | 0.86 |
+| 500 | 5 seconds | 3.33 s | 5.55 s | 5.95 s | 890 ms | 0.53 |
+| 5,000 | 1 second | 1.64 s | 5.37 s | 6.44 s | 948 ms | 1.78 |
+| 5,000 | 2 seconds | 2.31 s | 9.37 s | 11.05 s | 1,362 ms | 1.30 |
+| 5,000 | 5 seconds | 19.00 s | 25.76 s | 27.83 s | 1,479 ms | 0.83 |
+<!-- /bench:trigger -->
+
+<!-- bench:cap -->
+| `maxOffsetsPerTrigger` | Ceiling at a 5 s trigger | Batches | Longest batch | 300,000-event backlog cleared in | Effective rate | Stream job peak memory |
+|---|---|---|---|---|---|---|
+| 20,000 | 4,000 events/s | 16 | 11.22 s | 80.1 s | 3,745 events/s | 1.30 GiB |
+| 100,000 | 20,000 events/s | 4 | 13.86 s | 24.7 s | 12,146 events/s | 1.33 GiB |
+| 250,000 | 50,000 events/s | 2 | 26.41 s | 30.9 s | 9,709 events/s | 1.39 GiB |
+<!-- /bench:cap -->
+
+**What it means, and what changed.**
+
+*The old cap was a speed limit.* With a processing-time trigger, a batch that finishes early waits for the next trigger, so the job can never ingest more than cap / trigger: 20,000 per 5 s is 4,000 events/s. At 5,000 events/s the job fell further behind for the whole run, p50 19 s and rising. A 300,000-event backlog took 80 s to clear at 3,745 events/s, against the 35,000 the job can drain.
+
+*The cap.* 100,000 cleared the backlog fastest, in 24.7 s. 250,000 was slower: two large batches meant less overlap, and one of them ran 26 s. Peak memory barely moved (1.30 to 1.39 GiB), so memory does not decide it on this sample.
+
+*The trigger.*
+- At 500 events/s a 2 s trigger has the same p95 as 1 s (2.95 against 2.90 s) for 0.86 cores instead of 1.34. A warehouse micro-batch takes 0.75–0.9 s even with a few hundred rows in it (the lake query runs beside it), so at low rates a shorter trigger buys CPU use, not latency.
+- At 5,000 events/s 1 s still wins (p95 5.4 s against 9.4 s), but 2 s keeps more CPU for Airflow and Trino on a 4-core machine.
+
+*The new defaults.* A 2 s trigger and a cap of 100,000. The ceiling is now 50,000 events/s, above everything the job sustains, and a catch-up batch is bounded at about 14 s. The lake's per-trigger cap went from 200,000 to 2,000,000: at one trigger a minute, 200,000 was a ceiling of 3,333 events/s, and 2,000,000 is 33,000, above the warehouse's sustained rate. The fault runs above ran on the new defaults.
+
+
+### Freshness during the fault runs
+
+Read from `ops.quality_runs` for the fault phase (30 min). Since M5 each freshness check records the lag it measured: `now() − max(ingested_at)` of the relation, in `details.lag_seconds`. dbt's freshness test alone returns rows only when it fails.
+
+<!-- bench:freshness -->
+| | |
+|---|---|
+| `warehouse_refresh` runs with every check passing | 4 of 4 |
+| Freshness-only polls (no new rows) | 0 |
+| Freshness lag of `marts.fct_edits` at check time, p50 / p95 / max | 380.2 / 441.3 / 449.3 s (4 checks) |
+| Freshness lag of `raw.recentchange` at check time, p50 / p95 / max | 29.8 / 61.0 / 65.1 s (4 checks) |
+| Time between rebuilds of `marts.fct_edits`, p50 / p95 / max | 413 / 420 / 421 s (4 rebuilds) |
+| Check rows recorded | 196 (pass 196) |
+<!-- /bench:freshness -->
+
+Every `warehouse_refresh` during the fault runs passed every check: 4 of 4 runs, 196 check rows. Those were 18 kills of the job and the broker, with the lake reconciliation and the volume test included in the checks.
+
+*Mart freshness is the refresh, not the stream.* The landing table was 30–65 s behind its newest arrival when checked, which is the stream plus the fault outages. `marts.fct_edits` was 6–7.5 minutes behind (p50 380 s, max 449 s). On this loaded 4-vCPU machine one refresh takes about 7 minutes, and a new one starts as soon as the five-minute poll finds rows, so the marts trail the stream by about one refresh.
+
+Freshness of what the agent reads is therefore bounded by dbt's run time, not by Kafka or Spark. That is the number to look at before tightening the 60-minute freshness threshold. Faster refreshes would need incremental models for the other marts, or less contention on the box.
+
+
 ## To measure
 
 | What | Command | Milestone | Cost |
 |---|---|---|---|
-| Zero loss and zero duplicates with the job and the broker killed at three points; p50/p95 end-to-end latency; sustained throughput | `make bench` | M5 | $0 |
-| Throughput and p95 at 1, 3 and 6 partitions with per-stage ceilings | `make bench-scale` | M5 | $0 |
 | Postgres vs Trino over Iceberg latency, and pruning at 1M and 20M rows (partitioned vs unpartitioned vs uncompacted) | `make bench-query` | M6 | $0 |
-| What the second Kafka read and the Iceberg sink cost in throughput, at P = 3 | `make bench-scale` | M5 | $0 |
 | The 40 warehouse questions on Claude, recorded so the fake provider replays them (M3 is done on the `qwen2.5-coder:7b` recordings; this adds the Claude column) | `ANTHROPIC_API_KEY=... TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse.jsonl make record PROVIDER=anthropic` (default model `claude-opus-5-5`) | M3 | est. under $1 on Opus 5.5 (about 46 calls with a cached ~3k-token prefix), a few cents on `TRIBUTARY_MODEL=claude-haiku-5-5` |
 | BIRD dev50 on Claude Haiku 5.5, both variants and tracks, recorded so CI replays it | `docker compose up -d postgres && make bird && ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1` | M4 | see [Cost](#cost): estimated from this run's measured tokens |
 | BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |

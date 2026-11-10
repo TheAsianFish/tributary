@@ -288,3 +288,11 @@ def test_warehouse_refresh_rows_cover_every_mart() -> None:
     # A view reports rows_affected = -1; stored as unknown, not as a negative count.
     assert relations["staging.stg_recentchange"].rows_affected is None
     assert all(r.status == "success" for r in rows)
+
+
+def test_measure_freshness_leaves_other_checks_alone_without_connecting() -> None:
+    checks = [
+        quality.CheckResult("t1", "not_null", "marts.fct_edits", "pass", 0, {"column_name": "x"})
+    ]
+    # An unreachable server: no freshness check, so no connection is attempted.
+    assert quality.measure_freshness("host=invalid.invalid port=1", checks) == checks

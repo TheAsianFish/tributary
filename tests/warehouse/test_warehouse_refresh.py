@@ -151,6 +151,28 @@ def test_one_quality_row_per_dbt_test(refresh_run: Any, conninfo: str, settings:
     assert "unknown" not in {r[2] for r in rows}
 
 
+def test_freshness_checks_record_the_measured_lag(refresh_run: Any, conninfo: str) -> None:
+    with psycopg.connect(conninfo) as conn:
+        rows = conn.execute(
+            "SELECT target, (details->>'lag_seconds')::float, details->>'newest',"
+            " extract(epoch FROM finished_at - (details->>'newest')::timestamptz),"
+            " extract(epoch FROM recorded_at - (details->>'newest')::timestamptz)"
+            " FROM ops.quality_runs WHERE run_id = %s AND check_type = 'freshness'",
+            (refresh_run.run_id,),
+        ).fetchall()
+        newest = conn.execute("SELECT max(ingested_at) FROM marts.fct_edits").fetchone()
+    by_target = {r[0]: r for r in rows}
+    assert set(by_target) == {"raw.recentchange", "marts.fct_edits"}
+    assert newest is not None
+    _target, lag, stamp, after_test, at_record = by_target["marts.fct_edits"]
+    assert stamp == newest[0].isoformat()
+    # The lag is read between the dbt test finishing and the row being recorded,
+    # so it must lie between those two ages of the newest row (1 s of slack).
+    assert lag is not None
+    assert float(after_test) - 1 <= lag <= float(at_record) + 1, (lag, after_test, at_record)
+    assert lag > 0
+
+
 def test_every_mart_refreshed(refresh_run: Any, conninfo: str) -> None:
     with psycopg.connect(conninfo) as conn:
         rows = conn.execute(

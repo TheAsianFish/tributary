@@ -12,7 +12,14 @@ from structlog.testing import capture_logs
 
 from tributary.events import COLUMNS, to_row
 from tributary.stream import sink
-from tributary.stream.sink import PostgresSink, SinkResult, adapt_row, write_partition, write_rows
+from tributary.stream.sink import (
+    PostgresSink,
+    SinkResult,
+    adapt_row,
+    discard_partition,
+    write_partition,
+    write_rows,
+)
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
@@ -332,3 +339,20 @@ def test_postgres_sink_empty_batch_writes_nothing(connections: list[FakeConnecti
         run_sink(FakeBatch([[], []]), 8)
     assert connections == []
     assert [e["event"] for e in logs] == ["sink.batch_empty"]
+
+
+def test_discarding_sink_counts_rows_but_opens_no_connection(
+    connections: list[FakeConnection],
+) -> None:
+    batch = FakeBatch([[row(1), row(2)], [row(3)]])
+    with capture_logs() as logs:
+        PostgresSink("dbname=x", discard=True)(cast("DataFrame", batch), 4)
+    assert connections == []
+    [entry] = [e for e in logs if e["event"] == "sink.batch"]
+    assert (entry["rows"], entry["inserted"], entry["partitions"]) == (3, 0, 2)
+
+
+def test_discard_partition_reports_rows_and_newest_event_time() -> None:
+    [result] = collect(discard_partition(), [row(5), row(9)])
+    assert (result.rows, result.inserted) == (2, 0)
+    assert result.max_event_ts == datetime.fromtimestamp(1792193655 + 9, tz=UTC)

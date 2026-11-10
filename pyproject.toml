@@ -58,11 +58,13 @@ ignore = ["S101", "S608"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S"]
+# The benchmark drivers run docker and docker compose by design (fixed argv, no shell).
+"bench/**" = ["S603", "S607"]
 
 [tool.mypy]
 strict = true
 python_version = "3.12"
-files = ["tributary", "tests", "orchestration", "eval"]
+files = ["tributary", "tests", "orchestration", "eval", "bench"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]

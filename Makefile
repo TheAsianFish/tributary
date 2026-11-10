@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-results
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -96,3 +96,21 @@ results: ## Re-render RESULTS.md's BIRD tables from eval/results/
 
 serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	uv run tributary serve
+
+# Ingest benchmarks (M5). Both drive the Compose stack from the host, kill and recreate
+# its containers and write bench/results/; run them on a stack you can throw away
+# (`make down` afterwards). A rerun skips every unit whose result file exists.
+BENCH_REPS ?= 3
+
+bench: ## Exactly-once under SIGKILL, latency, trigger/backpressure tuning, freshness (~1 h)
+	$(MAKE) up-lakehouse up-airflow
+	uv run python -m bench.ingest --reps $(BENCH_REPS)
+	uv run python -m bench.report
+
+bench-scale: ## Sustained events/s, p95 and the bottleneck at 1, 3 and 6 partitions (~2 h)
+	$(MAKE) up
+	uv run python -m bench.scale --reps $(BENCH_REPS)
+	uv run python -m bench.report
+
+bench-results: ## Re-render RESULTS.md's ingest tables from bench/results/
+	uv run python -m bench.report

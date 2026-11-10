@@ -324,3 +324,25 @@ def test_progress_logger_reports_state_and_observed_metrics(
         OBSERVATION: {"input_rows": 2, "malformed_rows": 0, "canary_rows": 0}
     }
     assert entry["sources"][0]["end"] is not None
+
+
+@pytest.mark.parametrize("sink", ["python", "noop"])
+def test_a_discarding_sink_warns_at_start(sink: str) -> None:
+    from tributary.config import Settings
+    from tributary.stream.job import warn_if_discarding
+
+    settings = Settings(_env_file=None, stream_sink=sink)
+    with capture_logs() as logs:
+        assert warn_if_discarding(settings)
+    assert [(e["event"], e["log_level"], e["sink"]) for e in logs] == [
+        ("stream.sink_discards_rows", "warning", sink)
+    ]
+
+
+def test_the_postgres_sink_starts_without_a_warning() -> None:
+    from tributary.config import Settings
+    from tributary.stream.job import warn_if_discarding
+
+    with capture_logs() as logs:
+        assert not warn_if_discarding(Settings(_env_file=None))
+    assert logs == []

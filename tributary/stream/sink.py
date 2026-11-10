@@ -160,6 +160,22 @@ def write_partition(
     return write
 
 
+def discard_partition() -> Callable[[Iterable[Sequence[object]]], Iterator[SinkResult]]:
+    """Like :func:`write_partition` up to the write, which it skips.
+
+    The rows still cross from the JVM to a Python worker, are materialised and
+    adapted, so a job with this sink costs everything the PostgreSQL sink
+    costs except the database: the benchmark's "Spark plus Python" ceiling.
+    """
+
+    def discard(rows: Iterable[Sequence[object]]) -> Iterator[SinkResult]:
+        batch = [adapt_row(row) for row in rows]
+        times = [ts for row in batch if isinstance(ts := row[_EVENT_TS], datetime)]
+        yield SinkResult(len(batch), 0, 0.0, max(times, default=None))
+
+    return discard
+
+
 class PostgresSink:
     """``foreachBatch`` function: write a micro-batch from one connection per partition.
 
@@ -173,17 +189,18 @@ class PostgresSink:
     so the table's own ``max(event_ts)`` is not a safe "landed up to" mark.
     """
 
-    def __init__(self, conninfo: str, query: str = "warehouse") -> None:
+    def __init__(self, conninfo: str, query: str = "warehouse", *, discard: bool = False) -> None:
         self._conninfo = conninfo
         self._query = query
+        # discard=True: the benchmark's python sink (rows reach the workers, none are written).
+        self._discard = discard
         # foreachBatch runs on a py4j callback thread, which does not inherit contextvars.
         self._log = log.bind(**structlog.contextvars.get_contextvars())
 
     def __call__(self, batch_df: DataFrame, batch_id: int) -> None:
         start = time.perf_counter()
-        results: list[SinkResult] = (
-            batch_df.select(*COLUMNS).rdd.mapPartitions(write_partition(self._conninfo)).collect()
-        )
+        partition = discard_partition() if self._discard else write_partition(self._conninfo)
+        results: list[SinkResult] = batch_df.select(*COLUMNS).rdd.mapPartitions(partition).collect()
         sink_ms = (time.perf_counter() - start) * 1000
         rows = sum(r.rows for r in results)
         if rows == 0:
@@ -201,7 +218,7 @@ class PostgresSink:
             db_ms_max=round(max(r.seconds for r in results) * 1000, 1),
         )
         newest = max((r.max_event_ts for r in results if r.max_event_ts is not None), default=None)
-        if newest is not None:
+        if newest is not None and not self._discard:
             conn = _connection(self._conninfo)
             with conn.transaction(), conn.cursor() as cur:
                 cur.execute(RECORD_PROGRESS, (self._query, batch_id, newest, rows, inserted))

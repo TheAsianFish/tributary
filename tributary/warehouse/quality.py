@@ -15,12 +15,13 @@ earlier rows instead of adding a second set.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any, Literal
 
 import psycopg
 import structlog
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from tributary.stream.sink import ensure_schema
@@ -231,6 +232,52 @@ def refresh_rows(
             )
         )
     return rows
+
+
+FRESHNESS_TYPE = "freshness"
+
+LAG_SQL = sql.SQL(
+    "SELECT extract(epoch FROM clock_timestamp() - max({column})), max({column}) FROM {table}"
+)
+
+
+def measure_freshness(conninfo: str, checks: Sequence[CheckResult]) -> list[CheckResult]:
+    """Add the measured lag to every freshness check's details.
+
+    dbt's freshness test returns rows only when it fails, so a passing run
+    would record that the lag was under the limit but not what it was. This
+    reads ``now - max(column)`` of each checked relation right after the
+    tests (``details.lag_seconds``, and ``details.newest``), which is what the
+    benchmark's freshness figures come from. A relation that cannot be read
+    keeps its check unchanged.
+    """
+    if not any(c.check_type == FRESHNESS_TYPE for c in checks):
+        return list(checks)
+    out: list[CheckResult] = []
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        for check in checks:
+            column = check.details.get("column_name")
+            schema, _, table = check.target.partition(".")
+            if check.check_type != FRESHNESS_TYPE or not column or not table:
+                out.append(check)
+                continue
+            query = LAG_SQL.format(
+                column=sql.Identifier(str(column)), table=sql.Identifier(schema, table)
+            )
+            try:
+                row = conn.execute(query).fetchone()
+            except psycopg.Error as exc:
+                log.warning("quality.lag_unreadable", target=check.target, error=str(exc))
+                out.append(check)
+                continue
+            lag, newest = (row[0], row[1]) if row is not None else (None, None)
+            details = {
+                **check.details,
+                "lag_seconds": None if lag is None else round(float(lag), 3),
+                "newest": None if newest is None else newest.isoformat(),
+            }
+            out.append(replace(check, details=details))
+    return out
 
 
 def failed_checks(checks: Iterable[CheckResult]) -> list[CheckResult]:
