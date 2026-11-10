@@ -120,7 +120,9 @@ class BM25:
         lengths = {r: sum(d.values()) for r, d in documents.items()}
         average = sum(lengths.values()) / len(lengths) or 1.0
         n = len(documents)
-        query = set(tokens(question))
+        # Sorted so the float sum, and so any tie broken by name, is the same in every
+        # process: set order follows the per-process string hash seed.
+        query = sorted(set(tokens(question)))
         frequency = {term: sum(1 for d in documents.values() if term in d) for term in query}
         scores: dict[str, float] = {}
         for relation, document in documents.items():
@@ -176,6 +178,8 @@ def link_schema(
     except KeyError:
         known = ", ".join(LINKERS)
         raise ValueError(f"unknown linking strategy {strategy!r} (known: {known})") from None
+    if k is not None and k < 1:
+        raise ValueError(f"k must be at least 1, got {k}")
     return linker(question, catalog, k)
 
 

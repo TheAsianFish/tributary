@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
+
 import pytest
 
 from tributary.agent.catalog import Catalog, Column, ForeignKey, Table
@@ -205,3 +209,34 @@ def test_is_connected() -> None:
     assert not is_connected(["a", "d"], graph)
     assert is_connected(["d"], graph)
     assert is_connected([], graph)
+
+
+@pytest.mark.parametrize("k", [0, -1])
+def test_k_below_one_is_refused(k: int) -> None:
+    with pytest.raises(ValueError, match="k must be at least 1"):
+        link_schema("schools", school_catalog(), strategy="bm25", k=k)
+
+
+def test_bm25_scores_do_not_depend_on_the_hash_seed() -> None:
+    """Set order follows PYTHONHASHSEED; the float sum must not, or ties flip between runs."""
+    script = (
+        "from tributary.agent.catalog import Catalog, Column, Table\n"
+        "from tributary.agent.linker import BM25\n"
+        "words = [f'w{i}' for i in range(40)]\n"
+        "tables = tuple(Table('s', f't{j}', ' '.join(words[j::j + 2]),"
+        " (Column('c', 'text', ' '.join(words[: 10 + j]), None, None),), (), (), ())"
+        " for j in range(8))\n"
+        "scores = BM25().scores(' '.join(words), Catalog(tables, 'information_schema'))\n"
+        "print(sorted((r, s.hex()) for r, s in scores.items()))\n"
+    )
+    outputs = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": str(seed)},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for seed in range(6)
+    }
+    assert len(outputs) == 1
