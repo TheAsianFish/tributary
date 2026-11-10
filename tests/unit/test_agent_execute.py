@@ -237,3 +237,11 @@ def test_a_benchmark_executor_resolves_unqualified_names_in_one_schema() -> None
     rendered = [_rendered(s) for s in executor._settings()]
     assert 'SET LOCAL search_path = "card_games"' in rendered
     assert "SET TRANSACTION READ ONLY" in rendered
+
+
+def test_serial_plans_are_opt_in() -> None:
+    serial = "SET LOCAL max_parallel_workers_per_gather = 0"
+    assert serial not in [_rendered(s) for s in PostgresExecutor("dbname=x")._settings()]
+    rendered = [_rendered(s) for s in PostgresExecutor("dbname=x", parallel=False)._settings()]
+    assert rendered[0] == "SET TRANSACTION READ ONLY"
+    assert serial in rendered

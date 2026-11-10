@@ -17,7 +17,7 @@ htmlcov/
 
 # Data and caches (benchmark data is downloaded, never committed)
 .cache/
-bird/
+/bird/
 warehouse/target/
 warehouse/dbt_packages/
 warehouse/logs/

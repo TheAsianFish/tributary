@@ -123,6 +123,13 @@ class Settings(BaseSettings):
     # A relation not rebuilt for this long is flagged as stale in answers.
     agent_stale_after_minutes: int = Field(default=120, ge=1)
 
+    # BIRD Mini-Dev (`make bird`, `make eval`): its databases live in their own PostgreSQL
+    # database on the warehouse server, one schema per BIRD database, read by its own role.
+    bird_database: str = "bird"
+    bird_user: str = "tributary_bird"
+    bird_password: SecretStr = SecretStr("tributary_bird")
+    bird_cache_dir: Path = Path.home() / ".cache" / "tributary" / "bird"
+
     # API: comma-separated keys accepted in X-API-Key. Empty = the API refuses to start.
     api_keys: SecretStr = SecretStr("")
     api_host: str = "127.0.0.1"

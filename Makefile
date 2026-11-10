@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -71,6 +71,10 @@ eval-warehouse: ## The 40 warehouse questions (PROVIDER=fake replays recordings)
 record: ## Re-record the 40 questions' model calls from a live provider (PROVIDER=anthropic|ollama)
 	@test "$(PROVIDER)" != fake || { echo "make record PROVIDER=anthropic (or ollama)"; exit 1; }
 	uv run python -m eval.warehouse_eval --provider $(PROVIDER) --record
+
+# BIRD Mini-Dev (M4): needs PostgreSQL (`docker compose up -d postgres`).
+bird: ## Download BIRD Mini-Dev, load it into PostgreSQL, verify every gold query (~2 min)
+	uv run python -m eval.bird.load
 
 serve: ## The API on localhost:8000 (needs TRIBUTARY_API_KEYS)
 	uv run tributary serve

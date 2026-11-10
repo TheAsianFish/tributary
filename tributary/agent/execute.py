@@ -183,6 +183,7 @@ class PostgresExecutor:
         cost_ceiling: float | None = 1_000_000.0,
         connect_timeout: int = 5,
         search_path: str = "",
+        parallel: bool = True,
     ) -> None:
         self._conninfo = conninfo
         self.statement_timeout_ms = statement_timeout_ms
@@ -192,9 +193,15 @@ class PostgresExecutor:
         # Empty for the agent (the guard qualifies every relation); one schema for
         # benchmark gold queries, which BIRD writes unqualified.
         self.search_path = search_path
+        # Off for reproducible results: a parallel aggregate adds partial sums in whatever
+        # order the workers finish, so a float4 SUM can differ between runs.
+        self.parallel = parallel
 
     def _settings(self) -> Sequence[sql.SQL | sql.Composed]:
         timeout = sql.Literal(f"{self.statement_timeout_ms}ms")
+        serial = (
+            () if self.parallel else (sql.SQL("SET LOCAL max_parallel_workers_per_gather = 0"),)
+        )
         return (
             sql.SQL("SET TRANSACTION READ ONLY"),
             sql.SQL("SET LOCAL statement_timeout = {}").format(timeout),
@@ -203,6 +210,7 @@ class PostgresExecutor:
             sql.SQL("SET LOCAL search_path = {}").format(
                 sql.Identifier(self.search_path) if self.search_path else sql.Literal("")
             ),
+            *serial,
         )
 
     def run(self, query: str) -> QueryResult:
