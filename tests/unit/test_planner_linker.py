@@ -7,7 +7,7 @@ import pytest
 from tests.unit.agent_doubles import FakeExecutor, ScriptedProvider, draft, result
 from tributary.agent.catalog import Catalog, Column, Table
 from tributary.agent.guard import Guard
-from tributary.agent.linker import Link, link_schema
+from tributary.agent.linker import Link, LinkerUnavailable, link_schema
 from tributary.agent.planner import Planner, system_prompt
 from tributary.agent.provider import Usage
 
@@ -156,3 +156,19 @@ def test_the_agent_refuses_an_unavailable_linker_when_built() -> None:
     assert linker_for("bm25", 2) is not None
     with pytest.raises(LinkerUnavailable):
         linker_for("core", 4)
+
+
+def test_the_api_refuses_an_unavailable_linker_at_start_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tributary.api.app import app_from_settings
+    from tributary.config import get_settings
+
+    monkeypatch.setenv("TRIBUTARY_AGENT_LINKER", "core")
+    monkeypatch.setenv("TRIBUTARY_API_KEYS", "test:secret")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(LinkerUnavailable):
+            app_from_settings()
+    finally:
+        get_settings.cache_clear()

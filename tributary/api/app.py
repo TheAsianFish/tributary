@@ -212,12 +212,15 @@ def create_app(agent: Agent | Callable[[], Agent], api_keys: Sequence[str]) -> F
 
 def app_from_settings() -> FastAPI:
     """``uvicorn --factory tributary.api.app:app_from_settings``: the app wired from env."""
-    from tributary.agent.service import build_agent
+    from tributary.agent.service import build_agent, linker_for
     from tributary.config import get_settings
     from tributary.logging import configure_logging
 
     settings = get_settings()
     configure_logging(settings.log_format, settings.log_level)
+    # The agent itself is built on the first request; refuse an unavailable linker now,
+    # so a misconfigured server fails at start-up instead of on every question.
+    linker_for(settings.agent_linker, settings.agent_link_k)
     return create_app(
         lambda: build_agent(settings), parse_keys(settings.api_keys.get_secret_value())
     )
