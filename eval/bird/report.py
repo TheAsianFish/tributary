@@ -149,13 +149,29 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
 
 # Live commands that have not been run: (what, command, multiple of the measured dev50 run).
 LIVE_COMMANDS: tuple[tuple[str, str, int], ...] = (
-    ("dev50, both variants, both tracks", "make eval PROVIDER=anthropic MODEL={model} RECORD=1", 1),
+    (
+        "dev50, both variants, both tracks",
+        "make eval PROVIDER=anthropic MODEL={model} RECORD=1",
+        50,
+    ),
     (
         "all 500, both variants, both tracks",
         "make eval PROVIDER=anthropic MODEL={model} SUBSET=all RECORD=1",
-        10,
+        500,
     ),
 )
+
+
+def estimate_basis(reports: Sequence[tuple[str, dict[str, Any]]]) -> tuple[str, dict[str, Any]]:
+    """The run the live estimates scale from: a dev50 run, never whichever name sorts first."""
+    dev50 = [(name, r) for name, r in reports if r.get("subset") == "dev50"]
+    return (dev50 or list(reports))[0]
+
+
+def question_count(report: dict[str, Any]) -> int:
+    """Questions a run asked: its largest track (the official one keeps every question)."""
+    first = next(iter(report["variants"].values()))
+    return max(len(entry["verdicts"]) for entry in first.values()) or 1
 
 
 def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
@@ -182,7 +198,8 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
         return "\n".join(lines)
     # The live runs are the recorded run's variants with repairs: its measured tokens,
     # scaled by question count for a larger subset (same questions per database mix).
-    name, report = reports[0]
+    name, report = estimate_basis(reports)
+    questions = question_count(report)
     tokens_in = sum(r["input_tokens"] for r in report["ledger"] if r["variant"].endswith("-r2"))
     tokens_out = sum(r["output_tokens"] for r in report["ledger"] if r["variant"].endswith("-r2"))
     lines += [
@@ -196,7 +213,8 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
         "| What | Command | " + " | ".join(f"`{m}`" for m in ESTIMATE_MODELS) + " |",
         "|---|---|" + "---:|" * len(ESTIMATE_MODELS),
     ]
-    for what, command, scale in LIVE_COMMANDS:
+    for what, command, target in LIVE_COMMANDS:
+        scale = target / questions
         costs = []
         for m in ESTIMATE_MODELS:
             cost = estimate_cost(tokens_in * scale, tokens_out * scale, m)

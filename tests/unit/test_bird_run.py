@@ -227,3 +227,26 @@ def test_compare_finds_a_summary_or_ledger_the_verdicts_do_not_support() -> None
     problems = compare(recorded, tampered)
     assert "full/official/r2: correct 2 != 30" in problems
     assert "ledger differs from the recorded run" in problems
+
+
+def test_live_estimates_scale_from_the_dev50_run_by_question_count() -> None:
+    def run(subset: str, questions: int) -> dict[str, Any]:
+        verdicts = [
+            verdict(id=i, input_tokens=1000, input_tokens_r0=1000) for i in range(questions)
+        ]
+        r = _report(verdicts)
+        r["subset"] = subset
+        r["ledger"] = ledger(r)
+        return r
+
+    dev50 = run("dev50", 50)
+    # "bird-all-..." sorts before "bird-dev50-...": the basis must not depend on that.
+    table = report.ledger_table(
+        [("bird-all-x.json", run("all", 500)), ("bird-dev50-x.json", dev50)]
+    )
+    assert "the token counts `bird-dev50-x.json` measured" in table
+    alone = report.ledger_table([("bird-dev50-x.json", dev50)])
+    assert alone.split("Estimated cost")[1] == table.split("Estimated cost")[1]
+    # dev50 is the basis itself; all 500 is ten times its tokens.
+    assert f"${estimate_cost(50_000, 5_000, 'claude-opus-5-5'):.2f} |" in alone
+    assert f"${estimate_cost(500_000, 50_000, 'claude-opus-5-5'):.2f} |" in alone
