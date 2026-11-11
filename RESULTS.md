@@ -1237,6 +1237,29 @@ temperature.
 | The same with a `v0.1.1` tag | failed at the check: `tag v0.1.1, package 0.1.0` |
 | `images.yml`, run by hand (dry run) | both images built for linux/amd64 and linux/arm64 (QEMU), in 4 min 21 s (api) and 4 min 34 s (stream); not pushed, and the registry login was skipped |
 
+### The hardened API container and the CI jobs
+
+`TRIBUTARY_API_KEYS=... docker compose --profile api up -d --build --wait api`
+on the same stack (no catalog published, so data routes answer 503):
+
+| Check | Result |
+|---|---|
+| `docker inspect` | `ReadonlyRootfs=true`, `CapDrop=[ALL]`, `no-new-privileges:true`, user `tributary`; health check `healthy` |
+| `GET /health` | 200 with `nosniff`, `X-Frame-Options: DENY`, `default-src 'none'; frame-ancestors 'none'`, `no-referrer`, `no-store` |
+| No key; `/docs` | 401; 404 (docs off by default) |
+| 12 authenticated requests at once (`/freshness`, burst 10) | 10 answered (503, no catalog), then 429 with `Retry-After: 1` |
+| A 70,000-byte body to `/sql` | 413 before parsing |
+| `/metrics` with the key | Every request above counted by route template and status, plus `tributary_rate_limited_total 3`. The 413 is counted under `unmatched`, because the body cap answers before routing. |
+
+The three CI workflows ran their steps locally on the release branch. For
+`CI`, that was `make check` (1312 passed, 7 xfailed, on Java 17),
+`make eval-guard`, `make eval`, `make eval-link`, and
+`git diff --exit-code eval/results RESULTS.md` (clean). For `Warehouse`, on a
+fresh `postgres:17.11`: `tributary sample load`, `make dbt` (PASS=57) and
+`make test-warehouse` (32 passed). For `Integration`, on a fresh
+`--profile lakehouse` stack: `make test-integration` (7 passed, stream job
+not restarted) and `pytest tests/warehouse -m lakehouse` (1 passed).
+
 `act` reproduces the runner, not GitHub. The trusted-publishing exchange with
 PyPI, the `pypi` environment's approval and the push to GHCR cannot run
 without the repository's credentials. RELEASE.md lists them as the
