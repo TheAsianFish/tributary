@@ -125,6 +125,11 @@ class Settings(BaseSettings):
     # full = every table; bm25 = the k best lexical matches; core is not implemented yet.
     agent_linker: Literal["full", "bm25", "core"] = "full"
     agent_link_k: int = Field(default=4, ge=1)
+    # Planner features measured in M7 (RESULTS.md, "Agent quality"): value hints from the
+    # value index, worked examples from the marts' dbt docs, self-consistency draws.
+    agent_values: bool = False
+    agent_examples: int = Field(default=0, ge=0, le=10)
+    agent_votes: int = Field(default=1, ge=1, le=7)
     agent_max_repairs: int = Field(default=2, ge=0, le=5)
     agent_row_cap: int = Field(default=1000, ge=1)
     agent_statement_timeout_ms: int = Field(default=10_000, ge=100)

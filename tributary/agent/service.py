@@ -21,12 +21,16 @@ import structlog
 
 from tributary.agent.answer import Answer, compose, provenance_warnings, result_text
 from tributary.agent.catalog import Catalog, load_dbt
+from tributary.agent.context import value_hints, worked_examples
+from tributary.agent.examples import ExamplePool
 from tributary.agent.execute import ExecutionError, Executor, PostgresExecutor
 from tributary.agent.guard import Guard
 from tributary.agent.linker import DEFAULT_K, Link, link_schema
 from tributary.agent.planner import Planner, PlanOutcome
 from tributary.agent.provenance import PostgresProvenance, ProvenanceSource, TableProvenance
 from tributary.agent.provider import Provider, Usage
+from tributary.agent.values import ValueIndex
+from tributary.agent.vote import VotingPlanner
 from tributary.config import Settings
 from tributary.warehouse.catalog import current_version
 
@@ -66,6 +70,10 @@ class Limits:
     stale_after: timedelta = timedelta(minutes=120)
     linker: str = "full"
     link_k: int = DEFAULT_K
+    # M7's planner features (tributary/agent/context.py, vote.py).
+    values: bool = False  # hint the indexed values the question names
+    examples: int = 0  # show up to this many worked examples from the dbt docs
+    votes: int = 1  # self-consistency draws per question (1: no vote)
 
 
 class Agent:
@@ -85,7 +93,7 @@ class Agent:
         self.provenance = provenance
         self.limits = limits or Limits()
         self._clock = clock
-        self._planners: dict[str | None, Planner] = {}
+        self._planners: dict[str | None, Planner | VotingPlanner] = {}
 
     @property
     def provider(self) -> Provider:
@@ -103,11 +111,17 @@ class Agent:
     def guard(self, catalog: Catalog | None = None) -> Guard:
         return Guard((catalog or self.catalog()).relations(), max_rows=self.limits.row_cap)
 
-    def planner(self) -> Planner:
+    def planner(self) -> Planner | VotingPlanner:
         catalog = self.catalog()
         planner = self._planners.get(catalog.version)
         if planner is None or planner.catalog is not catalog:
-            planner = Planner(
+            context = []
+            if self.limits.examples:
+                pool = ExamplePool.from_catalog(catalog)
+                context.append(worked_examples(pool, self.limits.examples))
+            if self.limits.values:
+                context.append(value_hints(ValueIndex.from_catalog(catalog)))
+            single = Planner(
                 self.provider,
                 self.guard(catalog),
                 self.executor,
@@ -115,7 +129,9 @@ class Agent:
                 max_repairs=self.limits.max_repairs,
                 row_cap=self.limits.row_cap,
                 linker=linker_for(self.limits.linker, self.limits.link_k),
+                context=context,
             )
+            planner = VotingPlanner(single, self.limits.votes) if self.limits.votes > 1 else single
             self._planners = {catalog.version: planner}
         return planner
 
@@ -234,6 +250,9 @@ def build_agent(settings: Settings, provider: Provider | None = None) -> Agent:
             stale_after=stale_after,
             linker=settings.agent_linker,
             link_k=settings.agent_link_k,
+            values=settings.agent_values,
+            examples=settings.agent_examples,
+            votes=settings.agent_votes,
         ),
     )
 
