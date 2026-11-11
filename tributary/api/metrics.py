@@ -1,7 +1,8 @@
 """Prometheus text exposition (format 0.0.4) for the API, without a client library.
 
 Labels are bounded: requests are counted by route template (``/query``, not the
-raw path; anything no route matched is ``unmatched``), method and status; answers
+raw path; anything no route matched is ``unmatched``), method (a standard one, else
+``other``) and status; answers
 by route and agent status. No label ever carries a key, a question or SQL.
 """
 
@@ -11,6 +12,9 @@ import threading
 from collections import defaultdict
 
 CONTENT_TYPE = "text/plain; version=0.0.4; charset=utf-8"
+# The methods counted by name; any other (h11 passes arbitrary tokens through, and an
+# unauthenticated client could send thousands) is counted as "other".
+METHODS = frozenset({"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
 BUCKETS: tuple[float, ...] = (0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
 
 
@@ -57,6 +61,7 @@ class Metrics:
 
     def request(self, route: str, method: str, status: int, seconds: float) -> None:
         with self._lock:
+            method = method if method in METHODS else "other"
             self._requests[(route, method, str(status))] += 1
             self._latency[route].observe(seconds)
 

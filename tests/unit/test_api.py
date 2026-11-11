@@ -418,6 +418,15 @@ def test_buckets_are_keyed_by_digest_not_the_key() -> None:
     assert KeyCheck([KEY])(KEY) == hashlib.sha256(KEY.encode()).digest()
 
 
+def test_unknown_methods_share_one_metrics_series() -> None:
+    c = client()
+    for i in range(50):
+        c.request(f"X{i:05d}", "/health")  # unauthenticated, answered 405
+    text = c.get("/metrics", headers=auth()).text
+    assert 'tributary_http_requests_total{route="/health",method="other",status="405"} 50' in text
+    assert "X00000" not in text
+
+
 def test_metrics_need_the_key_and_skip_it_when_public() -> None:
     assert client().get("/metrics").status_code == 401
     assert client().get("/metrics", headers=auth("wrong")).status_code == 401
