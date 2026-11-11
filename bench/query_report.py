@@ -16,6 +16,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 QUERY = ROOT / "bench/results/m6-query"
 DASH = "\u2013"  # en dash, for empty cells
+TIE = 1.1
+"""Medians closer than this ratio are not called a win (run-to-run spread is about that size)."""
 ENGINE_NAMES = {
     "postgres": "PostgreSQL",
     "trino-postgres": "Trino over PostgreSQL",
@@ -114,6 +116,8 @@ def fastest(cells: Mapping[str, Any], query: str) -> str:
     if len(ordered) == 1:
         return ENGINE_NAMES[best]
     ratio = ordered[1][1] / best_s if best_s > 0 else float("inf")
+    if ratio < TIE:
+        return f"{ENGINE_NAMES[best]} and {ENGINE_NAMES[ordered[1][0]]} within 10%"
     return f"{ENGINE_NAMES[best]} ({ratio:.1f}x)"
 
 

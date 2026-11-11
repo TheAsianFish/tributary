@@ -127,6 +127,15 @@ def test_the_latency_table_marks_void_cells_and_names_the_fastest(results: Path)
     assert "| 2.1 ms / 3.0 ms | result differs | error | PostgreSQL |" in hour
 
 
+def test_medians_within_ten_percent_are_not_a_win() -> None:
+    cells = {
+        "q/postgres": _cell(0.143, 0.2),
+        "q/trino-postgres": _cell(0.5, 0.6),
+        "q/trino-iceberg": _cell(0.139, 0.2),
+    }
+    assert R.fastest(cells, "q") == "Trino over Iceberg and PostgreSQL within 10%"
+
+
 def test_a_cold_cell_that_differs_shows_no_time(results: Path) -> None:
     row = next(line for line in R.cold_table(results).splitlines() if line.startswith("| q01"))
     assert row.endswith("| 500 ms | 1.50 s | result differs |")

@@ -371,26 +371,61 @@ def pg_sizes(engines: Engines, name: str) -> dict[str, Any]:
     return dict(zip(keys, row, strict=True))
 
 
+CTAS_SESSION = {
+    "task_max_writer_count": "1",
+    "task_scale_writers_enabled": "false",
+    "scale_writers": "false",
+}
+"""One Parquet writer for the unpartitioned copy: at 20M rows Trino's default four
+writers buffer more than its 739 MB per-node query memory and the CTAS fails."""
+
+
+def ctas_writer(settings: Settings, sql: str) -> None:
+    conn = trino.dbapi.Connection(
+        host=settings.trino_host,
+        port=settings.trino_port,
+        user="bench",
+        timezone="UTC",
+        session_properties=dict(CTAS_SESSION),
+    )
+    try:
+        cur = conn.cursor()
+        cur.execute(sql)
+        cur.fetchall()
+    finally:
+        conn.close()  # type: ignore[no-untyped-call]  # the trino client is untyped
+
+
 def load_unit(settings: Settings, rows: int, name: str, path: Path) -> dict[str, Any]:
-    """Generate the data in the stream image, then optimize and copy it flat through Trino."""
+    """Generate the data in the stream image, then optimize and copy it flat through Trino.
+
+    The generator's report is saved on its own (``generate-<label>.json``) as
+    soon as it returns, so a failure in the Trino steps does not cost the load.
+    """
     if path.exists():
         return _read(path)
-    start = time.monotonic()
-    out = compose(
-        "run",
-        "--rm",
-        "--no-deps",
-        "-e",
-        "TRIBUTARY_SPARK_MASTER=local[4]",
-        "stream",
-        "bench",
-        "load",
-        "--rows",
-        str(rows),
-        timeout=4 * 3600,
-    )
-    generate_seconds = time.monotonic() - start
-    report = json.loads(out.strip().splitlines()[-1])
+    generated = path.with_name(path.name.replace("load-", "generate-", 1))
+    if generated.exists():
+        saved = _read(generated)
+        report, generate_seconds = saved["report"], saved["seconds"]
+    else:
+        start = time.monotonic()
+        out = compose(
+            "run",
+            "--rm",
+            "--no-deps",
+            "-e",
+            "TRIBUTARY_SPARK_MASTER=local[4]",
+            "stream",
+            "bench",
+            "load",
+            "--rows",
+            str(rows),
+            timeout=4 * 3600,
+        )
+        generate_seconds = time.monotonic() - start
+        report = json.loads(out.strip().splitlines()[-1])
+        _write(generated, {"report": report, "seconds": generate_seconds})
     engines = Engines(settings)
     try:
         table = f"iceberg.bench.{name}"
@@ -399,9 +434,7 @@ def load_unit(settings: Settings, rows: int, name: str, path: Path) -> dict[str,
         optimize_seconds = time.monotonic() - t0
         engines.fetch("trino-iceberg", f"DROP TABLE IF EXISTS {table}{FLAT_SUFFIX}")
         t0 = time.monotonic()
-        engines.fetch(
-            "trino-iceberg", f"CREATE TABLE {table}{FLAT_SUFFIX} AS SELECT * FROM {table}"
-        )
+        ctas_writer(settings, f"CREATE TABLE {table}{FLAT_SUFFIX} AS SELECT * FROM {table}")
         ctas_seconds = time.monotonic() - t0
         layouts = {
             layout: table_files(engines, f"{table}{suffix}") for layout, suffix in LAYOUTS.items()
