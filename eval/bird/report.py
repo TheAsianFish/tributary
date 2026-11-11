@@ -226,16 +226,21 @@ def ablation_table(report: dict[str, Any]) -> str:
 # Live commands that have not been run: (what, command, multiple of the measured dev50 run).
 LIVE_COMMANDS: tuple[tuple[str, str, int], ...] = (
     (
-        "dev50, both variants, both tracks",
-        "make eval PROVIDER=anthropic MODEL={model} RECORD=1",
+        "dev50, the recorded run's variants, both tracks",
+        "make eval PROVIDER=anthropic MODEL={model} VARIANTS={variants} RECORD=1",
         50,
     ),
     (
-        "all 500, both variants, both tracks",
-        "make eval PROVIDER=anthropic MODEL={model} SUBSET=all RECORD=1",
+        "all 500, the same variants, both tracks",
+        "make eval PROVIDER=anthropic MODEL={model} VARIANTS={variants} SUBSET=all RECORD=1",
         500,
     ),
 )
+
+
+def _count_words(n: int) -> str:
+    words = ("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    return words[n] if 0 <= n < len(words) else str(n)
 
 
 def estimate_basis(reports: Sequence[tuple[str, dict[str, Any]]]) -> tuple[str, dict[str, Any]]:
@@ -281,7 +286,8 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     lines += [
         "",
         f"Estimated cost of the live runs: the token counts `{name}` measured for "
-        f"its two variants with repairs ({tokens_in:,} in / {tokens_out:,} out, both tracks), "
+        f"its {_count_words(sum(r['variant'].endswith('-r2') for r in report['ledger']))} "
+        f"variants with repairs ({tokens_in:,} in / {tokens_out:,} out, both tracks), "
         "scaled by question count, at list price with no cache hits (an upper bound on "
         "input: the planner caches its schema prefix), Claude's own tokenizer and "
         "thinking tokens not modelled:",
@@ -295,7 +301,7 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
         for m in ESTIMATE_MODELS:
             cost = estimate_cost(tokens_in * scale, tokens_out * scale, m)
             costs.append(DASH if cost is None else f"${cost:.2f}")
-        cmd = command.format(model="<model>")
+        cmd = command.format(model="<model>", variants=",".join(report["variants"]))
         lines.append(f"| {what} | `{cmd}` | " + " | ".join(costs) + " |")
     return "\n".join(lines)
 

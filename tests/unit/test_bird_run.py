@@ -363,3 +363,28 @@ def _atom_draft() -> dict[str, Any]:
     from tests.unit.agent_doubles import draft
 
     return draft("SELECT element FROM tox.atom", tables=("tox.atom",))
+
+
+def test_a_core_variant_gets_the_databases_value_index(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tributary.agent import linker
+    from tributary.agent.linker import Link
+    from tributary.agent.values import ValueIndex
+
+    seen: list[object] = []
+
+    def stub(question: str, catalog: Any, k: int | None, values: Any) -> Link:
+        seen.append(values)
+        return Link("core", catalog.relations())
+
+    monkeypatch.setitem(linker.LINKERS, "core", stub)
+    harness, _, (official, _) = _harness_case()
+    index = ValueIndex({("tox.atom", "element"): ("chlorine",)})
+    harness.value_indexes = lambda: {"tox": index}
+    harness.grade(official, Variant.parse("core-k2"))
+    assert index in seen
+    # Other linkers are not handed the index.
+    seen.clear()
+    monkeypatch.setitem(linker.LINKERS, "bm25", stub)
+    harness.planner("tox", Variant.parse("bm25-k3")).system_for("q")
+    assert seen  # (linker_for also probes the strategy once when the planner is built)
+    assert all(v is None for v in seen)

@@ -188,20 +188,25 @@ class Agent:
         return self.provenance.lookup(list(catalog.tables))
 
 
-def linker_for(strategy: str, k: int) -> Callable[[str, Catalog], Link] | None:
+def linker_for(
+    strategy: str, k: int, values: ValueIndex | None = None
+) -> Callable[[str, Catalog], Link] | None:
     """The planner's linker for a strategy; ``None`` for ``full`` (one cached prefix).
 
-    An unavailable strategy is refused here, when the agent is built, rather
-    than on the first question.
+    ``values`` is the value index a literal-matching strategy (``core``) uses;
+    without it, the catalog's own indexed values. An unavailable strategy is
+    refused here, when the agent is built, rather than on the first question.
     """
     if strategy == "full":
         return None
     link_schema("", Catalog(tables=(), source="dbt"), strategy=strategy, k=k)
-    return partial(_link, strategy=strategy, k=k)
+    return partial(_link, strategy=strategy, k=k, values=values)
 
 
-def _link(question: str, catalog: Catalog, *, strategy: str, k: int) -> Link:
-    return link_schema(question, catalog, strategy=strategy, k=k)
+def _link(
+    question: str, catalog: Catalog, *, strategy: str, k: int, values: ValueIndex | None
+) -> Link:
+    return link_schema(question, catalog, strategy=strategy, k=k, values=values)
 
 
 def guard_error(reasons: tuple[str, ...]) -> str:

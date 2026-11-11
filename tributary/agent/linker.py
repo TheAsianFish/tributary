@@ -31,9 +31,12 @@ import re
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from tributary.agent.catalog import Catalog, Table
+
+if TYPE_CHECKING:  # values imports this module's STOPWORDS
+    from tributary.agent.values import ValueIndex
 
 Strategy = Literal["full", "bm25", "core"]
 STRATEGIES: tuple[Strategy, ...] = ("full", "bm25", "core")
@@ -101,7 +104,9 @@ def table_document(table: Table) -> list[str]:
 # --- strategies ---------------------------------------------------------------------------------
 
 
-def link_full(question: str, catalog: Catalog, k: int | None = None) -> Link:
+def link_full(
+    question: str, catalog: Catalog, k: int | None = None, values: ValueIndex | None = None
+) -> Link:
     relations = catalog.relations()
     return Link("full", relations, {r: 1.0 for r in relations})
 
@@ -139,15 +144,25 @@ class BM25:
         return scores
 
 
-def link_bm25(question: str, catalog: Catalog, k: int | None = None) -> Link:
+def link_bm25(
+    question: str, catalog: Catalog, k: int | None = None, values: ValueIndex | None = None
+) -> Link:
     scores = BM25().scores(question, catalog)
     ranked = sorted(scores, key=lambda r: (-scores[r], r))
     chosen = tuple(ranked[: DEFAULT_K if k is None else k])
     return Link("bm25", chosen, {r: round(scores[r], 6) for r in ranked})
 
 
-def link_core(question: str, catalog: Catalog, k: int | None = None) -> Link:
+def link_core(
+    question: str, catalog: Catalog, k: int | None = None, values: ValueIndex | None = None
+) -> Link:
     """Value matching plus join-path expansion over the foreign-key graph.
+
+    ``values`` is the value index to match the question against
+    (:meth:`~tributary.agent.values.ValueIndex.match` gives each matched
+    value's relation); ``None`` means the catalog's own indexed values
+    (``ValueIndex.from_catalog(catalog)``), which is what the warehouse has.
+    BIRD's catalogs carry no values, so the BIRD harness passes its index.
 
     Contract (``tests/unit/test_linker_core.py``):
 
@@ -162,7 +177,7 @@ def link_core(question: str, catalog: Catalog, k: int | None = None) -> Link:
     raise LinkerUnavailable("the core schema linker is not implemented yet; choose full or bm25")
 
 
-LINKERS: Mapping[str, Callable[[str, Catalog, int | None], Link]] = {
+LINKERS: Mapping[str, Callable[[str, Catalog, int | None, ValueIndex | None], Link]] = {
     "full": link_full,
     "bm25": link_bm25,
     "core": link_core,
@@ -170,9 +185,18 @@ LINKERS: Mapping[str, Callable[[str, Catalog, int | None], Link]] = {
 
 
 def link_schema(
-    question: str, catalog: Catalog, *, strategy: str = "full", k: int | None = None
+    question: str,
+    catalog: Catalog,
+    *,
+    strategy: str = "full",
+    k: int | None = None,
+    values: ValueIndex | None = None,
 ) -> Link:
-    """The tables to show the planner for ``question``, by ``strategy``."""
+    """The tables to show the planner for ``question``, by ``strategy``.
+
+    ``values`` is a value index for strategies that match literals (``core``);
+    the others ignore it.
+    """
     try:
         linker = LINKERS[strategy]
     except KeyError:
@@ -180,7 +204,7 @@ def link_schema(
         raise ValueError(f"unknown linking strategy {strategy!r} (known: {known})") from None
     if k is not None and k < 1:
         raise ValueError(f"k must be at least 1, got {k}")
-    return linker(question, catalog, k)
+    return linker(question, catalog, k, values)
 
 
 # --- graph helpers a strategy can use -------------------------------------------------------------

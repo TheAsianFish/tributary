@@ -173,9 +173,12 @@ class Variant:
         k_value = int(k) if k else (DEFAULT_K if linker == "bm25" else None)
         return cls(linker, k_value, values, examples, answer_all, votes)
 
-    def linker_fn(self) -> Callable[[str, Catalog], Link] | None:
-        """``None`` for ``full``: the whole catalog, one prompt prefix per database."""
-        return linker_for(self.linker, self.k or DEFAULT_K)
+    def linker_fn(self, values: ValueIndex | None = None) -> Callable[[str, Catalog], Link] | None:
+        """``None`` for ``full``: the whole catalog, one prompt prefix per database.
+
+        ``values`` is the database's value index, for a linker that matches literals.
+        """
+        return linker_for(self.linker, self.k or DEFAULT_K, values)
 
 
 # --- one question -----------------------------------------------------------------------------
@@ -286,10 +289,13 @@ class Harness:
             pool = self._pools.get(db_id, ExamplePool(()))
             blocks.append(worked_examples(pool, variant.examples))
         if variant.values:
-            if self._values is None:
-                self._values = self.value_indexes()
-            blocks.append(value_hints(self._values.get(db_id, ValueIndex({}))))
+            blocks.append(value_hints(self._value_index(db_id)))
         return blocks
+
+    def _value_index(self, db_id: str) -> ValueIndex:
+        if self._values is None:
+            self._values = self.value_indexes()
+        return self._values.get(db_id, ValueIndex({}))
 
     def planner(self, db_id: str, variant: Variant) -> Planner | VotingPlanner:
         key = (db_id, variant.name)
@@ -303,7 +309,9 @@ class Harness:
                 max_repairs=MAX_REPAIRS,
                 row_cap=ROW_CAP,
                 rules=BIRD_RULES_ANSWER if variant.answer_all else BIRD_RULES,
-                linker=variant.linker_fn(),
+                linker=variant.linker_fn(
+                    self._value_index(db_id) if variant.linker == "core" else None
+                ),
                 context=self.context(db_id, variant),
             )
             self._planners[key] = (
