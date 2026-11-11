@@ -303,8 +303,16 @@ def measure(
     runs: int,
     reference: Sequence[Sequence[Q.Value]] | None,
 ) -> dict[str, Any]:
-    """One discarded run checked against ``reference``, then ``runs`` timed runs."""
+    """One discarded run checked against ``reference``, then ``runs`` timed runs.
+
+    PostgreSQL is the reference, so it alone runs with ``reference=None``; any
+    other engine without one (PostgreSQL failed) is void, never timed unchecked.
+    Every timed run's rows must equal the first run's.
+    """
     cell: dict[str, Any] = {"engine": engine, "sql": sql}
+    if reference is None and engine != "postgres":
+        cell["mismatch"] = "no PostgreSQL result to check against"
+        return cell
     try:
         rows, first, _ = engines.run(engine, sql)
     except Exception as exc:  # any engine failure voids the cell, with its message
@@ -323,8 +331,9 @@ def measure(
     stats: list[dict[str, Any]] = []
     for _ in range(runs):
         got, elapsed, run_stats = engines.run(engine, sql)
-        if len(got) != len(rows):
-            cell["mismatch"] = f"a timed run returned {len(got)} rows, the first {len(rows)}"
+        drift = Q.compare(rows, got)
+        if drift is not None:
+            cell["mismatch"] = f"a timed run differs from the first: {drift}"
             return cell
         seconds.append(elapsed)
         stats.append(run_stats)

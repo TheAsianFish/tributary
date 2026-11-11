@@ -122,6 +122,7 @@ def test_results_compare_as_multisets_with_a_float_tolerance() -> None:
     expected: list[list[Q.Value]] = [["enwiki", 3, 0.25], ["dewiki", 1, None]]
     assert Q.compare(expected, [["dewiki", 1, None], ["enwiki", 3, 0.25 * (1 + 1e-12)]]) is None
     assert Q.compare([[3]], [[3.0]]) is None
+    assert Q.compare([[1_000_000_000]], [[1_000_000_001]]) is not None  # counts compare exactly
     assert Q.compare(expected, expected[:1]) == "1 rows, expected 2"
     differs = Q.compare(expected, [["enwiki", 3, 0.2501], ["dewiki", 1, None]])
     assert differs is not None

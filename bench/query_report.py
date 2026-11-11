@@ -217,7 +217,7 @@ def pruning_table(results: Path = QUERY) -> str:
                 lines.append(
                     f"| {name} | {label} | PostgreSQL heap, BRIN on `event_ts` | {DASH} | {DASH} | "
                     f"{_n(buffers['blocks'])} of {_n(heap_blocks)} blocks | "
-                    f"{DASH} | {fmt_bytes(buffers['blocks'] * 8192)} | "
+                    f"{DASH} | {fmt_bytes(buffers['blocks'] * 8192)} touched | "
                     f"{cell_text(warm.get(f'{query}/postgres'))} |"
                 )
     return "\n".join(lines)

@@ -149,7 +149,7 @@ def test_the_pruning_table_puts_postgres_blocks_beside_the_layouts(results: Path
     assert "| 2,250 | 180 | 180 |" in streamed
     pg = next(line for line in lines if "PostgreSQL heap" in line)
     assert "2,000 of 27,200 blocks" in pg
-    assert "16.4 MB" in pg  # 2,000 blocks of 8 kB
+    assert "16.4 MB touched" in pg  # 2,000 blocks of 8 kB, cache hits included
     assert pg.endswith("| 2.1 ms / 3.0 ms |")
     assert not any("unpartitioned" in line for line in lines)  # no cell, no row
 

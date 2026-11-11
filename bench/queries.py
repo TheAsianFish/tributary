@@ -197,6 +197,8 @@ def _sort_key(row: Sequence[Value]) -> tuple[tuple[int, str], ...]:
 def _equal(a: Value, b: Value) -> bool:
     if isinstance(a, bool) or isinstance(b, bool):
         return type(a) is type(b) and a == b  # True is not the integer 1 here
+    if isinstance(a, int) and isinstance(b, int):
+        return a == b  # counts are exact; a relative tolerance would pass 1e9 + 1
     if isinstance(a, int | float) and isinstance(b, int | float):
         return math.isclose(a, b, rel_tol=FLOAT_TOLERANCE, abs_tol=FLOAT_TOLERANCE)
     return a == b

@@ -131,9 +131,29 @@ def test_a_result_that_differs_from_postgres_voids_the_cell() -> None:
 
 def test_a_failing_query_is_recorded_as_an_error() -> None:
     cell = _measure(
-        FakeEngines([], error=RuntimeError("Query exceeded per-node memory limit")), None
+        FakeEngines([], error=RuntimeError("Query exceeded per-node memory limit")), [[1]]
     )
     assert cell["error"].startswith("RuntimeError: Query exceeded")
+    assert "seconds" not in cell
+
+
+def test_without_a_postgres_result_another_engine_is_void_not_timed() -> None:
+    fake = FakeEngines([["enwiki", 3]])
+    cell = _measure(fake, None)
+    assert fake.calls == 0
+    assert cell["mismatch"] == "no PostgreSQL result to check against"
+
+
+class DriftingEngines(FakeEngines):
+    def run(self, engine: str, sql: str) -> tuple[list[list[Q.Value]], float, dict[str, Any]]:
+        _, seconds, stats = super().run(engine, sql)
+        return [["x", self.calls]], seconds, stats  # the second column changes every run
+
+
+def test_a_timed_run_whose_rows_change_voids_the_cell() -> None:
+    fake = DriftingEngines([["x", 1]])
+    cell = _measure(fake, [["x", 1]])
+    assert "differs from the first" in cell["mismatch"]
     assert "seconds" not in cell
 
 

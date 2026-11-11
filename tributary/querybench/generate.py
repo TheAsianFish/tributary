@@ -22,7 +22,8 @@ One DataFrame, three writes, so the stores hold the same rows:
   and per event hour. Rows are grouped into simulated micro-batches by their
   arrival time and into the stream's three tasks by a hash of their id, and
   each (batch, task) group becomes exactly one Spark task, so the fanout
-  writer writes exactly the files the stream would. It is written in one
+  writer writes one file per batch, task and hour, as the stream does (the
+  stream's tasks follow Kafka's partitioner, so the match is statistical). It is written in one
   commit; the stream would have committed once per minute, so this layout
   has the stream's files but not its thousands of snapshots and manifests.
 
