@@ -66,7 +66,7 @@ def test_request_body() -> None:
         "format": {"type": "object"},
         "stream": False,
         "keep_alive": "30m",
-        "options": {"temperature": 0, "seed": 0, "num_ctx": 16384},
+        "options": {"temperature": 0, "seed": 0, "num_ctx": 16384, "num_predict": 1536},
     }
 
 

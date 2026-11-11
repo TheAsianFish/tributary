@@ -26,6 +26,7 @@ from tributary.agent.provider import (
     parse_object,
 )
 
+MAX_PREDICT = 1536
 START_HINT = "start it with `docker compose --profile ollama up -d ollama`"
 
 
@@ -60,6 +61,9 @@ class OllamaProvider:
                 "temperature": 0 if request.temperature is None else request.temperature,
                 "seed": request.sample,
                 "num_ctx": self.num_ctx,
+                # A draft is a few hundred tokens; a model stuck repeating itself would
+                # otherwise generate until the context is full. Cut, it is InvalidOutput.
+                "num_predict": min(request.max_tokens, MAX_PREDICT),
             },
         }
         started = time.perf_counter()
@@ -81,7 +85,9 @@ class OllamaProvider:
         except (ValueError, KeyError, TypeError):
             raise ProviderError(f"unexpected reply from Ollama: {reply.text[:200]}") from None
         if payload.get("done_reason") == "length":
-            raise InvalidOutput(f"reply truncated at num_ctx={self.num_ctx} ({self.model})")
+            raise InvalidOutput(
+                f"reply truncated (num_ctx={self.num_ctx}, num_predict cap) ({self.model})"
+            )
         data = parse_object(content)
         response = ModelResponse(
             data=data,
