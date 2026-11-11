@@ -632,7 +632,10 @@ recordings where they named Claude (there was no API key). Next, in order:
    and the vote at a lower temperature. Then the warehouse questions
    re-recorded with value hints and examples, so the product can turn them on.
 4. **A result byte cap** in the executor, and a shared rate-limit store for
-   multi-replica API deployments.
+   multi-replica API deployments. Also, column checks on table aliases:
+   `w.pg_typeof` over a mart still calls a function that takes a whole row.
+   None of those functions has side effects in stock PostgreSQL, but the guard
+   should know each mart's columns and refuse the rest.
 5. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
    dialect for the guard, so `/sql` can run guarded queries on the lake.
 
