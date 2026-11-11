@@ -1,11 +1,21 @@
 [project]
-name = "tributary"
+name = "tributary-platform"
 version = "0.1.0.dev0"
 description = "Streaming data platform with an evaluated analytics agent"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
+keywords = ["text-to-sql", "kafka", "spark", "dbt", "iceberg", "data-engineering", "llm-agent"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
 dependencies = [
     "anthropic>=1.15,<2",
     "confluent-kafka>=2.16,<3",
@@ -30,6 +40,10 @@ lakehouse = ["trino>=0.340,<1"]
 # The scheduler, its DAGs and dag.test(); the Airflow image installs this extra.
 airflow = ["apache-airflow==3.3.2"]
 
+[project.urls]
+Repository = "https://github.com/TheAsianFish/tributary"
+Changelog = "https://github.com/TheAsianFish/tributary/blob/main/CHANGELOG.md"
+
 [project.scripts]
 tributary = "tributary.cli:app"
 
@@ -47,6 +61,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["tributary"]
+
+# The sdist is the package and what building it needs; the sample, the BIRD files,
+# the recordings and the benchmark results stay in the repository.
+[tool.hatch.build.targets.sdist]
+include = ["/tributary", "/README.md", "/LICENSE", "/CHANGELOG.md", "/pyproject.toml"]
 
 [tool.ruff]
 line-length = 100

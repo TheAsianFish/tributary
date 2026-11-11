@@ -25,7 +25,7 @@ COPY tributary ./tributary
 # alone, so with the cache mount a rebuild after a code change would install the
 # previous build's wheel and the scheduler would run stale code.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-editable --reinstall-package tributary \
+    uv sync --locked --no-dev --no-editable --reinstall-package tributary-platform \
         --extra airflow --extra warehouse --extra lakehouse
 
 # The dbt project (sources only: no target/ or logs/ from a developer's machine;

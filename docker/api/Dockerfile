@@ -18,7 +18,7 @@ COPY tributary ./tributary
 # --reinstall-package: see docker/airflow/Dockerfile (uv's cached wheel of a local
 # project is keyed on pyproject.toml alone).
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-editable --reinstall-package tributary --extra api
+    uv sync --locked --no-dev --no-editable --reinstall-package tributary-platform --extra api
 
 RUN useradd --create-home --uid 10001 tributary
 ENV PATH=/opt/venv/bin:$PATH \
