@@ -1,0 +1,84 @@
+# q07's pushed-down filter, as Trino's PostgreSQL connector sends it (columns, no aggregate), run as the role Trino connects as.
+# Command: docker compose exec -T postgres psql -U tributary_reader -d tributary (this file's statements); 2026-11-11T02:20:58Z
+
+SHOW max_parallel_workers_per_gather;
+ max_parallel_workers_per_gather 
+---------------------------------
+ 2
+(1 row)
+
+SHOW work_mem;
+ work_mem 
+----------
+ 4MB
+(1 row)
+
+EXPLAIN (ANALYZE, BUFFERS, COSTS) SELECT wiki, length_old, length_new FROM bench.events_20m WHERE event_ts >= '2026-10-22 00:00:00+00' AND event_ts < '2026-10-22 06:00:00+00' AND event_type = 'edit';
+                                                                                       QUERY PLAN                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..706300.87 rows=253789 width=18) (actual time=5152.410..10456.036 rows=239692 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=96 read=534016
+   ->  Parallel Seq Scan on events_20m  (cost=0.00..679921.97 rows=105745 width=18) (actual time=3448.832..10423.822 rows=79897 loops=3)
+         Filter: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone) AND (event_type = 'edit'::text))
+         Rows Removed by Filter: 6586769
+         Buffers: shared hit=96 read=534016
+ Planning:
+   Buffers: shared hit=101
+ Planning Time: 0.365 ms
+ JIT:
+   Functions: 12
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.142 ms (Deform 0.724 ms), Inlining 244.387 ms, Optimization 122.753 ms, Emission 81.068 ms, Total 449.349 ms
+ Execution Time: 10483.963 ms
+(16 rows)
+
+SET max_parallel_workers_per_gather = 4;
+SET
+EXPLAIN (ANALYZE, BUFFERS, COSTS) SELECT wiki, length_old, length_new FROM bench.events_20m WHERE event_ts >= '2026-10-22 00:00:00+00' AND event_ts < '2026-10-22 06:00:00+00' AND event_type = 'edit';
+                                                                                       QUERY PLAN                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=1000.00..647976.88 rows=253789 width=18) (actual time=5237.577..10634.858 rows=239692 loops=1)
+   Workers Planned: 4
+   Workers Launched: 4
+   Buffers: shared hit=192 read=533920
+   ->  Parallel Seq Scan on events_20m  (cost=0.00..621597.98 rows=63447 width=18) (actual time=4233.582..10588.988 rows=47938 loops=5)
+         Filter: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone) AND (event_type = 'edit'::text))
+         Rows Removed by Filter: 3952062
+         Buffers: shared hit=192 read=533920
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.079 ms
+ JIT:
+   Functions: 20
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 4.977 ms (Deform 4.095 ms), Inlining 768.424 ms, Optimization 230.888 ms, Emission 156.813 ms, Total 1161.101 ms
+ Execution Time: 10647.790 ms
+(16 rows)
+
+SET work_mem = '64MB';
+SET
+EXPLAIN (ANALYZE, BUFFERS, COSTS) SELECT wiki, length_old, length_new FROM bench.events_20m WHERE event_ts >= '2026-10-22 00:00:00+00' AND event_ts < '2026-10-22 06:00:00+00' AND event_type = 'edit';
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on events_20m  (cost=137.94..559584.33 rows=253789 width=18) (actual time=76.102..293.663 rows=239692 loops=1)
+   Recheck Cond: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone))
+   Rows Removed by Index Recheck: 41506
+   Filter: (event_type = 'edit'::text)
+   Rows Removed by Filter: 255608
+   Heap Blocks: lossy=14336
+   Buffers: shared hit=12 read=14356
+   ->  Bitmap Index Scan on events_20m_event_ts_brin  (cost=0.00..74.49 rows=522322 width=0) (actual time=2.849..2.850 rows=143360 loops=1)
+         Index Cond: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone))
+         Buffers: shared hit=12 read=20
+ Planning:
+   Buffers: shared hit=1
+ Planning Time: 0.096 ms
+ JIT:
+   Functions: 6
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.374 ms (Deform 0.217 ms), Inlining 7.848 ms, Optimization 27.829 ms, Emission 16.948 ms, Total 52.999 ms
+ Execution Time: 302.975 ms
+(18 rows)
+

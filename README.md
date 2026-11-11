@@ -290,28 +290,31 @@ the engine's rows equal PostgreSQL's. Full tables in
   row store is 4.6 times the size of the Parquet files (4.4 GB against 958 MB)
   and does not fit in its 4 GB, so every scan reads every column of every row
   from disk; Trino reads only the columns the query names, compressed, in
-  parallel. At 1M rows, where the heap is cached, PostgreSQL wins the cheap
+  parallel (and answers a bare `count(*)` from the files' metadata without
+  reading data). At 1M rows, where the heap is cached, PostgreSQL wins the cheap
   aggregates, because any Trino query costs 100–200 ms of planning and
   scheduling.
 - **PostgreSQL wins point lookups by two orders of magnitude** (0.3 ms against
   1 s at 20M): it has a primary key, and Iceberg has no index, so Trino scans
   the id column of every file.
-- **PostgreSQL wins narrow time windows too**, because a BRIN index on
-  `event_ts` is its partitioning: the heap is in time order, so one hour is
-  3,353 of 534,112 blocks and costs 47 ms at 20M, the same as at 1M. A
-  six-hour window flips back to Trino (89 ms against 514 ms), since PostgreSQL
+- **Narrow time windows are close, PostgreSQL mostly**, because a BRIN index
+  on `event_ts` is its partitioning: the heap is in time order, so one hour is
+  3,353 of 534,112 blocks and costs 47 ms at 20M, the same as at 1M (Trino:
+  130 ms). With two `count(DISTINCT)` Trino edges it, 94 against 106 ms. A
+  six-hour window flips to Trino (89 ms against 514 ms), since PostgreSQL
   reads whole rows.
 - **Trino over PostgreSQL is a federation tool, not a faster PostgreSQL.** It
   pushes filters and simple aggregates down and adds its own overhead, and won
-  one query of ten. Its worst case was not Trino's cost: under the connector's
-  session defaults PostgreSQL's planner chose a sequential scan for a filter it
-  answers with BRIN in the benchmark's session, 8.3 s against 0.5 s.
+  one query of ten. Its worst case was not Trino's cost: the connector's sessions run
+  with PostgreSQL's default 4 MB `work_mem`, under which the planner chose a
+  sequential scan for a filter it answers with BRIN at 64 MB (10.5 s against
+  0.3 s when run by hand).
 - **Compaction matters more than partitioning at this scale.** Partitioned by
-  hour, one hour is one 600 kB file and costs 80 ms at 1M and at 20M. In the
-  layout the streaming sink leaves (a 36 kB file per trigger, task and hour),
-  pruning still finds the right 183 files but the query reads 11 times the
-  bytes and runs up to 8.6 times slower. Without partitioning, Parquet's
-  columns keep a full scan of 20M rows at 0.3–0.4 s, about 4 times the
+  hour, one hour is one 4 MB file, of which Trino reads 0.6 MB, and costs
+  80 ms at 1M and at 20M. In the layout the streaming sink leaves (a 36 kB
+  file per trigger, task and hour), pruning still finds the right 183 files
+  but the query reads 7–11 times the bytes and runs up to 10 times slower. Without partitioning (one unsorted file), Parquet's
+  columns keep a full scan of 20M rows at 0.3–0.4 s, 3.5–4.8 times the
   partitioned table, and it grows with the table.
 - **One failure, reported rather than tuned away.** Trino has no exact
   percentile aggregate, so the 95th-percentile query ranks every row per wiki
@@ -479,7 +482,7 @@ runs are listed there under "To measure", with their estimated cost.
 | Cost of the Iceberg sink at P = 3 | Sustained 29,800 → 25,900 events/s (one 15% ladder step); p95 at 80% load 14 → 42 s (medians; latency was still rising at that load) |
 | The shipped trigger and cap (found by `make bench`) | 20,000 offsets per 5 s trigger capped ingest at 4,000 events/s; now 2 s and 100,000 (ceiling 50,000) |
 | Freshness during the fault runs | 4 / 4 refreshes all checks passing; `fct_edits` 6–7.5 min behind at check time, set by dbt's ~7 min refresh rather than the stream |
-| Query engines at 20M rows (`make bench-query`, 4 vCPU, warm medians) | Trino over Iceberg wins whole-table aggregates 4–18x (0.2–2.5 s against 2.0–15 s); PostgreSQL wins the primary-key lookup (0.3 ms against 984 ms) and one-hour windows through BRIN (47 ms); Trino over PostgreSQL wins 1 of 10; the exact 95th percentile exceeds Trino's per-node memory at 20M |
+| Query engines at 20M rows (`make bench-query`, 4 vCPU, warm medians) | Trino over Iceberg wins whole-table aggregates 4–18x (0.2–2.5 s against 2.0–15 s); PostgreSQL wins the primary-key lookup (0.3 ms against 984 ms) and most one-hour windows through BRIN (47 ms); Trino over PostgreSQL wins 1 of 10; the exact 95th percentile exceeds Trino's per-node memory at 20M |
 | Partition pruning, one hour of 20M rows on Trino | Partitioned and compacted: 1 file, 0.6 MB read, 82 ms; unpartitioned (1 file): all 20M rows, 32 MB, 348 ms; as streamed, uncompacted: 183 files, 6.6 MB, 341 ms (six hours: 85 ms against 732 ms) |
 | Storage for 20M rows | PostgreSQL heap 4.4 GB (+ 631 MB primary key); Iceberg zstd Parquet 958 MB by hour, 1.6 GB in 44,357 files as streamed |
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
