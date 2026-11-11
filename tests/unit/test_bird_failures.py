@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import json
 import math
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -156,3 +158,22 @@ def test_each_other_variant_gets_a_column_of_the_failures_it_answers() -> None:
     assert value.endswith("| 1 | 2 |")
     assert join.endswith("| 1 | 1 (c) |")
     assert total == "| **Total** | | **3** | 100% | **3** | |"
+
+
+def test_a_later_run_does_not_take_the_labelled_runs_place(tmp_path: Path) -> None:
+    import shutil
+
+    report_module = report
+    results = tmp_path / "results"
+    shutil.copytree(report_module.RESULTS, results)
+    labels = json.loads((results / "bird-failures.json").read_text(encoding="utf-8"))
+    labelled = json.loads((results / labels["report"]).read_text(encoding="utf-8"))
+    # A Claude run of one variant sorts before the ollama run by name.
+    later = {**labelled, "variants": {"full+v+f+a": labelled["variants"]["full+v+f+a"]}}
+    (results / "bird-dev50-anthropic-claude-haiku-5-5.json").write_text(
+        json.dumps(later), encoding="utf-8"
+    )
+    tables = report_module.render_all(results)
+    committed = report_module.render_all(report_module.RESULTS)
+    assert tables["ablation"] == committed["ablation"]
+    assert tables["failures"] == committed["failures"]

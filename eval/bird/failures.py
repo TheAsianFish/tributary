@@ -5,7 +5,8 @@
 ``--dump`` writes every wrong answer of the variant (question, evidence, gold
 SQL, predicted SQL, status, error, row counts, and the rows each query
 returned, from the recorded executions) as JSON, which is what a person reads
-to label them. The labels live in ``eval/results/bird-failures.json``: one
+to label them. The labels live in ``eval/results/bird-failures.json``, which
+names the run report and the variant they were read from: one
 entry per (track, question id) with a category from :data:`CATEGORIES` and a
 one-line note saying what went wrong. :func:`failures_table` renders the
 counts into RESULTS.md and refuses labels that do not match the run (a

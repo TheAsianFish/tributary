@@ -315,11 +315,23 @@ def render_all(results: Path = RESULTS) -> dict[str, str]:
     none = "No recorded run yet: `make eval PROVIDER=ollama RECORD=1` after `make bird`."
     tables["ex"] = ex_table(reports) if reports else none
     tables["ledger"] = ledger_table(reports) if reports else none
-    _, basis = estimate_basis(reports) if reports else ("", None)
-    tables["ablation"] = ablation_table(basis) if basis is not None else none
+    # The ablation and the taxonomy describe one run, the one the labels were read from;
+    # a later run (another model, another subset) must not take their place by its name.
     labels_path = results / "bird-failures.json"
-    if labels_path.exists() and basis is not None:
-        tables["failures"] = failures_table(load_labels(labels_path), basis)
+    labels = load_labels(labels_path) if labels_path.exists() else None
+    basis: dict[str, Any] | None = None
+    if labels is not None and reports:
+        by_name = dict(reports)
+        if labels["report"] not in by_name:
+            raise ValueError(
+                f"bird-failures.json labels {labels['report']}, which is not in {results}"
+            )
+        basis = by_name[labels["report"]]
+    elif reports:
+        _, basis = estimate_basis(reports)
+    tables["ablation"] = ablation_table(basis) if basis is not None else none
+    if labels is not None and basis is not None:
+        tables["failures"] = failures_table(labels, basis)
     return tables
 
 
