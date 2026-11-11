@@ -561,6 +561,12 @@ def test_quoted_or_qualified_user_is_a_column(guard: Guard) -> None:
         "SELECT t.pg_sleep FROM ROWS FROM (generate_series(1, 1)) AS t",
         # and a name the denylist does not know is not a column either
         "SELECT t.upper FROM unnest(ARRAY['a']) AS t",
+        # an alias reused in another scope with a column of the call's name does not
+        # vouch for it where the alias has no such column
+        "SELECT p.pg_sleep FROM unnest(ARRAY[0.5]) AS p(x)"
+        " WHERE EXISTS (SELECT 1 FROM generate_series(1, 1) AS p(pg_sleep))",
+        "SELECT p.pg_sleep FROM unnest(ARRAY[0.5]) AS p(x)"
+        " CROSS JOIN LATERAL (SELECT 1 FROM generate_series(1, 1) AS p(pg_sleep)) AS z",
     ],
 )
 def test_call_in_column_notation_on_a_function_is_blocked(guard: Guard, sql: str) -> None:

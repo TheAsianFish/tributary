@@ -593,8 +593,10 @@ def _function_from_items(statement: exp.Expr) -> dict[str, set[str]]:
 
     PostgreSQL names an unaliased function item after the function, and a scalar
     function's single column after the item. Everything that can put a call in FROM
-    is collected (a function, UNNEST, LATERAL, ROWS FROM), wherever it sits: a name
-    reused in another scope only makes the check stricter.
+    is collected (a function, UNNEST, LATERAL, ROWS FROM), wherever it sits, without
+    resolving scopes. So a name bound twice keeps only the columns both bindings
+    have: a union would let ``p(pg_sleep)`` in a subquery vouch for ``p.pg_sleep``
+    in the outer query, where ``p`` is ``unnest(...) AS p(x)`` and the name is a call.
     """
     items: dict[str, set[str]] = {}
     for node in statement.walk():
@@ -619,9 +621,14 @@ def _function_from_items(statement: exp.Expr) -> dict[str, set[str]]:
             if isinstance(alias, exp.TableAlias) and alias.columns
             else names
         )
+        columns = {c for c in declared if c is not None}
         for name in names:
-            if name is not None:
-                items.setdefault(name, set()).update(c for c in declared if c is not None)
+            if name is None:
+                continue
+            if name in items:
+                items[name] &= columns
+            else:
+                items[name] = set(columns)
     return items
 
 
