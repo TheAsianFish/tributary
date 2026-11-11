@@ -1199,6 +1199,49 @@ Result at 20M rows, hour starting 2026-10-22T00:00:00+00:00:
 
 The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds in PostgreSQL, in one statement across two catalogs; its result equals the same join run inside PostgreSQL on `bench.events_<N>`. Trino reads one hour's file from the lake and the 160-row dimension through the connector, and the join costs it 155 ms at 20M.
 
+## Release (M8)
+
+Run on 2026-11-11 on a 4 vCPU, 15 GB machine (Linux 7.0, Docker 29.4.2,
+Compose 5.1.3). The Docker build cache was warm from an earlier build of the
+same Dockerfiles, so these times do not include a cold MinIO compile (about
+4 min). $0: the one live model call was a local model.
+
+### The README quickstart from a clean checkout
+
+A fresh `git clone` of the release branch into an empty directory, with no
+virtualenv and nothing else from the working copy, ran the
+[quickstart](README.md#quickstart) command by command:
+
+| Step | Result |
+|---|---|
+| `docker compose up -d --build` | Containers up in 45 s; the producer reported `produce_done` (50,000 sent, 50,000 delivered, 0 failed), and `raw.recentchange` held 50,000 rows 2 min 51 s after the command started |
+| `pip install '.[warehouse]'` into a new `python3.12 -m venv` | 78 s; `tributary version` printed `0.1.0.dev0` (this run was before the version commit) |
+| `tributary warehouse refresh` | 90 s: 8 relations built, 49 checks passed, catalog published under `./catalog` |
+| `tributary warehouse grant-agent` | `role tributary_agent: SELECT on marts and ops, read-only sessions` |
+| `tributary sql` top 5 wikis | wikidatawiki 9,745, enwiki 4,564, commonswiki 4,047, kuwiktionary 722, zhwiki 636: the same rows as the README |
+| `tributary sql "DELETE FROM marts.dim_wiki"` | `blocked by the safety policy: write_or_ddl: Delete statement`, exit 1 |
+| `tributary ask --provider ollama "Which 5 wikis had the most edits (including page creations)? ..."` (Ollama 0.40.6 in Compose, `qwen2.5-coder:7b`, CPU, first call of a cold model) | The same five rows, from `SUM(edits)` over `marts.agg_editor_activity`; 2,618 input and 131 output tokens, 309.6 s of model time, 5 min 10 s wall |
+| `tributary ask --provider fake` with the same question | The recorded answer of the same model, with the same SQL and rows and the same 2,618 tokens, in under 50 ms of planner time. The recording was made against a database loaded straight from the sample, and it replays against the one Kafka and Spark filled, so the two catalogs match |
+
+The live answer and the replayed one wrote the same SQL. That is one data
+point, not evidence of determinism: the model ran at its default
+temperature.
+
+### Packaging and the release workflows
+
+| Check | Result |
+|---|---|
+| `make dist` (version 0.1.0) | sdist 160,787 B, wheel 169,964 B; `twine check --strict` PASSED for both; the wheel with the `api` extra installs into a fresh venv outside the checkout, and `tributary version` prints `0.1.0` there, and the app imports from `site-packages` |
+| `release.yml`, run by hand (dry run) under `act` 0.2.97 | build job green (version check skipped off a tag, `make dist`, artifact uploaded); the PyPI and GitHub-release jobs skipped |
+| `release.yml` on a simulated `v0.1.0` tag push, build job | green, with the tag-matches-version check passing |
+| The same with a `v0.1.1` tag | failed at the check: `tag v0.1.1, package 0.1.0` |
+| `images.yml`, run by hand (dry run) | both images built for linux/amd64 and linux/arm64 (QEMU), in 4 min 21 s (api) and 4 min 34 s (stream); not pushed, and the registry login was skipped |
+
+`act` reproduces the runner, not GitHub. The trusted-publishing exchange with
+PyPI, the `pypi` environment's approval and the push to GHCR cannot run
+without the repository's credentials. RELEASE.md lists them as the
+maintainer's steps.
+
 ## To measure
 
 | What | Command | Milestone | Cost |
@@ -1211,3 +1254,6 @@ The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds
 | The rest of the M7 grid on the local model: the leave-one-out cells `full+v+a`, `full+f+a`, `full+v+f`, the vote `full+v+f+a+n3`, and `bm25-k4+v+f+a`, so each feature's share of the gain is measured rather than inferred | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,full+v+a,full+f+a,full+v+f,full+v+f+a+n3,bm25-k4+v+f+a RECORD=1 RESUME=1` (the recorded cells replay; about 75 min of CPU per new cell here; the vote is several hours, see [the pilot](#why-the-default-is-what-it-is)) | M7 | $0 |
 | The `core` linker in the grid, once `link_core` is written | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,core-k4+v+f+a RECORD=1 RESUME=1`, then `make eval-link` | M7 | $0 |
 | The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |
+| The provider against the real API: one structured-output call with usage and cost | `ANTHROPIC_API_KEY=... make test-live` (or the `Live` workflow, run by hand) | M8 | under $0.01 on `claude-haiku-5-5` (one call, about 100 input and 50 output tokens) |
+| The 40 warehouse questions with value hints and three worked examples on the local model, so the product's defaults can include them | `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` (about 35 min of CPU, from the 7B run's pace) | M8 | $0 |
+| CI on GitHub for this release: `CI`, `Integration` and `Warehouse` green on the pull request, and both release workflows' dry runs green on the branch | push the branch, open the pull request, then `gh workflow run release.yml --ref dev/m8` and `gh workflow run images.yml --ref dev/m8` | M8 | $0 (the repository's Actions minutes: a few minutes for the gate, up to 35 for Integration, about 10 for the images) |
