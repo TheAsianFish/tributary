@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -170,3 +172,47 @@ def test_each_engine_restarts_the_containers_it_reads_through() -> None:
         "trino-iceberg": ("minio", "trino"),
     }
     assert set(query.LAYOUTS) == {"partitioned", "unpartitioned", "uncompacted"}
+
+
+class FailsAfter(FakeEngines):
+    """Answers ``ok`` statements, then raises on every later one."""
+
+    def __init__(self, rows: list[list[Q.Value]], ok: int) -> None:
+        super().__init__(rows)
+        self.ok = ok
+
+    def run(self, engine: str, sql: str) -> tuple[list[list[Q.Value]], float, dict[str, Any]]:
+        if self.calls >= self.ok:
+            self.calls += 1
+            raise RuntimeError("Query exceeded per-node memory limit")
+        return super().run(engine, sql)
+
+
+def test_a_timed_run_that_fails_voids_the_cell_instead_of_raising() -> None:
+    cell = _measure(FailsAfter([["x", 1]], ok=2), [["x", 1]])
+    assert cell["error"].startswith("timed run 2: RuntimeError")
+    assert "seconds" not in cell
+
+
+def test_a_cold_run_without_a_postgres_result_is_void_not_timed() -> None:
+    fake = FakeEngines([["enwiki", 3]])
+    cell = query.measure_once(cast(query.Engines, fake), "trino-iceberg", "SELECT 1", None)
+    assert fake.calls == 0
+    assert "seconds" not in cell
+    assert cell["mismatch"] == "no PostgreSQL result to check against"
+
+
+def test_a_cold_run_with_a_different_result_is_marked() -> None:
+    fake = FakeEngines([["enwiki", 4]])
+    cell = query.measure_once(
+        cast(query.Engines, fake), "trino-iceberg", "SELECT 1", [["enwiki", 3]]
+    )
+    assert "differs" in cell["mismatch"]
+
+
+def test_a_finished_unit_with_another_run_count_is_refused(tmp_path: Path) -> None:
+    path = tmp_path / "warm-1m.json"
+    path.write_text(json.dumps({"runs": 10, "cells": {}}))
+    assert query._read(path, runs=10)["runs"] == 10
+    with pytest.raises(RuntimeError, match="holds 10 runs per cell, not 3"):
+        query._read(path, runs=3)

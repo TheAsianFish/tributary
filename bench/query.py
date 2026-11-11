@@ -67,7 +67,8 @@ ENGINE_SERVICES = {
     "trino-postgres": ("postgres", "trino"),
     "trino-iceberg": ("minio", "trino"),
 }
-"""Containers each engine reads through, in start order (a cold run restarts them)."""
+"""Containers a cold run restarts for each engine, in start order. Trino over Iceberg's
+catalog is JDBC on PostgreSQL, which stays up: its metadata lookups find a warm database."""
 LAYOUTS = {"partitioned": "", "unpartitioned": FLAT_SUFFIX, "uncompacted": STREAM_SUFFIX}
 PG_SESSION = {
     "TimeZone": "UTC",
@@ -330,7 +331,12 @@ def measure(
     seconds: list[float] = []
     stats: list[dict[str, Any]] = []
     for _ in range(runs):
-        got, elapsed, run_stats = engines.run(engine, sql)
+        try:
+            got, elapsed, run_stats = engines.run(engine, sql)
+        except Exception as exc:  # a timed run failing voids the cell, not the whole unit
+            cell["error"] = f"timed run {len(seconds) + 1}: {type(exc).__name__}: {exc}"[:2000]
+            log.warning("bench.query.error", engine=engine, error=cell["error"][:300])
+            return cell
         drift = Q.compare(rows, got)
         if drift is not None:
             cell["mismatch"] = f"a timed run differs from the first: {drift}"
@@ -355,8 +361,14 @@ def _write(path: Path, data: Mapping[str, Any]) -> None:
     log.info("bench.query.wrote", path=str(path))
 
 
-def _read(path: Path) -> dict[str, Any]:
+def _read(path: Path, *, runs: int | None = None) -> dict[str, Any]:
+    """A finished unit; refuses one recorded with a different number of timed runs."""
     data: dict[str, Any] = json.loads(path.read_text())
+    if runs is not None and data.get("runs") != runs:
+        raise RuntimeError(
+            f"{path} holds {data.get('runs')} runs per cell, not {runs}: "
+            "delete it to re-measure, or pass the same --runs"
+        )
     return data
 
 
@@ -490,7 +502,7 @@ def warm_unit(
     engines: Engines, name: str, window: Q.Window, runs: int, path: Path
 ) -> dict[str, Any]:
     if path.exists():
-        return _read(path)
+        return _read(path, runs=runs)
     cells: dict[str, dict[str, Any]] = {}
     for query in Q.load_queries():
         reference: list[list[Q.Value]] | None = None
@@ -540,7 +552,7 @@ def pruning_unit(
     engines: Engines, name: str, window: Q.Window, runs: int, path: Path
 ) -> dict[str, Any]:
     if path.exists():
-        return _read(path)
+        return _read(path, runs=runs)
     cells: dict[str, dict[str, Any]] = {}
     for query in [q for q in Q.load_queries() if q.kind == "window"]:
         end = window.six_hours_end if "six_hours_end" in query.postgres else window.hour_end
@@ -579,7 +591,7 @@ def federated_unit(
     engines: Engines, name: str, window: Q.Window, runs: int, path: Path
 ) -> dict[str, Any]:
     if path.exists():
-        return _read(path)
+        return _read(path, runs=runs)
     query = Q.load_federated()
     pg_sql = Q.render(query, "postgres", Q.table_ref("postgres", name), window)
     reference = measure(engines, "postgres", pg_sql, runs, None)
@@ -666,6 +678,9 @@ def measure_once(
     engines: Engines, engine: str, sql: str, reference: Sequence[Sequence[Q.Value]] | None
 ) -> dict[str, Any]:
     cell: dict[str, Any] = {"engine": engine, "sql": sql}
+    if reference is None and engine != "postgres":
+        cell["mismatch"] = "no PostgreSQL result to check against"
+        return cell
     try:
         rows, seconds, stats = engines.run(engine, sql)
     except Exception as exc:  # recorded; the cell is void
