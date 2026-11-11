@@ -1,0 +1,13 @@
+# `make bench-query` layers this over compose.yaml. The two engines under test get
+# the same memory: PostgreSQL 4 GB; Trino 3 GB (heap sized by the image at 80%)
+# plus MinIO 1 GB, which serves Trino's Iceberg files. A container's limit covers
+# the page cache of the files it reads, so this is also how much of each store can
+# stay cached between runs. No CPU limits: each engine runs alone with the stream
+# job stopped, so whichever is being timed has all the machine's cores.
+services:
+  postgres:
+    mem_limit: 4g
+  trino:
+    mem_limit: 3g
+  minio:
+    mem_limit: 1g

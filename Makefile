@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-results
+.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -112,5 +112,18 @@ bench-scale: ## Sustained events/s, p95 and the bottleneck at 1, 3 and 6 partiti
 	uv run python -m bench.scale --reps $(BENCH_REPS)
 	uv run python -m bench.report
 
-bench-results: ## Re-render RESULTS.md's ingest tables from bench/results/
+# Query engines (M6): PostgreSQL vs Trino over PostgreSQL vs Trino over Iceberg. Generates
+# bench.events_<N> in both stores, recreates PostgreSQL, MinIO and Trino under
+# bench/compose.query.yaml's memory limits, stops the stream job, and restarts the engines
+# for the cold runs (dropping the host page cache through `sudo -n` where allowed).
+SCALE ?= 1m,20m
+RUNS ?= 10
+
+bench-query: ## Latency per query, engine and scale (warm and cold), pruning by layout (~3 h)
+	$(MAKE) up-lakehouse
+	docker compose build stream
+	uv run python -m bench.query --scales $(SCALE) --runs $(RUNS)
+	uv run python -m bench.report
+
+bench-results: ## Re-render RESULTS.md's ingest and query tables from bench/results/
 	uv run python -m bench.report
