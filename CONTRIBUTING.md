@@ -50,10 +50,11 @@ alone too: `docker compose up -d postgres && make bird`.
 | `make results` | Re-render RESULTS.md's BIRD tables from `eval/results/`. |
 | `make bench` | Brings up the `lakehouse` and `airflow` profiles. It then tunes the trigger interval and `maxOffsetsPerTrigger`, produces 50,000 keyed events per run with the stream job and then the broker killed (SIGKILL) at three points, checks zero loss and zero duplicates in PostgreSQL and Iceberg, and reads freshness from `ops.quality_runs`. Writes `bench/results/m5-bench/`. About an hour. It recreates containers, so use a stack you can throw away. |
 | `make bench-scale` | Sustained events/s and p95 at 1, 3 and 6 partitions, the per-stage ceilings (broker, Spark `noop`, Spark + Python, the PostgreSQL sink alone), the bottleneck, and the Iceberg sink's cost at P = 3. Writes `bench/results/m5-scale/`. About 2 hours. It truncates `raw.recentchange` before each run, so use a disposable stack. A rerun skips finished units. |
+| `make bench-query` | Generates the sample scaled to `SCALE` rows (default `1m,20m`) in PostgreSQL and Iceberg (`tributary bench load`), then times ten queries on PostgreSQL, Trino over PostgreSQL and Trino over Iceberg (warm and cold), the three Iceberg layouts on the window queries, and one federated query. Writes `bench/results/m6-query/`. About 2 h for both scales. It recreates PostgreSQL, MinIO and Trino under `bench/compose.query.yaml`'s memory limits, stops the stream job and restarts the engines (dropping the host page cache through `sudo -n` where allowed), so use a disposable stack. A rerun skips finished units. |
 | `make bench-results` | Re-render RESULTS.md's ingest tables from `bench/results/` (a unit test fails if they are stale). |
 | `make serve` / `make up-api` | The API on localhost:8000 from the host / in Compose (profile `api`); both need `TRIBUTARY_API_KEYS`. |
 
-Planned targets (`make bench-query`, `make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
+Planned targets (`make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
 `uv run tributary warehouse grant-agent` once to create the agent's role.
 
 ## Conventions
