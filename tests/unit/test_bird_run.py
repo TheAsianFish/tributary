@@ -250,3 +250,116 @@ def test_live_estimates_scale_from_the_dev50_run_by_question_count() -> None:
     # dev50 is the basis itself; all 500 is ten times its tokens.
     assert f"${estimate_cost(50_000, 5_000, 'claude-opus-5-5'):.2f} |" in alone
     assert f"${estimate_cost(500_000, 50_000, 'claude-opus-5-5'):.2f} |" in alone
+
+
+# --- M7: the ablation flags ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "variant"),
+    [
+        ("full+v", Variant("full", None, values=True)),
+        ("full+f", Variant("full", None, examples=3)),
+        ("full+f5", Variant("full", None, examples=5)),
+        ("full+a", Variant("full", None, answer_all=True)),
+        ("bm25-k4+n3", Variant("bm25", 4, votes=3)),
+        ("full+v+f+a+n3", Variant("full", None, True, 3, True, 3)),
+    ],
+)
+def test_flags_parse_and_print_in_one_order(text: str, variant: Variant) -> None:
+    assert Variant.parse(text) == variant
+    assert variant.name == text
+
+
+def test_flags_written_in_another_order_name_the_same_variant() -> None:
+    assert Variant.parse("full+n3+a+f+v").name == "full+v+f+a+n3"
+
+
+@pytest.mark.parametrize("text", ["full+x", "full+v+v", "full+n1", "full+n", "full+v2", "full+"])
+def test_bad_flags_are_refused(text: str) -> None:
+    with pytest.raises(ValueError, match="flag"):
+        Variant.parse(text)
+
+
+def test_examples_then_values_then_the_question_in_the_user_turn() -> None:
+    from tributary.agent.examples import Example, ExamplePool
+    from tributary.agent.values import ValueIndex
+
+    harness, provider, (official, _) = _harness_case()
+    harness.value_indexes = lambda: {"tox": ValueIndex({("tox.atom", "element"): ("chlorine",)})}
+    harness.example_pools = lambda exclude: {
+        "tox": ExamplePool((Example("Which elements are there?", "SELECT 1", "bird:9"),))
+    }
+    question = replace(official, question="Which elements are like chlorine?")
+    harness.grade(question, Variant.parse("full+v+f"))
+    (request,) = provider.requests
+    user = request.messages[0].content
+    examples, values, asked = (
+        user.index("Which elements are there?"),
+        user.index("'chlorine'"),
+        user.index("Question: Which elements are like chlorine?"),
+    )
+    assert examples < values < asked
+    assert "tox.atom.element = 'chlorine'" in user
+    # Without the flags the turn is the bare question, as every recording before M7 has it.
+    provider.replies.append(_atom_draft())
+    harness.grade(question, Variant.parse("bm25-k1"))
+    assert (
+        provider.requests[-1].messages[0].content == "Question: Which elements are like chlorine?"
+    )
+
+
+def test_the_examples_hold_out_the_evaluated_subset() -> None:
+    harness, _, (official, _) = _harness_case()
+    seen: list[frozenset[int]] = []
+
+    def pools(exclude: Any) -> dict[str, Any]:
+        from tributary.agent.examples import ExamplePool
+
+        seen.append(frozenset(exclude))
+        return {"tox": ExamplePool(())}
+
+    harness.example_pools = pools
+    harness.example_exclude = frozenset({1, 2})
+    harness.grade(official, Variant.parse("full+f"))
+    assert seen == [frozenset({1, 2})]
+
+
+def test_a_vote_has_no_no_repair_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    from eval.bird import run as run_module
+
+    harness, provider, (official, _) = _harness_case()
+    provider.replies.append(_atom_draft())  # a second draw, the same answer: settled at 2
+    from eval.bird import data as bird_data
+
+    monkeypatch.setattr(bird_data, "questions", lambda track: [official])
+    monkeypatch.setattr(bird_data, "select", lambda qs, subset: list(qs))
+    body = run_module.run(harness, [Variant.parse("full+n3")], ["official"], "all", log=print)
+    entry = body["variants"]["full+n3"]["official"]
+    assert entry["r0"] is None
+    assert entry["r2"]["correct"] == 1
+    assert entry["r2"]["model_calls"] == 2  # both draws are paid for
+    (verdict_,) = entry["verdicts"]
+    assert (verdict_["draws"], verdict_["agreeing"]) == (2, 2)
+    assert [row["variant"] for row in run_module.ledger({"variants": body["variants"]})] == [
+        "full+n3-r2"
+    ]
+
+
+def test_memo_sends_each_distinct_request_once() -> None:
+    from eval.bird.run import Memo
+    from tests.unit.agent_doubles import ScriptedProvider, draft
+    from tributary.agent.provider import Message, ModelRequest
+
+    inner = ScriptedProvider([draft(), draft("SELECT 2")])
+    memo = Memo(inner)
+    request = ModelRequest("s", (Message("user", "q"),), {"type": "object"}, "x")
+    assert memo.complete(request) is memo.complete(request)
+    memo.complete(replace(request, sample=1))
+    assert len(inner.requests) == 2
+
+
+def _atom_draft() -> dict[str, Any]:
+    from tests.unit.agent_doubles import draft
+
+    return draft("SELECT element FROM tox.atom", tables=("tox.atom",))
