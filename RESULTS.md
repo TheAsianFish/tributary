@@ -635,6 +635,19 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 ### Thirty wrong answers, by cause
 
 <!-- bird:failures -->
+| Category | What it covers | Wrong answers | Share | Right with `bm25-k4` | Questions |
+|---|---|---:|---:|---:|---|
+| Refused | set answerable to false on an answerable question | 11 | 37% | 1 | 137, 198, 228, 327, 530, 753, 775, 782, 915, 1058, 1078 |
+| No query ran | every attempt was blocked or failed in PostgreSQL | 5 | 17% | 0 | 637, 967, 1175, 1265, 1404 |
+| Wrong table or column | read a column or table that does not hold the asked fact | 1 | 3% | 1 | 990 |
+| Wrong literal | filtered on a value not stored in that form (case, spelling, code) | 2 | 7% | 0 | 405, 477 |
+| Wrong join | a missing, extra or wrongly keyed join | 1 | 3% | 1 | 792 |
+| Evidence not followed | ignored or misapplied the formula or mapping given | 3 | 10% | 0 | 200, 786, 861 |
+| Wrong aggregation | wrong aggregate, grouping, DISTINCT or count target | 1 | 3% | 0 | 1257 |
+| Ordering or limit | wrong sort direction, tie handling or row limit | 1 | 3% | 0 | 37 (c) |
+| Output shape | the right facts with extra, missing or reordered columns | 2 | 7% | 0 | 23, 83 |
+| Gold is questionable | the gold answer is wrong or the question is ambiguous | 3 | 10% | 0 | 37, 1011, 1144 |
+| **Total** | | **30** | 100% | **3** | |
 <!-- /bird:failures -->
 
 ## Ingest under faults and at scale (M5)
