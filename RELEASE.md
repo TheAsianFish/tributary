@@ -69,9 +69,13 @@ an unrelated project); the import name and the command are `tributary`.
 
 ## If something goes wrong
 
-- **The build or a check fails on the tag:** nothing was published. Delete
-  the tag (`git push --delete origin vX.Y.Z && git tag -d vX.Y.Z`), fix it on
-  `main` and tag again.
+- **The tag check fails** (the tag does not match the version, or CHANGELOG.md
+  has no section for it): both workflows stop before publishing anything.
+  Delete the tag (`git push --delete origin vX.Y.Z && git tag -d vX.Y.Z`), fix
+  it on `main` and tag again.
+- **`make dist` fails on the tag:** nothing reached PyPI, but `images.yml`
+  runs independently and may already have pushed `X.Y.Z` images. Fix it on
+  `main` and release `X.Y.Z+1`; do not reuse the version.
 - **PyPI succeeded, but the GitHub release or an image failed:** re-run the
   failed job from the run page. PyPI never accepts the same version twice, so
   never re-tag a version that reached PyPI.
