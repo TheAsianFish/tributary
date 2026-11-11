@@ -1,0 +1,19 @@
+{
+ "report": {
+  "copies": 20,
+  "first_event_ts": "2026-10-16T23:45:26+00:00",
+  "last_event_ts": "2026-10-17T11:51:45+00:00",
+  "name": "events_1m",
+  "postgres_rows": 1000000,
+  "rows": 1000000,
+  "sample_rows": 50000,
+  "seconds": {
+   "iceberg": 19.9,
+   "postgres": 34.7,
+   "stream": 38.9
+  },
+  "span_seconds": 2179,
+  "stream_groups": 2181
+ },
+ "seconds": 108.51630896499955
+}

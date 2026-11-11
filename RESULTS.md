@@ -834,11 +834,177 @@ Every `warehouse_refresh` during the fault runs passed every check: 4 of 4 runs,
 Freshness of what the agent reads is therefore bounded by dbt's run time, not by Kafka or Spark. That is the number to look at before tightening the 60-minute freshness threshold. Faster refreshes would need incremental models for the other marts, or less contention on the box.
 
 
+## Query engines: PostgreSQL vs Trino over Iceberg (M6)
+
+`make bench-query` (both scales, about 2 h on this machine: 24 min to generate 20M rows, the rest timing). No model calls; $0. Raw output, one JSON file per unit with every run's time, Trino's statistics, the SQL sent and each result, is under [`bench/results/m6-query/`](bench/results/m6-query/); the tables between the `bench:` markers are rendered from it by `make bench-results`, and a unit test fails if they drift apart.
+
+**Method.** `tributary bench load --rows N` tiles the 50,000-event sample in time (copy *i* shifted by *i* × 2,179 s, ids `uuid5` per copy) in one Spark batch job and writes the same DataFrame to PostgreSQL (`bench.events_<N>`, loaded in event-time order, then primary key, BRIN on `event_ts`, `VACUUM ANALYZE`) and to Iceberg twice: partitioned by `hours(event_ts)` with one file per hour, and in the layout the streaming sink leaves before compaction (one file per one-minute trigger, per task and per hour, in one commit; rows are assigned to the stream's three tasks by a Spark hash of the id, so the layout matches the stream's statistically, not file for file). Trino then runs `optimize` on the first and copies it unpartitioned with a CTAS. 1M rows cover about 12 event hours, 20M about 10 event days. Three engines: PostgreSQL directly, Trino over its `postgresql` catalog, and Trino over Iceberg on MinIO. Each runs alone with the stream job stopped; memory is PostgreSQL 4 GB against Trino 3 GB plus MinIO 1 GB, and a container's limit also bounds the page cache for its files. For each query and engine: one run whose result must equal PostgreSQL's as a multiset of rows (floats to 1e-9) or the cell is void, then 10 timed runs, wall clock in the client until the last row arrives. **p95 of 10 runs is the slowest run** (nearest rank). Cold: the engine's containers stopped, the host page cache dropped, the containers started, one run; one restart per query and engine. The hour windows are the middle hour of each scale's data (2026-10-17 05:00 and 2026-10-22 00:00 UTC). The PostgreSQL session sets `max_parallel_workers_per_gather = 4` and `work_mem = 64MB`; Trino's PostgreSQL connector opens its own sessions, which run on the server defaults (2 workers, 4 MB).
+
+<!-- bench:query-environment -->
+4 vCPU (AMD EPYC 7763 64-Core Processor), 15.6 GiB RAM, Linux 7.0.0-1019-azure, Docker 29.4.2. Memory limits: minio 1 GiB, postgres 4 GiB, trino 3 GiB; no CPU limits. PostgreSQL 17.11 (shared_buffers 128MB, session work_mem 64MB, max_parallel_workers_per_gather 4, jit on); Trino 484. Host page cache dropped before cold runs: yes.
+<!-- /bench:query-environment -->
+
+### The data in each store
+
+<!-- bench:query-storage -->
+| Rows | Store | Data files | Size | Median file | Written in |
+|---|---|---|---|---|---|
+| 1M | PostgreSQL heap (primary key 31.6 MB, BRIN 24.6 kB) | – | 219.0 MB | – | 34.70 s (COPY, keys, VACUUM) |
+| 1M | Iceberg, by hour, compacted | 13 | 47.3 MB | 4.0 MB | 19.90 s + optimize 344 ms |
+| 1M | Iceberg, unpartitioned | 1 | 38.8 MB | 38.8 MB | 30.18 s (Trino CTAS) |
+| 1M | Iceberg, by hour, as streamed | 2,219 | 80.0 MB | 36.2 kB | 38.90 s |
+| 20M | PostgreSQL heap (primary key 630.9 MB, BRIN 163.8 kB) | – | 4.4 GB | – | 682.80 s (COPY, keys, VACUUM) |
+| 20M | Iceberg, by hour, compacted | 243 | 958.1 MB | 4.0 MB | 107.30 s + optimize 2.89 s |
+| 20M | Iceberg, unpartitioned | 1 | 780.8 MB | 780.8 MB | 117.23 s (Trino CTAS) |
+| 20M | Iceberg, by hour, as streamed | 44,357 | 1.6 GB | 36.1 kB | 653.50 s |
+<!-- /bench:query-storage -->
+
+The row store is 4.6 times the size of the hourly Parquet table (4.4 GB against 958 MB at 20M), before its 631 MB primary key. So at 20M the heap does not fit in PostgreSQL's 4 GB (page cache included) and every full scan reads from disk, while the columnar copy of the few columns a query touches does fit. The streamed layout is 1.7 times the compacted one: 36 kB files compress worse and each carries its own footer.
+
+### Warm latency: query × engine × scale
+
+<!-- bench:query-latency -->
+| Query | Rows | PostgreSQL | Trino over PostgreSQL | Trino over Iceberg | Fastest (lead over the next) |
+|---|---|---|---|---|---|
+| q01 Count every event | 1M | 83 ms / 106 ms | 177 ms / 207 ms | 132 ms / 176 ms | PostgreSQL (1.6x) |
+| q01 Count every event | 20M | 2.04 s / 2.76 s | 3.65 s / 3.99 s | 205 ms / 314 ms | Trino over Iceberg (10.0x) |
+| q02 The 20 wikis with the most edits | 1M | 83 ms / 104 ms | 473 ms / 785 ms | 188 ms / 282 ms | PostgreSQL (2.3x) |
+| q02 The 20 wikis with the most edits | 20M | 8.39 s / 8.41 s | 9.10 s / 9.55 s | 544 ms / 833 ms | Trino over Iceberg (15.4x) |
+| q03 Events and active wikis per hour | 1M | 554 ms / 789 ms | 1.38 s / 1.93 s | 261 ms / 378 ms | Trino over Iceberg (2.1x) |
+| q03 Events and active wikis per hour | 20M | 14.83 s / 15.95 s | 27.16 s / 27.76 s | 1.97 s / 2.71 s | Trino over Iceberg (7.5x) |
+| q04 Bot share per event type | 1M | 136 ms / 146 ms | 610 ms / 942 ms | 196 ms / 288 ms | PostgreSQL (1.4x) |
+| q04 Bot share per event type | 20M | 8.34 s / 8.50 s | 12.39 s / 12.74 s | 464 ms / 690 ms | Trino over Iceberg (18.0x) |
+| q05 The 10 most-changed pages in one hour | 1M | 60 ms / 89 ms | 177 ms / 240 ms | 114 ms / 165 ms | PostgreSQL (1.9x) |
+| q05 The 10 most-changed pages in one hour | 20M | 47 ms / 49 ms | 184 ms / 239 ms | 130 ms / 166 ms | PostgreSQL (2.8x) |
+| q06 Events, editors and wikis in one hour | 1M | 72 ms / 96 ms | 239 ms / 347 ms | 126 ms / 169 ms | PostgreSQL (1.8x) |
+| q06 Events, editors and wikis in one hour | 20M | 106 ms / 139 ms | 187 ms / 374 ms | 94 ms / 155 ms | Trino over Iceberg (1.1x) |
+| q07 The 10 wikis that grew most in six hours | 1M | 98 ms / 115 ms | 349 ms / 559 ms | 176 ms / 312 ms | PostgreSQL (1.8x) |
+| q07 The 10 wikis that grew most in six hours | 20M | 514 ms / 744 ms | 8.30 s / 8.34 s | 89 ms / 112 ms | Trino over Iceberg (5.8x) |
+| q08 One event by id | 1M | 0.3 ms / 0.6 ms | 51 ms / 59 ms | 123 ms / 167 ms | PostgreSQL (170.0x) |
+| q08 One event by id | 20M | 0.3 ms / 0.6 ms | 40 ms / 44 ms | 984 ms / 1.60 s | PostgreSQL (132.7x) |
+| q09 95th-percentile emit delay of the 10 busiest wikis | 1M | 934 ms / 1.34 s | 2.37 s / 2.93 s | 611 ms / 825 ms | Trino over Iceberg (1.5x) |
+| q09 95th-percentile emit delay of the 10 busiest wikis | 20M | 22.74 s / 23.15 s | error | error | PostgreSQL |
+| q10 The 20 most active human editors, with distinct pages | 1M | 887 ms / 1.25 s | 594 ms / 814 ms | 273 ms / 339 ms | Trino over Iceberg (2.2x) |
+| q10 The 20 most active human editors, with distinct pages | 20M | 13.64 s / 15.57 s | 9.82 s / 10.49 s | 2.47 s / 3.35 s | Trino over Iceberg (4.0x) |
+<!-- /bench:query-latency -->
+
+Median / p95 per cell. "error" is a query that failed; its message is in the raw file.
+
+- **Whole-table aggregates at 20M: Trino over Iceberg, by 5.5–18x over PostgreSQL** (q01–q04, q10; 4.0x over Trino over PostgreSQL on q10). It reads only the columns the query names, compressed, from 243 files in parallel; PostgreSQL scans whole rows of a 4.4 GB heap that does not fit in its 4 GB (q02: 8.4 s against 0.54 s). The warm runs kept no buffer counts, so how much of each scan came from disk rather than cache is not measured. q01 is the extreme case: Trino answers `count(*)` from the Parquet files' row counts and reads no data at all (`physicalInputBytes` 0), while PostgreSQL answers it with a parallel index-only scan of the 631 MB primary key (its plan, read with `EXPLAIN` on the same table after the run), so its 10x compares metadata with an index scan. At 1M, where the heap is 219 MB, PostgreSQL wins the cheap ones (q01, q02, q04), because no Trino over Iceberg query here took less than about 80 ms (planning, split scheduling, opening files on MinIO) and these took PostgreSQL 83–136 ms. q09 is a whole-table aggregate too, and Trino could not run it at 20M (below).
+- **Point lookup: PostgreSQL, by three orders of magnitude over Trino over Iceberg and two over Trino over PostgreSQL** (q08: 0.3 ms at both scales, through the primary key). Iceberg has no index: Trino scans the `event_id` column of every file (random UUIDs, so file bounds skip nothing), 123 ms at 1M and 984 ms at 20M, growing with the table.
+- **One hour out of the table: close, PostgreSQL mostly** (q05, q06). The BRIN index narrows the heap to the hour's 3,353 blocks of 534,112, so q05 costs no more at 20M than at 1M (47 against 60 ms; Trino 130 ms); Trino reads 0.6 MB of one 4 MB file but pays its fixed cost. q06 rises from 72 to 106 ms on PostgreSQL, and at 20M Trino's 94 ms is marked faster, but that 12 ms is inside the run-to-run spread of these ~100 ms queries (see the note below the pruning table), so it is a tie, not a win.
+- **Six hours (q07) at 20M: Trino over Iceberg (89 ms against 514 ms).** PostgreSQL still uses BRIN but reads 118 MB of whole rows; Trino reads 5.7 MB of the five columns it needs.
+- **Trino over PostgreSQL never beats PostgreSQL directly, except on q10** (9.8 s against 13.6 s at 20M, 594 ms against 887 ms at 1M). Trino pushes filters and simple aggregates down (`count(*)` arrives as `SELECT count(*)`), then adds its own overhead; anything it cannot push down it pulls through one JDBC connection. Its q07 at 20M (8.3 s) is not Trino's cost: the pushed-down filter reaches PostgreSQL in a session with the server's defaults, where the planner picks a parallel sequential scan of all 534,112 blocks. Run by hand as the reader role ([`q07-planner-20m.txt`](bench/results/m6-query/q07-planner-20m.txt)): 10.5 s with the defaults, 10.6 s with 4 workers, 0.30 s once `work_mem` is also 64 MB, when the planner switches to the BRIN bitmap scan (its bitmap cost estimate depends on `work_mem`). A later session with `work_mem` alone at 64 MB and the default 2 workers chose the same bitmap scan (0.2–0.4 s warm, recorded in the same file), so the setting is `work_mem`, not the workers. The same filter, 35x, from one setting the benchmark gave PostgreSQL's own session and not the connector's; it is part of why Trino over PostgreSQL loses here.
+- **q09 at 20M fails on both Trino engines** with `EXCEEDED_LOCAL_MEMORY_LIMIT` (739 MB per node). Trino has no exact percentile aggregate, so the variant ranks every row per wiki in a window, and the window buffers a whole wiki's rows (commonswiki is about 6M) in memory; PostgreSQL's `percentile_disc` sorts with spill to disk and answers in 22.7 s. Spilling or a larger heap would let Trino finish; `approx_percentile` would finish too but return a different answer, so it would not pass the equality check.
+- **Text tie-breaks sort differently on the two engines.** q02, q05 and q10 break count ties on a text column before `LIMIT`. PostgreSQL sorts by the database's `en_US.utf8` collation and Trino by code point, so a tie group that straddles the limit can keep different rows. In q05's hour, five titles tie at 461 events across ranks 7–11 (at 20M), and the two engines happen to keep the same ones. A difference would void a cell, never let a wrong answer count; `COLLATE "C"` on PostgreSQL's tie-breaks would remove the risk, but it changes PostgreSQL's sort cost, so it waits for a rerun.
+
+### Cold: first run after a restart
+
+<!-- bench:query-cold -->
+| Query | Rows | PostgreSQL | Trino over PostgreSQL | Trino over Iceberg |
+|---|---|---|---|---|
+| q01 Count every event | 1M | 146 ms | 779 ms | 2.09 s |
+| q01 Count every event | 20M | 2.94 s | 5.05 s | 2.14 s |
+| q02 The 20 wikis with the most edits | 1M | 276 ms | 1.54 s | 3.24 s |
+| q02 The 20 wikis with the most edits | 20M | 10.90 s | 11.87 s | 7.47 s |
+| q03 Events and active wikis per hour | 1M | 854 ms | 4.00 s | 5.11 s |
+| q03 Events and active wikis per hour | 20M | 16.75 s | 29.04 s | 9.35 s |
+| q04 Bot share per event type | 1M | 302 ms | 1.99 s | 3.05 s |
+| q04 Bot share per event type | 20M | 11.01 s | 13.91 s | 6.30 s |
+| q05 The 10 most-changed pages in one hour | 1M | 557 ms | 2.16 s | 3.55 s |
+| q05 The 10 most-changed pages in one hour | 20M | 855 ms | 2.21 s | 3.61 s |
+| q06 Events, editors and wikis in one hour | 1M | 595 ms | 2.03 s | 3.07 s |
+| q06 Events, editors and wikis in one hour | 20M | 808 ms | 2.69 s | 4.19 s |
+| q07 The 10 wikis that grew most in six hours | 1M | 686 ms | 4.46 s | 4.16 s |
+| q07 The 10 wikis that grew most in six hours | 20M | 1.22 s | 12.39 s | 3.45 s |
+| q08 One event by id | 1M | 11 ms | 688 ms | 2.39 s |
+| q08 One event by id | 20M | 11 ms | 690 ms | 6.20 s |
+| q09 95th-percentile emit delay of the 10 busiest wikis | 1M | 1.56 s | 4.99 s | 6.04 s |
+| q09 95th-percentile emit delay of the 10 busiest wikis | 20M | 25.09 s | error | error |
+| q10 The 20 most active human editors, with distinct pages | 1M | 1.06 s | 2.47 s | 4.69 s |
+| q10 The 20 most active human editors, with distinct pages | 20M | 17.74 s | 12.89 s | 13.33 s |
+<!-- /bench:query-cold -->
+
+One run per cell after the engine's containers were restarted with the host page cache dropped. The clock starts once Trino reports an active node, so the JVM's start (the restart itself, up to 22 s, is recorded as `restart_seconds`) is not in these times. Cold Trino over Iceberg pays 2.0–5.4 s over its warm median at 1M and 1.9–10.9 s at 20M (q10: 13.3 s against 2.5 s warm). Trino over PostgreSQL, restarted the same way, answers its count and its lookup at 1M in 0.69–0.78 s, so most of that cost is the Iceberg path: metadata, manifests and Parquet footers fetched cold from MinIO, and code the fresh JVM has not compiled yet (the Iceberg catalog's JDBC database is PostgreSQL, which a Trino-over-Iceberg cold run does not restart). A cold PostgreSQL pays its reads from disk. Cold, PostgreSQL wins every query at 1M; at 20M Trino over Iceberg still wins the whole-table aggregates q01–q04 (q03: 9.4 s against 16.8 s), because reading the heap from disk costs more than the cold Iceberg path. These are single runs; cold q10 at 20M is Trino over PostgreSQL's by 0.4 s (12.9 against 13.3 s).
+
+### Pruning: partitioned vs unpartitioned vs uncompacted
+
+<!-- bench:query-pruning -->
+| Query | Rows | Layout | Data files in the table | Files the window's bounds match | Splits read | Rows read | Bytes read | Median / p95 |
+|---|---|---|---|---|---|---|---|---|
+| q05 The 10 most-changed pages in one hour | 1M | Iceberg, by hour, compacted | 13 | 1 | 1 | 83,149 | 607.6 kB | 77 ms / 86 ms |
+| q05 The 10 most-changed pages in one hour | 1M | Iceberg, unpartitioned | 1 | 1 | 1 | 1,000,000 | 3.9 MB | 153 ms / 212 ms |
+| q05 The 10 most-changed pages in one hour | 1M | Iceberg, by hour, as streamed | 2,219 | 183 | 183 | 83,149 | 6.6 MB | 264 ms / 354 ms |
+| q05 The 10 most-changed pages in one hour | 1M | PostgreSQL heap, BRIN on `event_ts` | – | – | 3,074 of 26,720 blocks | – | 25.2 MB touched | 60 ms / 89 ms |
+| q06 Events, editors and wikis in one hour | 1M | Iceberg, by hour, compacted | 13 | 1 | 1 | 83,149 | 709.8 kB | 77 ms / 106 ms |
+| q06 Events, editors and wikis in one hour | 1M | Iceberg, unpartitioned | 1 | 1 | 1 | 1,000,000 | 2.2 MB | 180 ms / 233 ms |
+| q06 Events, editors and wikis in one hour | 1M | Iceberg, by hour, as streamed | 2,219 | 183 | 183 | 83,149 | 6.6 MB | 253 ms / 386 ms |
+| q06 Events, editors and wikis in one hour | 1M | PostgreSQL heap, BRIN on `event_ts` | – | – | 3,074 of 26,720 blocks | – | 25.2 MB touched | 72 ms / 96 ms |
+| q07 The 10 wikis that grew most in six hours | 1M | Iceberg, by hour, compacted | 13 | 6 | 6 | 495,094 | 5.7 MB | 88 ms / 117 ms |
+| q07 The 10 wikis that grew most in six hours | 1M | Iceberg, unpartitioned | 1 | 1 | 1 | 1,000,000 | 3.7 MB | 145 ms / 182 ms |
+| q07 The 10 wikis that grew most in six hours | 1M | Iceberg, by hour, as streamed | 2,219 | 1,099 | 1,099 | 495,094 | 39.6 MB | 921 ms / 1.29 s |
+| q07 The 10 wikis that grew most in six hours | 1M | PostgreSQL heap, BRIN on `event_ts` | – | – | 14,106 of 26,720 blocks | – | 115.6 MB touched | 98 ms / 115 ms |
+| q05 The 10 most-changed pages in one hour | 20M | Iceberg, by hour, compacted | 243 | 1 | 1 | 83,345 | 608.3 kB | 82 ms / 194 ms |
+| q05 The 10 most-changed pages in one hour | 20M | Iceberg, unpartitioned | 1 | 1 | 6 | 20,000,000 | 32.0 MB | 348 ms / 699 ms |
+| q05 The 10 most-changed pages in one hour | 20M | Iceberg, by hour, as streamed | 44,357 | 183 | 183 | 83,345 | 6.6 MB | 341 ms / 437 ms |
+| q05 The 10 most-changed pages in one hour | 20M | PostgreSQL heap, BRIN on `event_ts` | – | – | 3,353 of 534,112 blocks | – | 27.5 MB touched | 47 ms / 49 ms |
+| q06 Events, editors and wikis in one hour | 20M | Iceberg, by hour, compacted | 243 | 1 | 1 | 83,345 | 710.7 kB | 80 ms / 141 ms |
+| q06 Events, editors and wikis in one hour | 20M | Iceberg, unpartitioned | 1 | 1 | 6 | 20,000,000 | 25.4 MB | 284 ms / 436 ms |
+| q06 Events, editors and wikis in one hour | 20M | Iceberg, by hour, as streamed | 44,357 | 183 | 183 | 83,345 | 6.6 MB | 633 ms / 1.04 s |
+| q06 Events, editors and wikis in one hour | 20M | PostgreSQL heap, BRIN on `event_ts` | – | – | 3,353 of 534,112 blocks | – | 27.5 MB touched | 106 ms / 139 ms |
+| q07 The 10 wikis that grew most in six hours | 20M | Iceberg, by hour, compacted | 243 | 6 | 6 | 495,300 | 5.7 MB | 85 ms / 177 ms |
+| q07 The 10 wikis that grew most in six hours | 20M | Iceberg, unpartitioned | 1 | 1 | 6 | 20,000,000 | 51.4 MB | 410 ms / 698 ms |
+| q07 The 10 wikis that grew most in six hours | 20M | Iceberg, by hour, as streamed | 44,357 | 1,099 | 1,098 | 495,295 | 39.6 MB | 732 ms / 1.06 s |
+| q07 The 10 wikis that grew most in six hours | 20M | PostgreSQL heap, BRIN on `event_ts` | – | – | 14,393 of 534,112 blocks | – | 117.9 MB touched | 514 ms / 744 ms |
+<!-- /bench:query-pruning -->
+
+The three window queries on each Iceberg layout through Trino, with PostgreSQL's BRIN plan beside them. Files the window's bounds match come from the table's `$files` metadata (`event_ts` lower and upper bounds); splits and rows read from `EXPLAIN ANALYZE` of the same query; bytes read are Trino's physical input, median over the 10 runs. For PostgreSQL the blocks are those `EXPLAIN (ANALYZE, BUFFERS)` touched, 8 kB each.
+
+- **Partitioning: one hour reads one file**, 0.6 MB and the hour's rows (83,149 at 1M, 83,345 at 20M), at both scales; the 20M table is 20 times larger and the hour query costs the same 80 ms.
+- **Unpartitioned: nothing can be skipped.** The CTAS writes one file (39 MB at 1M, 781 MB at 20M) and does not sort it, so neither file bounds nor its row groups' statistics exclude anything and the scan reads all 20,000,000 rows to keep 83,345. It stays at 0.3–0.4 s because Parquet still lets it read only the needed columns (25–51 MB of 781 MB), but it is 3.5–4.8 times the partitioned table at 20M and grows with the table, where the partitioned one does not. A copy sorted by `event_ts` could skip row groups; that was not measured.
+- **Uncompacted: the right files, too many of them.** Pruning works (183 files for the hour, 1,099 for six hours) and the rows read are the same as compacted (at 20M one small file of the 1,099 is also skipped on `event_type` statistics), but each 36 kB file is an object request and a footer: 7–11 times the bytes (6.6 MB instead of 0.6 MB for the hour), and q07 is 8.6 times slower at 20M (732 ms against 85 ms) and 10.5 times at 1M. This is what `lake_maintenance`'s `optimize` exists to remove. The layout was written in one commit, so these numbers leave out the cost of the thousands of snapshots a real stream would also have left.
+- **PostgreSQL's BRIN index is its partitioning.** It reads 3,353 blocks of 534,112 for the hour (27.5 MB, whole rows) and wins q05, but q06 at 20M is a tie and the six-hour query reads 118 MB of rows where Trino reads 5.7 MB of columns.
+- **Unpartitioned against uncompacted.** The streamed layout is slower than the unpartitioned file in five of the six cells (1.4–6.4x) and ties it on q05 at 20M (341 against 348 ms, with 6.6 MB read against 32 MB). The unpartitioned table's cost grows with the table (1.6–2.3x the partitioned one at 1M, 3.5–4.8x at 20M) while the streamed layout's does not, so at some larger scale partitioning would matter more than compaction; at 1M and 20M compaction matters more.
+
+**Run-to-run spread.** The three window queries on the partitioned table ran twice with identical SQL: in the warm unit (between the other engines' runs) and in this pruning unit (ten in a row). The medians differ more than the engines do: q05 114 against 77 ms at 1M and 130 against 82 ms at 20M, q06 126 against 77 ms, q07 176 against 88 ms at 1M. The cause was not established. So below about 200 ms, a difference under 2x between engines is not resolved by these runs: q06 at both scales and q07 at 1M (PostgreSQL 98 ms against Trino's 88–176 ms) are ties, whatever the latency table's last column says.
+
+### A federated query: lake events joined with a warehouse mart
+
+<!-- bench:query-federated -->
+| Rows | Trino: Iceberg ⋈ PostgreSQL | The same join inside PostgreSQL | Result |
+|---|---|---|---|
+| 1M | 166 ms / 246 ms | 59 ms / 77 ms | matches, 15 rows |
+| 20M | 155 ms / 203 ms | 93 ms / 114 ms | matches, 15 rows |
+<!-- /bench:query-federated -->
+
+<!-- bench:query-federated-result -->
+Result at 20M rows, hour starting 2026-10-22T00:00:00+00:00:
+
+| project_family | events | wikis |
+|---|---|---|
+| wikipedia | 31,344 | 105 |
+| commons | 26,323 | 1 |
+| wikidata | 16,439 | 2 |
+| wiktionary | 7,954 | 20 |
+| wikisource | 465 | 10 |
+| wikiquote | 433 | 2 |
+| wikimedia | 195 | 7 |
+| mediawiki | 53 | 1 |
+| wikibooks | 36 | 1 |
+| wikivoyage | 32 | 4 |
+| wikifunctions | 31 | 1 |
+| wikiversity | 18 | 3 |
+| wikispecies | 16 | 1 |
+| abstract_wikipedia | 4 | 1 |
+| (none) | 2 | 1 |
+<!-- /bench:query-federated-result -->
+
+The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds in PostgreSQL, in one statement across two catalogs; its result equals the same join run inside PostgreSQL on `bench.events_<N>`. Trino reads one hour's file from the lake and the 160-row dimension through the connector, and the join costs it 155 ms at 20M.
+
 ## To measure
 
 | What | Command | Milestone | Cost |
 |---|---|---|---|
-| Postgres vs Trino over Iceberg latency, and pruning at 1M and 20M rows (partitioned vs unpartitioned vs uncompacted) | `make bench-query` | M6 | $0 |
 | The 40 warehouse questions on Claude, recorded so the fake provider replays them (M3 is done on the `qwen2.5-coder:7b` recordings; this adds the Claude column) | `ANTHROPIC_API_KEY=... TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse.jsonl make record PROVIDER=anthropic` (default model `claude-opus-5-5`) | M3 | est. under $1 on Opus 5.5 (about 46 calls with a cached ~3k-token prefix), a few cents on `TRIBUTARY_MODEL=claude-haiku-5-5` |
 | BIRD dev50 on Claude Haiku 5.5, both variants and tracks, recorded so CI replays it | `docker compose up -d postgres && make bird && ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1` | M4 | see [Cost](#cost): estimated from this run's measured tokens |
 | BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |

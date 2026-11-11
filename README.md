@@ -11,8 +11,9 @@ on BIRD Mini-Dev (execution accuracy, PostgreSQL) and guarded against unsafe
 queries. The demo data is the live Wikipedia edit stream; one
 `docker compose up` brings the pipeline up with a committed sample.
 
-**Status: the pipeline, the guarded agent and its benchmark harness work, and
-the ingest path is measured under failure and at scale (milestone 5 of 8).**
+**Status: the pipeline, the guarded agent and its benchmark harness work, the
+ingest path is measured under failure and at scale, and the warehouse and the
+lake are timed against each other (milestone 6 of 8).**
 Kafka feeds one Spark application with two streaming queries: one into the
 PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
 MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
@@ -27,7 +28,8 @@ execution accuracy, on the official and the corrected labels, from
 recordings that CI replays without a model or a database. `make bench` kills
 the stream job and the broker mid-batch and checks every event landed once in
 both stores; `make bench-scale` measures throughput at 1, 3 and 6 partitions
-and names what limits it. Measured numbers live in [RESULTS.md](RESULTS.md).
+and names what limits it; `make bench-query` times ten queries on PostgreSQL,
+Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured numbers live in [RESULTS.md](RESULTS.md).
 
 ## Why
 
@@ -272,6 +274,78 @@ time *T*, anything older than *T* − 10 min is dropped as late, so replaying an
 old file into a stack that has already ingested newer events loses it. Start
 from `make down` (which deletes the checkpoint) to replay from scratch.
 
+### Two engines over the same events: where each wins
+
+The warehouse (a PostgreSQL row store) and the lake (Iceberg's columnar files
+on object storage, read by Trino) hold the same events, so `make bench-query`
+asks which to use for what. It scales the sample to 1M and 20M rows (copies
+shifted in time, so the distributions stay real), writes the same rows to both
+stores in one Spark job, and times ten queries on PostgreSQL, Trino over its
+PostgreSQL catalog and Trino over Iceberg, warm and cold. A time only counts if
+the engine's rows equal PostgreSQL's. Full tables in
+[RESULTS.md](RESULTS.md#query-engines-postgresql-vs-trino-over-iceberg-m6).
+
+- **Trino over Iceberg wins whole-table aggregates once the data outgrows
+  memory: 5.5–18x over PostgreSQL at 20M rows** (counts per wiki in 0.54 s
+  against 8.4 s). The row store is 4.6 times the size of the Parquet files
+  (4.4 GB against 958 MB) and does not fit in its 4 GB, so its scans read
+  whole rows; Trino reads only the columns the query names, compressed, in
+  parallel (and answers a bare `count(*)` from the files' metadata without
+  reading data). At 1M rows PostgreSQL wins the cheap aggregates, because no
+  Trino over Iceberg query took less than about 80 ms (planning, scheduling,
+  opening files), and these take PostgreSQL 83–136 ms.
+- **PostgreSQL wins point lookups by three orders of magnitude** (0.3 ms
+  against 1 s at 20M): it has a primary key, and Iceberg has no index, so Trino scans
+  the id column of every file.
+- **Narrow time windows are close, PostgreSQL mostly**, because a BRIN index
+  on `event_ts` is its partitioning: the heap is in time order, so one hour is
+  3,353 of 534,112 blocks and costs 47 ms at 20M, no more than at 1M (Trino:
+  130 ms). The other one-hour query is a tie (94 against 106 ms, inside the
+  spread of repeated runs at this size). A six-hour window flips to Trino
+  (89 ms against 514 ms at 20M), since PostgreSQL reads whole rows.
+- **Trino over PostgreSQL is a federation tool, not a faster PostgreSQL.** It
+  pushes filters and simple aggregates down and adds its own overhead; it beat
+  PostgreSQL directly on one query of ten and was never the fastest engine. Its worst case was not Trino's cost: the connector's sessions run
+  with PostgreSQL's default 4 MB `work_mem`, under which the planner chose a
+  sequential scan for a filter it answers with BRIN at 64 MB (10.5 s against
+  0.3 s when run by hand, and 0.2–0.4 s with `work_mem` alone changed).
+- **Compaction matters more than partitioning at this scale.** Partitioned by
+  hour, one hour is one 4 MB file, of which Trino reads 0.6 MB, and costs
+  80 ms at 1M and at 20M. In the layout the streaming sink leaves (a 36 kB
+  file per trigger, task and hour), pruning still finds the right 183 files
+  but the query reads 7–11 times the bytes and runs 3–10 times slower. Without partitioning (one unsorted file), Parquet's
+  columns keep a full scan of 20M rows at 0.3–0.4 s, 3.5–4.8 times the
+  partitioned table, and it grows with the table.
+- **One failure, reported rather than tuned away.** Trino has no exact
+  percentile aggregate, so the 95th-percentile query ranks every row per wiki
+  in a window. At 20M that buffers about 6M rows for one wiki and exceeds
+  Trino's 739 MB per-node query memory on both Trino engines. PostgreSQL sorts
+  with spill to disk and answers in 23 s.
+
+The lake and the warehouse also meet in one query. Trino joins the Iceberg
+events with `marts.dim_wiki`, which dbt builds in PostgreSQL, and its result
+equals the same join run inside PostgreSQL (155 ms at 20M):
+
+```sql
+SELECT d.project_family, count(*) AS events, count(DISTINCT e.wiki) AS wikis
+FROM iceberg.bench.events_20m AS e
+JOIN postgresql.marts.dim_wiki AS d ON d.wiki = e.wiki
+WHERE e.event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC'
+  AND e.event_ts <  TIMESTAMP '2026-10-22 01:00:00 UTC'
+GROUP BY d.project_family
+ORDER BY events DESC, d.project_family
+```
+
+| project_family | events | wikis |
+|---|---|---|
+| wikipedia | 31,344 | 105 |
+| commons | 26,323 | 1 |
+| wikidata | 16,439 | 2 |
+| wiktionary | 7,954 | 20 |
+| wikisource | 465 | 10 |
+
+(top 5 of 15 rows)
+
 ### The agent: an answer you can check
 
 **The hard part on the agent side is trusting an answer, which takes four
@@ -408,6 +482,9 @@ runs are listed there under "To measure", with their estimated cost.
 | Cost of the Iceberg sink at P = 3 | Sustained 29,800 → 25,900 events/s (one 15% ladder step); p95 at 80% load 14 → 42 s (medians; latency was still rising at that load) |
 | The shipped trigger and cap (found by `make bench`) | 20,000 offsets per 5 s trigger capped ingest at 4,000 events/s; now 2 s and 100,000 (ceiling 50,000) |
 | Freshness during the fault runs | 4 / 4 refreshes all checks passing; `fct_edits` 6–7.5 min behind at check time, set by dbt's ~7 min refresh rather than the stream |
+| Query engines at 20M rows (`make bench-query`, 4 vCPU, warm medians) | Trino over Iceberg wins whole-table aggregates 5.5–18x (0.2–2.5 s against 2.0–14.8 s); PostgreSQL wins the primary-key lookup (0.3 ms against 984 ms) and the one-hour top-pages window through BRIN (47 ms against 130 ms); Trino over PostgreSQL is never the fastest; the exact 95th percentile exceeds Trino's per-node memory at 20M |
+| Partition pruning, one hour of 20M rows on Trino | Partitioned and compacted: 1 file, 0.6 MB read, 82 ms; unpartitioned (1 file): all 20M rows, 32 MB, 348 ms; as streamed, uncompacted: 183 files, 6.6 MB, 341 ms (six hours: 85 ms against 732 ms) |
+| Storage for 20M rows | PostgreSQL heap 4.4 GB (+ 631 MB primary key); Iceberg zstd Parquet 958 MB by hour, 1.6 GB in 44,357 files as streamed |
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
 | Replay of the BIRD run (what CI tests) | All 190 verdicts in 0.4 s, no model and no database, against 69 min live |
 
@@ -425,7 +502,7 @@ run of the 40 questions waits for a key); M4 BIRD harness and schema
 linking (done on local-model recordings; the Claude runs are costed in
 RESULTS.md); M5 fault-injection and scaling benchmarks (done: no loss under 18 kills
 and no Iceberg duplicate, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
-over Iceberg; M7 agent quality; M8 release. Beyond that: an Iceberg REST
+over Iceberg (done: where each engine wins at 1M and 20M rows, pruning and compaction measured); M7 agent quality; M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.
 

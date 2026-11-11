@@ -1,0 +1,409 @@
+{
+ "cells": {
+  "q01_count/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 4.790548134999881,
+   "seconds": 2.942817074999766,
+   "sql": "SELECT count(*) AS events\nFROM bench.events_20m"
+  },
+  "q01_count/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 20.83305024800029,
+   "seconds": 2.142834499998571,
+   "sql": "SELECT count(*) AS events\nFROM iceberg.bench.events_20m",
+   "stats": {
+    "cpuTimeMillis": 342,
+    "elapsedTimeMillis": 2106,
+    "peakMemoryBytes": 1052496,
+    "physicalInputBytes": 0,
+    "processedBytes": 10449,
+    "processedRows": 20000000,
+    "queryId": "20261111_015325_00001_tfwqp",
+    "queuedTimeMillis": 6,
+    "totalSplits": 246,
+    "wallTimeMillis": 1297
+   }
+  },
+  "q01_count/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.251535520999823,
+   "seconds": 5.049191333999261,
+   "sql": "SELECT count(*) AS events\nFROM postgresql.bench.events_20m",
+   "stats": {
+    "cpuTimeMillis": 9,
+    "elapsedTimeMillis": 5022,
+    "peakMemoryBytes": 96,
+    "physicalInputBytes": 0,
+    "processedBytes": 0,
+    "processedRows": 1,
+    "queryId": "20261111_014724_00001_itigx",
+    "queuedTimeMillis": 1,
+    "totalSplits": 1,
+    "wallTimeMillis": 29
+   }
+  },
+  "q02_top_wikis/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.542364705000182,
+   "seconds": 10.897177374000421,
+   "sql": "SELECT wiki, count(*) AS edits\nFROM bench.events_20m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20"
+  },
+  "q02_top_wikis/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.10245871100051,
+   "seconds": 7.4677200019996235,
+   "sql": "SELECT wiki, count(*) AS edits\nFROM iceberg.bench.events_20m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20",
+   "stats": {
+    "cpuTimeMillis": 6792,
+    "elapsedTimeMillis": 7434,
+    "peakMemoryBytes": 18937184,
+    "physicalInputBytes": 33308607,
+    "processedBytes": 34024211,
+    "processedRows": 20000000,
+    "queryId": "20261111_015349_00001_972is",
+    "queuedTimeMillis": 1,
+    "totalSplits": 253,
+    "wallTimeMillis": 33736
+   }
+  },
+  "q02_top_wikis/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 20.034746228000586,
+   "seconds": 11.867045479999433,
+   "sql": "SELECT wiki, count(*) AS edits\nFROM postgresql.bench.events_20m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20",
+   "stats": {
+    "cpuTimeMillis": 2390,
+    "elapsedTimeMillis": 11828,
+    "peakMemoryBytes": 1341784,
+    "physicalInputBytes": 0,
+    "processedBytes": 3474,
+    "processedRows": 9675200,
+    "queryId": "20261111_014751_00001_y5j6t",
+    "queuedTimeMillis": 4,
+    "totalSplits": 11,
+    "wallTimeMillis": 10537
+   }
+  },
+  "q03_hourly/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.8716936829996484,
+   "seconds": 16.74591278600019,
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM bench.events_20m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour"
+  },
+  "q03_hourly/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.321423415000027,
+   "seconds": 9.351898118999088,
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_20m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour",
+   "stats": {
+    "cpuTimeMillis": 11531,
+    "elapsedTimeMillis": 9316,
+    "peakMemoryBytes": 19906528,
+    "physicalInputBytes": 142944595,
+    "processedBytes": 144550547,
+    "processedRows": 20000000,
+    "queryId": "20261111_015420_00001_pkqsz",
+    "queuedTimeMillis": 2,
+    "totalSplits": 255,
+    "wallTimeMillis": 52364
+   }
+  },
+  "q03_hourly/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.289559856999404,
+   "seconds": 29.038011471000573,
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM postgresql.bench.events_20m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour",
+   "stats": {
+    "cpuTimeMillis": 18163,
+    "elapsedTimeMillis": 29002,
+    "peakMemoryBytes": 3561360,
+    "physicalInputBytes": 0,
+    "processedBytes": 1604546,
+    "processedRows": 20000000,
+    "queryId": "20261111_014825_00001_8qsc6",
+    "queuedTimeMillis": 6,
+    "totalSplits": 13,
+    "wallTimeMillis": 27118
+   }
+  },
+  "q04_bot_share/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.633474696000121,
+   "seconds": 11.007124933999876,
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM bench.events_20m\nGROUP BY event_type\nORDER BY event_type"
+  },
+  "q04_bot_share/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.421270074999484,
+   "seconds": 6.29990832600015,
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM iceberg.bench.events_20m\nGROUP BY event_type\nORDER BY event_type",
+   "stats": {
+    "cpuTimeMillis": 5418,
+    "elapsedTimeMillis": 6242,
+    "peakMemoryBytes": 9642032,
+    "physicalInputBytes": 156892046,
+    "processedBytes": 156925528,
+    "processedRows": 20000000,
+    "queryId": "20261111_015452_00001_entsx",
+    "queuedTimeMillis": 1,
+    "totalSplits": 251,
+    "wallTimeMillis": 26263
+   }
+  },
+  "q04_bot_share/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.283144190998428,
+   "seconds": 13.914237154000148,
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM postgresql.bench.events_20m\nGROUP BY event_type\nORDER BY event_type",
+   "stats": {
+    "cpuTimeMillis": 6322,
+    "elapsedTimeMillis": 13877,
+    "peakMemoryBytes": 2194744,
+    "physicalInputBytes": 0,
+    "processedBytes": 610,
+    "processedRows": 20000000,
+    "queryId": "20261111_014917_00001_kqkua",
+    "queuedTimeMillis": 1,
+    "totalSplits": 9,
+    "wallTimeMillis": 12823
+   }
+  },
+  "q05_hour_pages/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.5837313069996526,
+   "seconds": 0.8552216520001821,
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM bench.events_20m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-22 00:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-22 01:00:00+00'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10"
+  },
+  "q05_hour_pages/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.319996905998778,
+   "seconds": 3.6109975300005317,
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM iceberg.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 01:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": {
+    "cpuTimeMillis": 878,
+    "elapsedTimeMillis": 3552,
+    "peakMemoryBytes": 1866472,
+    "physicalInputBytes": 608277,
+    "processedBytes": 2087868,
+    "processedRows": 83345,
+    "queryId": "20261111_015521_00001_8zkr3",
+    "queuedTimeMillis": 0,
+    "totalSplits": 11,
+    "wallTimeMillis": 1519
+   }
+  },
+  "q05_hour_pages/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 19.968895537000208,
+   "seconds": 2.2122817099989334,
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM postgresql.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 01:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": {
+    "cpuTimeMillis": 418,
+    "elapsedTimeMillis": 2179,
+    "peakMemoryBytes": 3204112,
+    "physicalInputBytes": 0,
+    "processedBytes": 1479591,
+    "processedRows": 83345,
+    "queryId": "20261111_014952_00001_wv4ch",
+    "queuedTimeMillis": 4,
+    "totalSplits": 11,
+    "wallTimeMillis": 746
+   }
+  },
+  "q06_hour_editors/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.5481126619997667,
+   "seconds": 0.8081188549986109,
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM bench.events_20m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-22 00:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-22 01:00:00+00'"
+  },
+  "q06_hour_editors/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.34673894199841,
+   "seconds": 4.189698832000431,
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 01:00:00 UTC'",
+   "stats": {
+    "cpuTimeMillis": 723,
+    "elapsedTimeMillis": 4138,
+    "peakMemoryBytes": 1052576,
+    "physicalInputBytes": 710688,
+    "processedBytes": 785574,
+    "processedRows": 83345,
+    "queryId": "20261111_015547_00001_2mrnk",
+    "queuedTimeMillis": 2,
+    "totalSplits": 10,
+    "wallTimeMillis": 988
+   }
+  },
+  "q06_hour_editors/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.104732648998834,
+   "seconds": 2.6857909629998176,
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM postgresql.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 01:00:00 UTC'",
+   "stats": {
+    "cpuTimeMillis": 390,
+    "elapsedTimeMillis": 2630,
+    "peakMemoryBytes": 1319432,
+    "physicalInputBytes": 0,
+    "processedBytes": 74886,
+    "processedRows": 83345,
+    "queryId": "20261111_015017_00001_7zbix",
+    "queuedTimeMillis": 1,
+    "totalSplits": 10,
+    "wallTimeMillis": 884
+   }
+  },
+  "q07_six_hours_growth/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.4913136819996,
+   "seconds": 1.2214254530008475,
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM bench.events_20m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-22 00:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-22 06:00:00+00' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10"
+  },
+  "q07_six_hours_growth/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 20.868703180998637,
+   "seconds": 3.446038234998923,
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM iceberg.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 06:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": {
+    "cpuTimeMillis": 2186,
+    "elapsedTimeMillis": 3409,
+    "peakMemoryBytes": 11342536,
+    "physicalInputBytes": 5710281,
+    "processedBytes": 5735779,
+    "processedRows": 495300,
+    "queryId": "20261111_015614_00001_56kxc",
+    "queuedTimeMillis": 2,
+    "totalSplits": 16,
+    "wallTimeMillis": 6967
+   }
+  },
+  "q07_six_hours_growth/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.714346884000406,
+   "seconds": 12.388188969998737,
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM postgresql.bench.events_20m\nWHERE event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-22 06:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": {
+    "cpuTimeMillis": 418,
+    "elapsedTimeMillis": 12329,
+    "peakMemoryBytes": 913216,
+    "physicalInputBytes": 0,
+    "processedBytes": 4543,
+    "processedRows": 239692,
+    "queryId": "20261111_015043_00001_e9h4m",
+    "queuedTimeMillis": 2,
+    "totalSplits": 11,
+    "wallTimeMillis": 5603
+   }
+  },
+  "q08_lookup/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.528880569998364,
+   "seconds": 0.011361115999534377,
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM bench.events_20m\nWHERE event_id = 'f886fb73-264e-5b85-a87b-09e7eb1363ea'"
+  },
+  "q08_lookup/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 22.18122178500016,
+   "seconds": 6.19872532699992,
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM iceberg.bench.events_20m\nWHERE event_id = 'f886fb73-264e-5b85-a87b-09e7eb1363ea'",
+   "stats": {
+    "cpuTimeMillis": 5950,
+    "elapsedTimeMillis": 6162,
+    "peakMemoryBytes": 33554432,
+    "physicalInputBytes": 704590067,
+    "processedBytes": 704590067,
+    "processedRows": 20000000,
+    "queryId": "20261111_015641_00001_thw3j",
+    "queuedTimeMillis": 1,
+    "totalSplits": 243,
+    "wallTimeMillis": 27140
+   }
+  },
+  "q08_lookup/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 20.495529288999023,
+   "seconds": 0.6904682540007343,
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM postgresql.bench.events_20m\nWHERE event_id = UUID 'f886fb73-264e-5b85-a87b-09e7eb1363ea'",
+   "stats": {
+    "cpuTimeMillis": 14,
+    "elapsedTimeMillis": 659,
+    "peakMemoryBytes": 576,
+    "physicalInputBytes": 0,
+    "processedBytes": 0,
+    "processedRows": 1,
+    "queryId": "20261111_015118_00001_bjzpj",
+    "queuedTimeMillis": 0,
+    "totalSplits": 1,
+    "wallTimeMillis": 17
+   }
+  },
+  "q09_emit_delay/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.741183762000219,
+   "seconds": 25.0905386609993,
+   "sql": "SELECT wiki, count(*) AS events,\n       percentile_disc(0.95) WITHIN GROUP (ORDER BY delay_ms) AS p95_delay_ms\nFROM (\n    SELECT wiki, (extract(epoch FROM emitted_at - event_ts) * 1000)::bigint AS delay_ms\n    FROM bench.events_20m\n    WHERE emitted_at IS NOT NULL\n) AS d\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10"
+  },
+  "q09_emit_delay/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "error": "TrinoQueryError: TrinoQueryError(type=INSUFFICIENT_RESOURCES, name=EXCEEDED_LOCAL_MEMORY_LIMIT, message=\"Query exceeded per-node memory limit of 739.20MB [Allocated: 738.10MB, Delta: 1.12MB, Top Consumers: {PagesToPagesIndexes=735.56MB, FilterAndProjectOperator=1.66MB, StreamingAggregationOperator=888.79kB}]\", query_id=20261111_015710_00001_ffjp2)",
+   "restart_seconds": 21.29994497000007,
+   "sql": "WITH d AS (\n    SELECT wiki, date_diff('millisecond', event_ts, emitted_at) AS delay_ms\n    FROM iceberg.bench.events_20m\n    WHERE emitted_at IS NOT NULL\n),\nranked AS (\n    SELECT wiki, delay_ms,\n           row_number() OVER (PARTITION BY wiki ORDER BY delay_ms) AS rn,\n           count(*) OVER (PARTITION BY wiki) AS n\n    FROM d\n)\nSELECT wiki, max(n) AS events, min(delay_ms) FILTER (WHERE rn >= ceil(0.95 * n)) AS p95_delay_ms\nFROM ranked\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10"
+  },
+  "q09_emit_delay/trino-postgres": {
+   "engine": "trino-postgres",
+   "error": "TrinoQueryError: TrinoQueryError(type=INSUFFICIENT_RESOURCES, name=EXCEEDED_LOCAL_MEMORY_LIMIT, message=\"Query exceeded per-node memory limit of 739.20MB [Allocated: 738.93MB, Delta: 1.77MB, Top Consumers: {PagesToPagesIndexes=736.95MB, FilterAndProjectOperator=1.12MB, StreamingAggregationOperator=879.01kB}]\", query_id=20261111_015140_00001_y3sfy)",
+   "restart_seconds": 20.469034224999632,
+   "sql": "WITH d AS (\n    SELECT wiki, date_diff('millisecond', event_ts, emitted_at) AS delay_ms\n    FROM postgresql.bench.events_20m\n    WHERE emitted_at IS NOT NULL\n),\nranked AS (\n    SELECT wiki, delay_ms,\n           row_number() OVER (PARTITION BY wiki ORDER BY delay_ms) AS rn,\n           count(*) OVER (PARTITION BY wiki) AS n\n    FROM d\n)\nSELECT wiki, max(n) AS events, min(delay_ms) FILTER (WHERE rn >= ceil(0.95 * n)) AS p95_delay_ms\nFROM ranked\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10"
+  },
+  "q10_human_editors/postgres": {
+   "engine": "postgres",
+   "restart_seconds": 3.678656129999581,
+   "seconds": 17.73872341599963,
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM bench.events_20m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20"
+  },
+  "q10_human_editors/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "restart_seconds": 21.489972143999694,
+   "seconds": 13.329506948999551,
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM iceberg.bench.events_20m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20",
+   "stats": {
+    "cpuTimeMillis": 18045,
+    "elapsedTimeMillis": 13293,
+    "peakMemoryBytes": 64884976,
+    "physicalInputBytes": 157139623,
+    "processedBytes": 337331107,
+    "processedRows": 20000000,
+    "queryId": "20261111_015746_00001_25jsd",
+    "queuedTimeMillis": 2,
+    "totalSplits": 257,
+    "wallTimeMillis": 81914
+   }
+  },
+  "q10_human_editors/trino-postgres": {
+   "engine": "trino-postgres",
+   "restart_seconds": 21.534490537000238,
+   "seconds": 12.891763505000199,
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM postgresql.bench.events_20m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20",
+   "stats": {
+    "cpuTimeMillis": 6282,
+    "elapsedTimeMillis": 12861,
+    "peakMemoryBytes": 8711792,
+    "physicalInputBytes": 0,
+    "processedBytes": 266648578,
+    "processedRows": 6320800,
+    "queryId": "20261111_015250_00001_nwcqn",
+    "queuedTimeMillis": 1,
+    "totalSplits": 11,
+    "wallTimeMillis": 17786
+   }
+  }
+ },
+ "method": "containers stopped, host page cache dropped, containers started",
+ "name": "events_20m",
+ "page_cache_dropped": true,
+ "window": {
+  "event_id": "f886fb73-264e-5b85-a87b-09e7eb1363ea",
+  "hour_end": "2026-10-22T01:00:00+00:00",
+  "hour_start": "2026-10-22T00:00:00+00:00",
+  "six_hours_end": "2026-10-22T06:00:00+00:00"
+ }
+}

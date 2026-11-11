@@ -1,0 +1,335 @@
+{
+ "name": "events_20m",
+ "plan": "Trino version: 484\nFragment 0 [SINGLE]\n    Output layout: [project_family, count, count_2]\n    Output partitioning: SINGLE []\n    Output[columnNames = [project_family, events, wikis]]\n    \u2502   Layout: [project_family:varchar, count:bigint, count_2:bigint]\n    \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n    \u2502   events := count\n    \u2502   wikis := count_2\n    \u2514\u2500 RemoteMerge[sourceFragmentIds = [1]]\n           Layout: [project_family:varchar, count_2:bigint, count:bigint]\n\nFragment 1 [ROUND_ROBIN]\n    Output layout: [project_family, count_2, count]\n    Output partitioning: SINGLE []\n    LocalMerge[orderBy = [count DESC NULLS LAST, project_family ASC NULLS LAST]]\n    \u2502   Layout: [project_family:varchar, count_2:bigint, count:bigint]\n    \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n    \u2514\u2500 PartialSort[orderBy = [count DESC NULLS LAST, project_family ASC NULLS LAST]]\n       \u2502   Layout: [project_family:varchar, count_2:bigint, count:bigint]\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [project_family:varchar, count_2:bigint, count:bigint]\n\nFragment 2 [HASH]\n    Output layout: [project_family, count_2, count]\n    Output partitioning: ROUND_ROBIN []\n    Project[]\n    \u2502   Layout: [project_family:varchar, count_2:bigint, count:bigint]\n    \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n    \u2502   count := COALESCE(coalesce_expr, bigint '0')\n    \u2514\u2500 Aggregate[type = FINAL, keys = [project_family]]\n       \u2502   Layout: [project_family:varchar, count_2:bigint, coalesce_expr:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n       \u2502   count_2 := count(count_3)\n       \u2502   coalesce_expr := any_value(any_value)\n       \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [project_family::varchar]]\n          \u2502   Layout: [project_family:varchar, count_3:bigint, any_value:bigint]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n          \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                 Layout: [project_family:varchar, count_3:bigint, any_value:bigint]\n\nFragment 3 [HASH]\n    Output layout: [project_family, count_3, any_value]\n    Output partitioning: HASH [project_family]\n    Aggregate[type = PARTIAL, keys = [project_family]]\n    \u2502   Layout: [project_family:varchar, count_3:bigint, any_value:bigint]\n    \u2502   count_3 := count(wiki) (mask = gid_filter)\n    \u2502   any_value := any_value(inner) (mask = non_distinct_gid_filter)\n    \u2514\u2500 Project[]\n       \u2502   Layout: [non_distinct_gid_filter:boolean, gid_filter:boolean, project_family:varchar, wiki:varchar, inner:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   non_distinct_gid_filter := (group = bigint '0')\n       \u2502   gid_filter := (group = bigint '1')\n       \u2514\u2500 Aggregate[type = FINAL, keys = [project_family, wiki, group]]\n          \u2502   Layout: [project_family:varchar, wiki:varchar, group:bigint, inner:bigint]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n          \u2502   inner := count(count_4)\n          \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [project_family::varchar, wiki::varchar, group::bigint]]\n             \u2502   Layout: [project_family:varchar, wiki:varchar, group:bigint, count_4:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [4]]\n                    Layout: [project_family:varchar, wiki:varchar, group:bigint, count_4:bigint]\n\nFragment 4 [SOURCE]\n    Output layout: [project_family, wiki, group, count_4]\n    Output partitioning: HASH [project_family, wiki, group]\n    Aggregate[type = PARTIAL, keys = [project_family, wiki, group]]\n    \u2502   Layout: [project_family:varchar, wiki:varchar, group:bigint, count_4:bigint]\n    \u2502   count_4 := count(*)\n    \u2514\u2500 GroupId[symbols = [[project_family], [project_family, wiki]]]\n       \u2502   Layout: [project_family:varchar, wiki:varchar, group:bigint]\n       \u2502   project_family := project_family\n       \u2502   wiki := wiki\n       \u2514\u2500 InnerJoin[criteria = (wiki = wiki_0), distribution = REPLICATED]\n          \u2502   Layout: [wiki:varchar, project_family:varchar]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 4.52kB, network: 0B}\n          \u2502   Distribution: REPLICATED\n          \u2502   dynamicFilterAssignments = {wiki_0 -> #df_458}\n          \u251c\u2500 ScanFilter[table = iceberg:bench.events_20m$data@7601990016743161663 constraint on [event_ts], dynamicFilters = {wiki = #df_458}]\n          \u2502      Layout: [wiki:varchar]\n          \u2502      Estimates: {rows: 83345 (504.77kB), cpu: 504.77k, memory: 0B, network: 0B}/{rows: 83345 (504.77kB), cpu: 504.77k, memory: 0B, network: 0B}\n          \u2502      wiki := 5:wiki:varchar\n          \u2502      2:event_ts:timestamp(6) with time zone\n          \u2502          :: [[2026-10-22 00:00:00.000000 UTC, 2026-10-22 01:00:00.000000 UTC)]\n          \u2514\u2500 LocalExchange[partitioning = SINGLE]\n             \u2502   Layout: [wiki_0:varchar, project_family:varchar]\n             \u2502   Estimates: {rows: 160 (4.52kB), cpu: 0, memory: 0B, network: 0B}\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [5]]\n                    Layout: [wiki_0:varchar, project_family:varchar]\n\nFragment 5 [SOURCE]\n    Output layout: [wiki_0, project_family]\n    Output partitioning: BROADCAST []\n    TableScan[table = postgresql:marts.dim_wiki tributary.marts.dim_wiki columns=[wiki:varchar:text, project_family:varchar:text]]\n        Layout: [wiki_0:varchar, project_family:varchar]\n        Estimates: {rows: 160 (4.52kB), cpu: 4.52k, memory: 0B, network: 0B}\n        project_family := project_family:varchar:text\n        wiki_0 := wiki:varchar:text\n\n",
+ "postgres": {
+  "engine": "postgres",
+  "result": [
+   [
+    "wikipedia",
+    31344,
+    105
+   ],
+   [
+    "commons",
+    26323,
+    1
+   ],
+   [
+    "wikidata",
+    16439,
+    2
+   ],
+   [
+    "wiktionary",
+    7954,
+    20
+   ],
+   [
+    "wikisource",
+    465,
+    10
+   ],
+   [
+    "wikiquote",
+    433,
+    2
+   ],
+   [
+    "wikimedia",
+    195,
+    7
+   ],
+   [
+    "mediawiki",
+    53,
+    1
+   ],
+   [
+    "wikibooks",
+    36,
+    1
+   ],
+   [
+    "wikivoyage",
+    32,
+    4
+   ],
+   [
+    "wikifunctions",
+    31,
+    1
+   ],
+   [
+    "wikiversity",
+    18,
+    3
+   ],
+   [
+    "wikispecies",
+    16,
+    1
+   ],
+   [
+    "abstract_wikipedia",
+    4,
+    1
+   ],
+   [
+    null,
+    2,
+    1
+   ]
+  ],
+  "result_rows": 15,
+  "seconds": [
+   0.11170951900021464,
+   0.09293005299969082,
+   0.10896925100041699,
+   0.09071879500061186,
+   0.11388011100007134,
+   0.10786981499950343,
+   0.085378363000018,
+   0.09375235099923884,
+   0.08221990400033974,
+   0.09283583800061024
+  ],
+  "sql": "SELECT d.project_family, count(*) AS events, count(DISTINCT e.wiki) AS wikis\nFROM bench.events_20m AS e\nJOIN marts.dim_wiki AS d ON d.wiki = e.wiki\nWHERE e.event_ts >= TIMESTAMPTZ '2026-10-22 00:00:00+00' AND e.event_ts < TIMESTAMPTZ '2026-10-22 01:00:00+00'\nGROUP BY d.project_family\nORDER BY events DESC, d.project_family",
+  "summary": {
+   "max": 0.11388011100007134,
+   "median": 0.09334120199946483,
+   "min": 0.08221990400033974,
+   "p95": 0.11388011100007134
+  },
+  "warmup_seconds": 0.07588622300045245
+ },
+ "runs": 10,
+ "trino": {
+  "engine": "trino-iceberg",
+  "result": [
+   [
+    "wikipedia",
+    31344,
+    105
+   ],
+   [
+    "commons",
+    26323,
+    1
+   ],
+   [
+    "wikidata",
+    16439,
+    2
+   ],
+   [
+    "wiktionary",
+    7954,
+    20
+   ],
+   [
+    "wikisource",
+    465,
+    10
+   ],
+   [
+    "wikiquote",
+    433,
+    2
+   ],
+   [
+    "wikimedia",
+    195,
+    7
+   ],
+   [
+    "mediawiki",
+    53,
+    1
+   ],
+   [
+    "wikibooks",
+    36,
+    1
+   ],
+   [
+    "wikivoyage",
+    32,
+    4
+   ],
+   [
+    "wikifunctions",
+    31,
+    1
+   ],
+   [
+    "wikiversity",
+    18,
+    3
+   ],
+   [
+    "wikispecies",
+    16,
+    1
+   ],
+   [
+    "abstract_wikipedia",
+    4,
+    1
+   ],
+   [
+    null,
+    2,
+    1
+   ]
+  ],
+  "result_rows": 15,
+  "seconds": [
+   0.20258587099942815,
+   0.1921976210005596,
+   0.18753851699966617,
+   0.164982493000025,
+   0.15271088300050906,
+   0.14546558799975173,
+   0.15771456400034367,
+   0.14518225899973913,
+   0.14064637999945262,
+   0.14657170700047573
+  ],
+  "sql": "SELECT d.project_family, count(*) AS events, count(DISTINCT e.wiki) AS wikis\nFROM iceberg.bench.events_20m AS e\nJOIN postgresql.marts.dim_wiki AS d ON d.wiki = e.wiki\nWHERE e.event_ts >= TIMESTAMP '2026-10-22 00:00:00 UTC' AND e.event_ts < TIMESTAMP '2026-10-22 01:00:00 UTC'\nGROUP BY d.project_family\nORDER BY events DESC, d.project_family",
+  "stats": [
+   {
+    "cpuTimeMillis": 70,
+    "elapsedTimeMillis": 196,
+    "peakMemoryBytes": 1181616,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014455_00327_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 79
+   },
+   {
+    "cpuTimeMillis": 66,
+    "elapsedTimeMillis": 187,
+    "peakMemoryBytes": 143128,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014455_00328_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 68
+   },
+   {
+    "cpuTimeMillis": 70,
+    "elapsedTimeMillis": 182,
+    "peakMemoryBytes": 143128,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00329_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 74
+   },
+   {
+    "cpuTimeMillis": 49,
+    "elapsedTimeMillis": 159,
+    "peakMemoryBytes": 137592,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00330_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 60
+   },
+   {
+    "cpuTimeMillis": 43,
+    "elapsedTimeMillis": 148,
+    "peakMemoryBytes": 137592,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00331_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 47
+   },
+   {
+    "cpuTimeMillis": 33,
+    "elapsedTimeMillis": 140,
+    "peakMemoryBytes": 1328840,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00332_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 35
+   },
+   {
+    "cpuTimeMillis": 42,
+    "elapsedTimeMillis": 154,
+    "peakMemoryBytes": 144328,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00333_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 46
+   },
+   {
+    "cpuTimeMillis": 37,
+    "elapsedTimeMillis": 141,
+    "peakMemoryBytes": 143176,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014456_00334_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 42
+   },
+   {
+    "cpuTimeMillis": 31,
+    "elapsedTimeMillis": 135,
+    "peakMemoryBytes": 136488,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014457_00335_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 34
+   },
+   {
+    "cpuTimeMillis": 31,
+    "elapsedTimeMillis": 141,
+    "peakMemoryBytes": 136440,
+    "physicalInputBytes": 87186,
+    "processedBytes": 100602,
+    "processedRows": 83665,
+    "queryId": "20261111_014457_00336_25ehc",
+    "queuedTimeMillis": 0,
+    "totalSplits": 17,
+    "wallTimeMillis": 33
+   }
+  ],
+  "summary": {
+   "max": 0.20258587099942815,
+   "median": 0.15521272350042636,
+   "min": 0.14064637999945262,
+   "p95": 0.20258587099942815
+  },
+  "warmup_seconds": 0.7091720640000858
+ },
+ "window": {
+  "event_id": "f886fb73-264e-5b85-a87b-09e7eb1363ea",
+  "hour_end": "2026-10-22T01:00:00+00:00",
+  "hour_start": "2026-10-22T00:00:00+00:00",
+  "six_hours_end": "2026-10-22T06:00:00+00:00"
+ }
+}
