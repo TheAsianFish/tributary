@@ -25,6 +25,7 @@ jobs:
           java-version: "17"
       - uses: astral-sh/setup-uv@v6
         with:
+          version: "0.13.7"
           enable-cache: true
           python-version: "3.12"
       - run: uv sync --all-extras --locked
