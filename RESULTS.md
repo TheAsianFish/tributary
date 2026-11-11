@@ -708,7 +708,14 @@ Turning them on is one setting each, and the re-recording that would justify it 
 Not measured here, and listed under [To measure](#to-measure):
 
 - each feature's own share: the leave-one-out cells `full+v+a` and `full+f+a`;
-- the vote `full+v+f+a+n3`, which is built and unit-tested;
+- the vote `full+v+f+a+n3`, which is built and unit-tested. A pilot of the cell
+  was stopped after 14 sampled draws (temperature 0.7, recorded in
+  `tests/recordings/bird-qwen2.5-coder-7b.jsonl`, errors included): 5 gave no
+  usable reply (4 ran to the 1,536-token cap, 1 was aborted as repetitive),
+  against 2 of the 307 temperature-0 calls behind the table above. A failed draw
+  casts no vote and costs up to 6.5 minutes here (133 s mean over the 14), so the
+  cell would take several hours on this CPU, and a lower sampling temperature is
+  the first thing to try;
 - `bm25-k4` with every feature;
 - `core`, once `link_core` exists;
 - the whole grid on Claude.
@@ -1158,6 +1165,6 @@ The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds
 | BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD dev50 on Claude Opus 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-opus-5-5 RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD, all 500 questions on the local model (about 13 h of CPU at this run's pace) | `make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=all RECORD=1` | M7 | $0 |
-| The rest of the M7 grid on the local model: the leave-one-out cells `full+v+a`, `full+f+a`, `full+v+f`, the vote `full+v+f+a+n3`, and `bm25-k4+v+f+a`, so each feature's share of the gain is measured rather than inferred | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,full+v+a,full+f+a,full+v+f,full+v+f+a+n3,bm25-k4+v+f+a RECORD=1 RESUME=1` (the recorded cells replay; about 75 min of CPU per new cell here, and up to twice that for the vote) | M7 | $0 |
+| The rest of the M7 grid on the local model: the leave-one-out cells `full+v+a`, `full+f+a`, `full+v+f`, the vote `full+v+f+a+n3`, and `bm25-k4+v+f+a`, so each feature's share of the gain is measured rather than inferred | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,full+v+a,full+f+a,full+v+f,full+v+f+a+n3,bm25-k4+v+f+a RECORD=1 RESUME=1` (the recorded cells replay; about 75 min of CPU per new cell here; the vote is several hours, see [the pilot](#why-the-default-is-what-it-is)) | M7 | $0 |
 | The `core` linker in the grid, once `link_core` is written | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,core-k4+v+f+a RECORD=1 RESUME=1`, then `make eval-link` | M7 | $0 |
 | The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |
