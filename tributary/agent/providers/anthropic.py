@@ -10,7 +10,9 @@ response names the model that actually served, which is the one priced.
 
 Sampling parameters (``temperature``, ``top_p``) and an explicit ``thinking``
 budget are deliberately absent: current models reject them, and adaptive
-thinking is the default.
+thinking is the default. A self-consistency draw (``request.sample > 0``)
+therefore differs from the first call only in its fingerprint: Claude's own
+sampling supplies the variation, and ``request.temperature`` is not sent.
 """
 
 from __future__ import annotations

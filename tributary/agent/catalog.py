@@ -32,6 +32,7 @@ from typing import Any, Literal
 
 from psycopg import sql
 
+from tributary.agent.examples import Example
 from tributary.warehouse.catalog import PublishedCatalog, QueryFn, load_current
 
 Source = Literal["dbt", "information_schema"]
@@ -101,6 +102,9 @@ class Catalog:
     source: Source
     version: str | None = None
     generated_at: str | None = None
+    # Worked questions documented with the models (dbt ``meta.examples``). They go in the
+    # user message, never in render(): the system prompt does not change with them.
+    examples: tuple[Example, ...] = ()
 
     def relations(self) -> tuple[str, ...]:
         return tuple(t.relation for t in self.tables)
@@ -116,7 +120,7 @@ class Catalog:
 
     def to_dict(self) -> dict[str, Any]:
         # Any: a JSON document.
-        return {
+        document: dict[str, Any] = {
             "source": self.source,
             "version": self.version,
             "generated_at": self.generated_at,
@@ -150,6 +154,11 @@ class Catalog:
                 for t in self.tables
             ],
         }
+        if self.examples:  # only when present, so catalogs without them serialise as before
+            document["examples"] = [
+                {"question": e.question, "sql": e.sql, "source": e.source} for e in self.examples
+            ]
+        return document
 
     @classmethod
     def from_dict(cls, document: Mapping[str, Any]) -> Catalog:
@@ -189,6 +198,10 @@ class Catalog:
             source=source,
             version=document.get("version"),
             generated_at=document.get("generated_at"),
+            examples=tuple(
+                Example(str(e["question"]), str(e["sql"]), str(e.get("source") or ""))
+                for e in document.get("examples", ())
+            ),
         )
 
     def render(
@@ -334,6 +347,32 @@ def _upstream(unique_id: str, nodes: Mapping[str, Any], sources: Mapping[str, An
     return found
 
 
+def _node_examples(node: Mapping[str, Any], relation: str) -> list[Example]:
+    """A model's ``meta.examples``: question and SQL pairs documented with it.
+
+    dbt >= 1.10 keeps a model's meta under ``config.meta`` and mirrors it at the
+    node's top level; either is read (``config`` first, they are the same list).
+    """
+    meta = (node.get("config") or {}).get("meta") or {}
+    found = meta.get("examples")
+    if found is None:
+        found = (node.get("meta") or {}).get("examples")
+    if found is None:
+        return []
+    if not isinstance(found, list):
+        raise ValueError(f"{relation}: meta.examples must be a list of question/sql entries")
+    out = []
+    for i, entry in enumerate(found):
+        question = entry.get("question") if isinstance(entry, Mapping) else None
+        query = entry.get("sql") if isinstance(entry, Mapping) else None
+        if not isinstance(question, str) or not isinstance(query, str):
+            raise ValueError(f"{relation}: meta.examples[{i}] needs a string question and sql")
+        if not question.strip() or not query.strip():
+            raise ValueError(f"{relation}: meta.examples[{i}] has an empty question or sql")
+        out.append(Example(question.strip(), query.strip(), relation))
+    return out
+
+
 def _ref_target(test: Mapping[str, Any], nodes: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """The node a ``relationships`` test points at: its other dependency, else its ``to``."""
     attached = test.get("attached_node")
@@ -408,6 +447,7 @@ def from_published(published: PublishedCatalog, schemas: Sequence[str] = ("marts
     indexed: Mapping[str, Any] = published.values.get("columns", {})
     tests = _tests_by_node(nodes)
     tables = []
+    examples: dict[str, list[Example]] = {}
     for unique_id, entry in published.catalog.get("nodes", {}).items():
         metadata = entry.get("metadata", {})
         schema, name = metadata.get("schema"), metadata.get("name")
@@ -435,6 +475,7 @@ def from_published(published: PublishedCatalog, schemas: Sequence[str] = ("marts
             )
         found = tests.get(unique_id)
         relation = f"{schema}.{name}"
+        examples[relation] = _node_examples(node, relation)
         tables.append(
             Table(
                 schema=schema,
@@ -457,6 +498,7 @@ def from_published(published: PublishedCatalog, schemas: Sequence[str] = ("marts
         source="dbt",
         version=published.version,
         generated_at=None if generated_at is None else str(generated_at),
+        examples=tuple(e for t in tables for e in examples[t.relation]),
     )
 
 

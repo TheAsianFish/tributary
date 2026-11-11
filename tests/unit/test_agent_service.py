@@ -239,3 +239,35 @@ def test_sql_deployment_failure_propagates() -> None:
     with pytest.raises(ExecutionError) as caught:
         make_agent(executor=executor).sql(GOOD)
     assert caught.value is down
+
+
+def test_limits_add_value_hints_examples_and_a_vote() -> None:
+    from tributary.agent.examples import Example
+
+    cat = replace(
+        catalog(),
+        examples=(Example("How many edits did dewiki get?", "SELECT 1", "marts.fct_edits"),),
+    )
+    provider = ScriptedProvider([draft(GOOD), draft(GOOD)])
+    agent = make_agent(
+        provider,
+        the_catalog=cat,
+        limits=Limits(values=True, examples=2, votes=3),
+    )
+
+    answer = agent.ask("How many edits on dewiki?")
+
+    assert answer.status == "answered"
+    # Two draws returned the same rows, so the third was never asked for.
+    assert len(provider.requests) == 2
+    user = provider.requests[0].messages[0].content
+    assert "How many edits did dewiki get?" in user  # the documented example
+    assert ".wiki = 'dewiki'" in user  # the value hint, with the column it is in
+    assert user.endswith("Question: How many edits on dewiki?")
+    assert provider.requests[1].sample == 1
+
+
+def test_default_limits_send_the_bare_question() -> None:
+    provider = ScriptedProvider([draft(GOOD)])
+    make_agent(provider).ask("How many edits on dewiki?")
+    assert provider.requests[0].messages[0].content == "Question: How many edits on dewiki?"

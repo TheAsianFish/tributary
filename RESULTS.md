@@ -528,6 +528,14 @@ every query the run sent to PostgreSQL in
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
 <!-- /bird:ex -->
 
 The `-r0` rows are the same run read at its first attempt (the first model
@@ -595,25 +603,172 @@ replay could have graded a different reply than the live run did), and
 calls live (69 min). Every reported verdict is therefore graded from the
 recorded reply and from this run's own query executions, and the offline
 replay (`make eval`, which CI runs) reproduces all 190 verdicts of the
-report in 0.4 s with no model and no database.
+report in 0.4 s with no model and no database. Since M7 the same report also
+holds the `full+a` and `full+v+f+a` cells (the table above includes their
+rows; see [Agent quality](#agent-quality-what-each-planner-feature-buys-m7)),
+and the replay checks all 380 verdicts.
 
 ### Cost
 
 <!-- bird:ledger -->
 | Run | Variant | Model calls | Tokens in / out | Cost | Same tokens on `claude-haiku-5-5` / `claude-opus-5-5` |
 |---|---|---:|---:|---:|---:|
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+a-r0` | 63 | 140,117 / 13,557 | $0.00 | $0.02 / $0.83 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+a-r2` | 88 | 206,276 / 19,404 | $0.00 | $0.03 / $1.21 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r0` | 63 | 166,385 / 13,688 | $0.00 | $0.02 / $0.94 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r2` | 85 | 233,842 / 18,570 | $0.00 | $0.03 / $1.31 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r0` | 63 | 140,054 / 11,175 | $0.00 | $0.02 / $0.78 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r2` | 83 | 193,346 / 15,209 | $0.00 | $0.03 / $1.08 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r0` | 63 | 117,031 / 11,469 | $0.00 | $0.02 / $0.70 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r2` | 78 | 153,384 / 14,736 | $0.00 | $0.02 / $0.91 |
 
-Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its two variants with repairs (346,730 in / 29,945 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
+Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its four variants with repairs (786,848 in / 67,919 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
 
 | What | Command | `claude-haiku-5-5` | `claude-opus-5-5` |
 |---|---|---:|---:|
-| dev50, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> RECORD=1` | $0.05 | $1.99 |
-| all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
+| dev50, the recorded run's variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> VARIANTS=bm25-k4,full,full+a,full+v+f+a RECORD=1` | $0.11 | $4.51 |
+| all 500, the same variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> VARIANTS=bm25-k4,full,full+a,full+v+f+a SUBSET=all RECORD=1` | $1.13 | $45.06 |
 <!-- /bird:ledger -->
+
+## Agent quality: what each planner feature buys (M7)
+
+<!-- m7:intro -->
+`make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b
+VARIANTS=full,bm25-k4,full+a,full+v+f+a RECORD=1 RESUME=1`: the same 50
+dev50 questions, both label tracks, the same planner, guard, executor and
+scorer as M4, with features layered on the M4 baseline (`full`: every table,
+the bare question, up to two repairs). The features are:
+
+- `+v`, value hints. The stored values the question and its evidence name,
+  found by literal matching against the value index
+  (`eval/bird/data/values.json.gz`, built by `make bird`). On dev50, 39 of
+  50 questions get at least one hint, and 31 get a hint whose value the gold
+  SQL uses as a literal (`uv run python -m eval.bird.values --coverage`; 287
+  of 500 over the whole set).
+- `+f`, three worked examples. These are the official questions most similar
+  to the asked one by BM25, from the same database and outside dev50 (450
+  candidates).
+- `+a`, the answer-every-question rule. It replaces the planner's
+  "unanswerable" exit with "write your best query".
+
+Value hints and examples go in the user turn, so each database's system
+prompt is unchanged and stays cached. The `full` and `bm25-k4` rows are M4's
+recorded run, replayed with this run's executions.
+
+The grid is two cells, not the planned full one, because I time-boxed the
+milestone's CPU budget to about two hours. At about 1 model call per minute on this CPU, each cell is
+about 75 minutes. The two cells were run side by side on one Ollama server
+with two slots (`OLLAMA_NUM_PARALLEL=2`; Ollama 0.40.16, temperature 0, seed
+0, 16k context). Their model time per question was therefore measured while
+sharing the CPU and is not comparable with M4's serial rows. The calls and
+token counts are exact. The remaining cells (leave-one-out, the vote,
+`bm25-k4` with every feature, `core`) are under
+[To measure](#to-measure) with their commands. Cost $0 (local model).
+
+"vs `full`" counts the questions the variant gets right that `full` gets
+wrong (+) and the reverse (-) on the same questions, with the exact two-sided
+McNemar p-value on those discordant questions. At n = 50 a change of a few
+questions is noise; the p-value says how much.
+<!-- /m7:intro -->
+
+### The ablation grid
+
+<!-- bird:ablation -->
+| Variant | Official EX | Corrected EX | vs `full`, official: +gained -lost (p) | vs `full`, corrected: +gained -lost (p) | Official EX, no repairs | Refused | Model calls | Tokens in / out | `claude-haiku-5-5` / `claude-opus-5-5` | Model time per question, p50 / p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `full` | **21/50** (42.0%, 29.4%–55.8%) | **18/45** (40.0%, 27.0%–54.5%) | – | – | 21/50 | 11 | 83 | 193,346 / 15,209 | $0.03 / $1.08 | 42.5 s / 225.1 s |
+| `bm25-k4` | **21/50** (42.0%, 29.4%–55.8%) | **17/45** (37.8%, 25.1%–52.4%) | +3 -3 (1.00) | +3 -4 (1.00) | 21/50 | 11 | 78 | 153,384 / 14,736 | $0.02 / $0.91 | 51.2 s / 191.9 s |
+| `full+a` | **25/50** (50.0%, 36.6%–63.4%) | **22/45** (48.9%, 35.0%–63.0%) | +7 -3 (0.34) | +5 -1 (0.22) | 24/50 | 0 | 88 | 206,276 / 19,404 | $0.03 / $1.21 | 80.4 s / 308.9 s |
+| `full+v+f+a` | **26/50** (52.0%, 38.5%–65.2%) | **26/45** (57.8%, 43.3%–71.0%) | +8 -3 (0.23) | +13 -5 (0.10) | 25/50 | 1 | 85 | 233,842 / 18,570 | $0.03 / $1.31 | 77.8 s / 303.3 s |
+<!-- /bird:ablation -->
+
+### Why the default is what it is
+
+<!-- m7:default -->
+**What the numbers say.**
+
+- **The refusal exit cost 4 questions, and removing it fixed 4 of its 11 refusals.** `full+a` refuses nothing (11 → 0), and EX moves from 21 to 25 / 50 on the official track and from 18 to 22 / 45 on the corrected one. Of the 11 questions the baseline refused, `full+a` answers 4 correctly. The other 7 still end wrong: 5 with a query that returns the wrong rows, and 2 that fail every attempt. So the exit was mostly hiding questions the model could not answer anyway. Paired against `full`, the official track is +7 -3 (p = 0.34) and the corrected +5 -1 (p = 0.22). That is in the right direction on both tracks, but not significant at n = 50.
+- **Value hints and examples move many answers both ways.** On top of `+a`, `+v+f` gains 8 and loses 7 official questions (25 → 26), and gains 11 and loses 7 on the corrected track (22 → 26). Against `full`, `full+v+f+a` is +8 -3 (p = 0.23) and +13 -5 (p = 0.10).
+  - The gain is in the hard questions: challenging goes from 2 to 4 of 10 on the official track and from 1 to 7 of 9 on the corrected one.
+  - The losses are in the simple ones: 9 → 7 of 15 official and 8 → 6 of 13 corrected, against `full+a`. Examples pull a 7B model toward the shape of a similar question, which helps a multi-step question and sometimes over-complicates a lookup.
+  - In the taxonomy below, `+v+f` is the only cell that fixes a wrong literal: on 477 it now looks `'Coldsnap'` up in `sets.name` instead of comparing it with the set code. It also fixes two of the three "evidence not followed" answers. Question 405 (`'Portuguese (Brasil)'` in the evidence, `'Portuguese (Brazil)'` stored) is still wrong, because the matcher is exact up to case. A fuzzy match is the next step for value retrieval.
+- **Cost.** `full+v+f+a` sends 13% more input tokens than `full+a` (233,842 against 206,276 over both tracks, with repairs): about 400 more input tokens per call (2,751 against 2,344), mostly examples and hints. On Claude at list price that is $0.03 vs $0.03 on Haiku 5.5 and $1.31 vs $1.21 on Opus 5.5 for the whole cell. Calls are about equal (85 against 88).
+- **Model time.** The two M7 cells took 78–80 s per question at the median. They ran side by side, sharing the CPU, so this is not comparable with M4's serial 42 s. Their token counts are.
+
+**The default.** `make eval`'s live default is now `full,full+v+f+a`: the baseline and the variant that is best on both tracks, for 13% more input tokens than the next best. It is the only cell that improved the challenging questions, and neither pairing against `full` is significant at this size, which is what a larger subset (`SUBSET=all`, under To measure) would settle.
+
+The product's agent keeps value hints and worked examples **off** by default (`TRIBUTARY_AGENT_VALUES=false`, `TRIBUTARY_AGENT_EXAMPLES=0`), for three reasons:
+
+- Over `full+a`, their net gain on BIRD is 1 and 4 questions: 8 and 11 gained, against 7 lost on each track.
+- The warehouse prompt already lists every indexed value in its DDL.
+- The 40 warehouse questions have not been re-recorded with them.
+
+Turning them on is one setting each, and the re-recording that would justify it is under To measure. `+a` stays a benchmark setting: the warehouse gets genuinely unanswerable questions.
+
+Not measured here, and listed under [To measure](#to-measure):
+
+- each feature's own share: the leave-one-out cells `full+v+a` and `full+f+a`;
+- the vote `full+v+f+a+n3`, which is built and unit-tested. A pilot of the cell
+  was stopped after 14 sampled draws (temperature 0.7, recorded in
+  `tests/recordings/bird-qwen2.5-coder-7b.jsonl`, errors included): 5 gave no
+  usable reply (4 ran to the 1,536-token cap, 1 was aborted as repetitive),
+  against 2 of the 307 temperature-0 calls behind the table above. A failed draw
+  casts no vote and costs up to 6.5 minutes here (133 s mean over the 14), so the
+  cell would take several hours on this CPU, and a lower sampling temperature is
+  the first thing to try;
+- `bm25-k4` with every feature;
+- `core`, once `link_core` exists;
+- the whole grid on Claude.
+<!-- /m7:default -->
+
+### Thirty wrong answers, by cause
+
+`eval/results/bird-failures.json` holds 30 of the baseline's (`full`)
+wrong answers: all 29 on the official track, plus question 37 on the
+corrected track, which is worded differently there. Each was labelled by
+reading the predicted query against the gold query, both result sets
+(`uv run python -m eval.bird.failures --report ... --variant full --dump
+FILE` writes them out) and the evidence, with stored values checked in the
+database. Each answer got one category from a list fixed before labelling:
+the error that, fixed alone, gets closest to the gold. The "Right with"
+columns are computed from the verdicts, not labelled, and `make results`
+fails if a label names an answer that is not wrong in the run.
+
+<!-- bird:failures -->
+| Category | What it covers | Wrong answers | Share | Right with `full+a` | Right with `bm25-k4` | Right with `full+v+f+a` | Questions |
+|---|---|---:|---:|---:|---:|---:|---|
+| Refused | set answerable to false on an answerable question | 11 | 37% | 4 | 1 | 3 | 137, 198, 228, 327, 530, 753, 775, 782, 915, 1058, 1078 |
+| No query ran | every attempt was blocked or failed in PostgreSQL | 5 | 17% | 1 | 0 | 1 | 637, 967, 1175, 1265, 1404 |
+| Wrong table or column | read a column or table that does not hold the asked fact | 1 | 3% | 0 | 1 | 0 | 990 |
+| Wrong literal | filtered on a value not stored in that form (case, spelling, code) | 2 | 7% | 0 | 0 | 1 | 405, 477 |
+| Wrong join | a missing, extra or wrongly keyed join | 1 | 3% | 0 | 1 | 1 | 792 |
+| Evidence not followed | ignored or misapplied the formula or mapping given | 3 | 10% | 1 | 0 | 2 | 200, 786, 861 |
+| Wrong aggregation | wrong aggregate, grouping, DISTINCT or count target | 1 | 3% | 0 | 0 | 0 | 1257 |
+| Ordering or limit | wrong sort direction, tie handling or row limit | 1 | 3% | 0 | 0 | 0 | 37 (c) |
+| Output shape | the right facts with extra, missing or reordered columns | 2 | 7% | 1 | 0 | 0 | 23, 83 |
+| Gold is questionable | the gold answer is wrong or the question is ambiguous | 3 | 10% | 0 | 0 | 0 | 37, 1011, 1144 |
+| **Total** | | **30** | 100% | **7** | **3** | **8** | |
+<!-- /bird:failures -->
+
+- **Half the baseline's failures were not wrong SQL at all.** 11 were
+  refusals and 5 were queries that never ran. The model claimed, for
+  example, that `drivers.dob` was missing when the evidence names it (915),
+  and that `colour` has no 'No Colour' row when it has one (753). This is why
+  `+a` came first, and why its gain is real but bounded: answering is
+  necessary, not sufficient (4 of 11 become right).
+- **3 of 30 are the benchmark's fault.**
+  - 1011: the gold reads the lap time `1:01:30.660` as 61 s, while the model
+    returns the true fastest lap.
+  - 37: the gold's `NULLS FIRST` picks a school with no test takers.
+  - 1144: a tie that the gold breaks arbitrarily.
+
+  The corrected track exists for this; its gold for 37 is different again,
+  a 17-way tie.
+- **Literal and evidence errors are what the context features target, and
+  they moved.** `+v+f` fixes 1 of 2 wrong literals and 2 of 3 evidence
+  misreadings, which `+a` alone does not. The remaining literal (405) is a
+  spelling mismatch between BIRD's evidence and the data, which exact
+  matching cannot bridge.
 
 ## Ingest under faults and at scale (M5)
 
@@ -1010,3 +1165,6 @@ The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds
 | BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD dev50 on Claude Opus 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-opus-5-5 RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD, all 500 questions on the local model (about 13 h of CPU at this run's pace) | `make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=all RECORD=1` | M7 | $0 |
+| The rest of the M7 grid on the local model: the leave-one-out cells `full+v+a`, `full+f+a`, `full+v+f`, the vote `full+v+f+a+n3`, and `bm25-k4+v+f+a`, so each feature's share of the gain is measured rather than inferred | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,full+v+a,full+f+a,full+v+f,full+v+f+a+n3,bm25-k4+v+f+a RECORD=1 RESUME=1` (the recorded cells replay; about 75 min of CPU per new cell here; the vote is several hours, see [the pilot](#why-the-default-is-what-it-is)) | M7 | $0 |
+| The `core` linker in the grid, once `link_core` is written | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,core-k4+v+f+a RECORD=1 RESUME=1`, then `make eval-link` | M7 | $0 |
+| The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |

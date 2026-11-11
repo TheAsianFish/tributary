@@ -67,20 +67,32 @@ class ModelRequest:
     # Any: a JSON schema document.
     schema_name: str
     max_tokens: int = 4096
+    # Self-consistency asks the same question several times. Sample 0 is the ordinary
+    # call (the provider's deterministic default); sample i > 0 is the i-th extra draw,
+    # at ``temperature`` where the provider takes one. Both are in the fingerprint, so
+    # each draw is recorded and replayed as itself.
+    sample: int = 0
+    temperature: float | None = None
 
     def fingerprint(self) -> str:
         """sha256 over what the model sees; the key a recording is stored under.
 
         ``max_tokens`` is left out on purpose: it changes when a reply is cut,
         not what the model is asked, so a recording replays unchanged under a
-        different budget (a smaller one would have truncated live).
+        different budget (a smaller one would have truncated live). The sampling
+        fields enter only when set, so an ordinary call keeps the fingerprint it
+        had before they existed.
         """
-        document = {
+        document: dict[str, Any] = {
             "system": self.system,
             "messages": [[m.role, m.content] for m in self.messages],
             "schema_name": self.schema_name,
             "schema": self.schema,
         }
+        if self.sample:
+            document["sample"] = self.sample
+        if self.temperature is not None:
+            document["temperature"] = self.temperature
         canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 

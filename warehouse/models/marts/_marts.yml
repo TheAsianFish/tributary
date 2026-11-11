@@ -4,6 +4,11 @@ version: 2
 # the catalog's value index lists a low-cardinality text column's values and sends
 # them to the model, and editor identities and page titles must never be among them.
 
+# Each model's config.meta.examples are worked questions with the SQL that answers them.
+# The agent's catalog carries them and the planner shows the most similar few before a
+# question. They must not ask any of eval/warehouse_questions.yaml's questions (a unit
+# test checks), or the evaluation would grade the model on answers it was shown.
+
 models:
   - name: fct_edits
     description: >
@@ -15,6 +20,27 @@ models:
       - volume_anomaly:
           arguments:
             column_name: event_ts
+    config:
+      meta:
+        examples:
+          - question: "What was the average page size in bytes after edits to File pages on Wikimedia Commons? Return the average rounded to the nearest byte."
+            sql: |
+              SELECT round(avg(length_new)) AS avg_bytes
+              FROM marts.fct_edits
+              WHERE wiki = 'commonswiki' AND namespace = 6
+          - question: "What were the 10 most recent edits to User pages on Spanish Wikipedia? Return the title, the editor and the edit time, newest first."
+            sql: |
+              SELECT title, user_name, event_ts
+              FROM marts.fct_edits
+              WHERE wiki = 'eswiki' AND namespace = 2
+              ORDER BY event_ts DESC, event_id
+              LIMIT 10
+          - question: "What share of Italian Wikipedia's patrollable edits were patrolled? Return the percentage rounded to 1 decimal place."
+            sql: |
+              SELECT round(100.0 * count(*) FILTER (WHERE is_patrolled) / nullif(count(is_patrolled), 0), 1)
+                AS pct_patrolled
+              FROM marts.fct_edits
+              WHERE wiki = 'itwiki'
     columns:
       - name: event_id
         description: Event UUID; primary key, one row per edit.
@@ -86,6 +112,27 @@ models:
     description: >
       One row per wiki seen in the data, with its project family, language and
       activity totals over all data loaded so far. Grain is wiki.
+    config:
+      meta:
+        examples:
+          - question: "Which 10 wikis have the largest number of log actions and categorisation events? Return the wiki and that count."
+            sql: |
+              SELECT wiki, events - edits AS other_events
+              FROM marts.dim_wiki
+              ORDER BY other_events DESC, wiki
+              LIMIT 10
+          - question: "List the Wikivoyage wikis with their domain and language code."
+            sql: |
+              SELECT wiki, domain, language_code
+              FROM marts.dim_wiki
+              WHERE project_family = 'wikivoyage'
+              ORDER BY wiki
+          - question: "For each Wikiquote wiki, how many minutes passed between its first and last event? Return the wiki and the minutes rounded to 1 decimal place."
+            sql: |
+              SELECT wiki, round(extract(epoch FROM last_event_ts - first_event_ts) / 60, 1) AS active_minutes
+              FROM marts.dim_wiki
+              WHERE project_family = 'wikiquote'
+              ORDER BY active_minutes DESC, wiki
     columns:
       - name: wiki
         description: Wiki database name, e.g. enwiki, frwiktionary, commonswiki; primary key.
@@ -113,6 +160,31 @@ models:
     description: >
       One row per page that received at least one edit or creation; grain is
       page_key. Counts cover all data loaded so far.
+    config:
+      meta:
+        examples:
+          - question: "Which 10 category pages on Wikimedia Commons had the most distinct editors? Return the title and the editor count."
+            sql: |
+              SELECT title, distinct_editors
+              FROM marts.dim_page
+              WHERE wiki = 'commonswiki' AND namespace = 14
+              ORDER BY distinct_editors DESC, title
+              LIMIT 10
+          - question: "On Russian Wikipedia, how many pages that already existed before the data began were touched, per namespace? Return the namespace name and the page count."
+            sql: |
+              SELECT namespace_name, count(*) AS pages
+              FROM marts.dim_page
+              WHERE wiki = 'ruwiki' AND NOT created_in_window
+              GROUP BY namespace_name
+              ORDER BY pages DESC, namespace_name
+          - question: "Which Wikisource pages saw the most activity? Return the wiki, its language code, the title and the edit count for the top 10."
+            sql: |
+              SELECT p.wiki, w.language_code, p.title, p.edits
+              FROM marts.dim_page AS p
+              JOIN marts.dim_wiki AS w ON w.wiki = p.wiki
+              WHERE w.project_family = 'wikisource'
+              ORDER BY p.edits DESC, p.wiki, p.title
+              LIMIT 10
     columns:
       - name: page_key
         description: Stable page identifier (md5 of wiki, namespace, title); primary key.
@@ -148,6 +220,27 @@ models:
       - unique_combination:
           arguments:
             combination_of_columns: [wiki, event_hour]
+    config:
+      meta:
+        examples:
+          - question: "On average, how many edits did Spanish Wikipedia get per active hour? Return the average rounded to 1 decimal place."
+            sql: |
+              SELECT round(avg(edits), 1) AS avg_edits_per_hour
+              FROM marts.agg_edits_hourly
+              WHERE wiki = 'eswiki'
+          - question: "In each UTC hour, which wiki gained the most content in bytes? Return the hour, the wiki and its bytes added."
+            sql: |
+              SELECT DISTINCT ON (event_hour) event_hour, wiki, bytes_added
+              FROM marts.agg_edits_hourly
+              ORDER BY event_hour, bytes_added DESC, wiki
+          - question: "Which 5 wikis shrank the most, removing more bytes than they added? Return the wiki, bytes added and bytes removed."
+            sql: |
+              SELECT wiki, sum(bytes_added) AS bytes_added, sum(bytes_removed) AS bytes_removed
+              FROM marts.agg_edits_hourly
+              GROUP BY wiki
+              HAVING sum(bytes_removed) > sum(bytes_added)
+              ORDER BY sum(bytes_removed) - sum(bytes_added) DESC, wiki
+              LIMIT 5
     columns:
       - name: wiki
         description: Wiki database name.
@@ -178,6 +271,28 @@ models:
       - unique_combination:
           arguments:
             combination_of_columns: [wiki, user_name]
+    config:
+      meta:
+        examples:
+          - question: "Who are the 10 busiest bot accounts on Wikidata? Return the account name and its edit count."
+            sql: |
+              SELECT user_name, edits
+              FROM marts.agg_editor_activity
+              WHERE wiki = 'wikidatawiki' AND is_bot
+              ORDER BY edits DESC, user_name
+              LIMIT 10
+          - question: "Which logged-in human contributors to English Wikipedia grew it by the most net bytes? Return the top 10 names, their net bytes and pages edited."
+            sql: |
+              SELECT user_name, net_bytes, pages_edited
+              FROM marts.agg_editor_activity
+              WHERE wiki = 'enwiki' AND NOT is_bot AND NOT is_anonymous
+              ORDER BY net_bytes DESC, user_name
+              LIMIT 10
+          - question: "How many accounts on Hebrew Wikipedia touched exactly one page? Return one number."
+            sql: |
+              SELECT count(*) AS single_page_editors
+              FROM marts.agg_editor_activity
+              WHERE wiki = 'hewiki' AND pages_edited = 1
     columns:
       - name: wiki
         description: Wiki database name.

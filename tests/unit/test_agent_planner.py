@@ -283,3 +283,17 @@ def test_a_deployment_failure_is_not_repaired(the_catalog: Catalog, kind: str) -
 def test_query_errors_are_repairable() -> None:
     for kind in ("database", "timeout", "too_expensive", "read_only"):
         assert ExecutionError(kind, "x").repairable
+
+
+def test_an_unusable_reply_fails_the_question_without_a_repair() -> None:
+    from tributary.agent.provider import InvalidOutput
+
+    cat = catalog()
+    provider = ScriptedProvider([InvalidOutput("aborted: token repeat limit reached")])
+    executor = FakeExecutor()
+    outcome = Planner(provider, Guard(cat.relations()), executor, cat).run("How many edits?")
+    assert outcome.status == "failed"
+    assert len(provider.requests) == 1
+    assert executor.ran == []
+    assert outcome.error is not None
+    assert "repeat limit" in outcome.error

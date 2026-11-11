@@ -2,7 +2,9 @@
 
 Ollama's structured outputs take the JSON schema itself as ``format``, so the
 request mirrors the Anthropic one. Sampling is pinned (temperature 0, fixed
-seed) so a rerun asks the same question the same way, and the context window
+seed) so a rerun asks the same question the same way; a self-consistency draw
+sets its own temperature and uses its sample number as the seed, so it too is
+the same draw on a rerun. The context window
 is raised from Ollama's small default because the schema prefix alone runs to
 several thousand tokens. Local calls cost nothing; tokens are still counted.
 """
@@ -24,6 +26,7 @@ from tributary.agent.provider import (
     parse_object,
 )
 
+MAX_PREDICT = 1536
 START_HINT = "start it with `docker compose --profile ollama up -d ollama`"
 
 
@@ -54,7 +57,14 @@ class OllamaProvider:
             "format": dict(request.schema),
             "stream": False,
             "keep_alive": "30m",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": self.num_ctx},
+            "options": {
+                "temperature": 0 if request.temperature is None else request.temperature,
+                "seed": request.sample,
+                "num_ctx": self.num_ctx,
+                # A draft is a few hundred tokens; a model stuck repeating itself would
+                # otherwise generate until the context is full. Cut, it is InvalidOutput.
+                "num_predict": min(request.max_tokens, MAX_PREDICT),
+            },
         }
         started = time.perf_counter()
         try:
@@ -75,7 +85,9 @@ class OllamaProvider:
         except (ValueError, KeyError, TypeError):
             raise ProviderError(f"unexpected reply from Ollama: {reply.text[:200]}") from None
         if payload.get("done_reason") == "length":
-            raise InvalidOutput(f"reply truncated at num_ctx={self.num_ctx} ({self.model})")
+            raise InvalidOutput(
+                f"reply truncated (num_ctx={self.num_ctx}, num_predict cap) ({self.model})"
+            )
         data = parse_object(content)
         response = ModelResponse(
             data=data,
@@ -97,6 +109,10 @@ class OllamaProvider:
             detail = str(reply.json().get("error", reply.text))
         except (ValueError, AttributeError):
             detail = reply.text
+        if "prediction aborted" in detail:
+            # The model degenerated (e.g. "token repeat limit reached"): the reply is
+            # unusable, like a truncated one, which is not a problem with the server.
+            return InvalidOutput(f"Ollama aborted the reply ({self.model}): {detail[:200]}")
         if reply.status_code == 404 and "not found" in detail:
             return ProviderError(
                 f"Ollama has no model {self.model}: run `ollama pull {self.model}` "

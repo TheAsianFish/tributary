@@ -6,6 +6,12 @@ column names often need quoting, and each question may come with *evidence*
 (BIRD's "external knowledge"), which defines the terms the question uses.
 Kept short and generic on purpose: M7 measures what few-shot examples and
 value hints add on top of this baseline.
+
+:data:`BIRD_RULES_ANSWER` differs in one rule. The product keeps an exit for
+questions its tables cannot answer, because users ask those; every BIRD
+question is answerable, and M4 found a 7B model taking the exit on 11 of 50
+of them. The variant swaps the exit for "always write your best query", so
+the ablation measures what the exit costs on a benchmark that never needs it.
 """
 
 from __future__ import annotations
@@ -32,3 +38,15 @@ Tables:
 
 {schema}
 """
+
+_EXIT = """\
+- If these tables cannot answer the question, set answerable to false, leave sql \
+empty and say why in assumptions.
+"""
+_ALWAYS = """\
+- Every question can be answered from these tables: set answerable to true and \
+write your best query, even when unsure.
+"""
+if _EXIT not in BIRD_RULES:  # pragma: no cover (an edit to the rules above broke the swap)
+    raise RuntimeError("BIRD_RULES no longer contains the unanswerable exit")
+BIRD_RULES_ANSWER = BIRD_RULES.replace(_EXIT, _ALWAYS)

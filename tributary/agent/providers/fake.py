@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from tributary.agent.provider import (
+    InvalidOutput,
     ModelRequest,
     ModelResponse,
     Provider,
@@ -88,6 +89,18 @@ def to_recording(request: ModelRequest, response: ModelResponse, provider: str) 
     }
 
 
+def to_error_recording(request: ModelRequest, error: str, provider: str, model: str) -> Recording:
+    return {
+        "fingerprint": request.fingerprint(),
+        "schema_name": request.schema_name,
+        "provider": provider,
+        "model": model,
+        "messages": [[m.role, m.content] for m in request.messages],
+        "system_sha256": hashlib.sha256(request.system.encode("utf-8")).hexdigest(),
+        "error": error,
+    }
+
+
 class FakeProvider:
     """Replays recordings by request fingerprint; a miss is an error, never a guess."""
 
@@ -116,6 +129,8 @@ class FakeProvider:
                 f"no recording {fingerprint[:16]} for {request.schema_name} "
                 f"({last_user[:80]!r}); {RECORD_HINT}"
             )
+        if "error" in record:  # the live call produced no usable reply; so does the replay
+            raise InvalidOutput(record["error"])
         reply = record["response"]
         response = ModelResponse(
             data=reply["data"],
@@ -148,7 +163,18 @@ class RecordingProvider:
         self._writing = threading.Lock()
 
     def complete(self, request: ModelRequest) -> ModelResponse:
-        response = self.inner.complete(request)
+        try:
+            response = self.inner.complete(request)
+        except InvalidOutput as exc:
+            # An unusable reply is the model's answer to this request: record it, so a
+            # replay fails the same way instead of missing a recording.
+            with self._writing:
+                recordings = load_recordings(self.path) if self.path.exists() else {}
+                recordings[request.fingerprint()] = to_error_recording(
+                    request, str(exc), self.inner.name, self.inner.model
+                )
+                write_recordings(self.path, recordings)
+            raise
         with self._writing:
             recordings = load_recordings(self.path) if self.path.exists() else {}
             recordings[request.fingerprint()] = to_recording(request, response, self.inner.name)

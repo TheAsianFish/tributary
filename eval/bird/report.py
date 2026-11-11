@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections.abc import Sequence
@@ -28,6 +29,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
+from eval.bird.failures import failures_table, load_labels
 from eval.bird.run import ESTIMATE_MODELS, estimate_cost
 from tributary.config import REPO_ROOT
 
@@ -147,19 +149,98 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     return "\n".join(lines)
 
 
+def mcnemar_exact(gained: int, lost: int) -> float:
+    """Two-sided exact McNemar p-value: the discordant pairs as a fair coin's flips."""
+    n = gained + lost
+    if n == 0:
+        return 1.0
+    tail: float = sum(math.comb(n, i) for i in range(min(gained, lost) + 1)) / 2**n
+    return min(1.0, 2 * tail)
+
+
+def paired(baseline: Sequence[dict[str, Any]], other: Sequence[dict[str, Any]]) -> tuple[int, int]:
+    """Questions right only with ``other`` and right only with ``baseline`` (same questions)."""
+    base = {v["id"]: v["correct"] for v in baseline}
+    gained = sum(v["correct"] and not base.get(v["id"], False) for v in other)
+    lost = sum(base.get(v["id"], False) and not v["correct"] for v in other)
+    return gained, lost
+
+
+BASELINE = "full"
+
+
+def ablation_table(report: dict[str, Any]) -> str:
+    """One row per variant (with repairs): EX on both tracks, the paired change against
+    the baseline on each, refusals, what it cost and how long a question took."""
+    variants = report["variants"]
+    base = variants.get(BASELINE)
+    tracks = [t for t in ("official", "corrected") if t in next(iter(variants.values()))]
+    header = (
+        "| Variant | "
+        + " | ".join(f"{t.capitalize()} EX" for t in tracks)
+        + " | "
+        + " | ".join(f"vs `{BASELINE}`, {t}: +gained -lost (p)" for t in tracks)
+        + " | Official EX, no repairs | Refused | Model calls | Tokens in / out | "
+        + " / ".join(f"`{m}`" for m in ESTIMATE_MODELS)
+        + " | Model time per question, p50 / p95 |"
+    )
+    lines = [header, "|---|" + "---:|" * (2 * len(tracks) + 6)]
+    ledger = {row["variant"]: row for row in report["ledger"]}
+    for name, entry in _ordered(variants, (BASELINE,)):
+        cells = []
+        for t in tracks:
+            s = entry[t]["r2"]
+            lo, hi = s["ex_wilson95"]
+            cells.append(
+                f"**{s['correct']}/{s['total']}** ({_pct(s['ex'])}, {_pct(lo)}{DASH}{_pct(hi)})"
+            )
+        for t in tracks:
+            if base is None or name == BASELINE:
+                cells.append(DASH)
+                continue
+            gained, lost = paired(base[t]["verdicts"], entry[t]["verdicts"])
+            cells.append(f"+{gained} -{lost} ({mcnemar_exact(gained, lost):.2f})")
+        r0 = entry[tracks[0]]["r0"]
+        cells.append(DASH if r0 is None else f"{r0['correct']}/{r0['total']}")
+        refused = (entry[tracks[0]]["r2"]["by_status"] or {}).get("unanswerable", 0)
+        cells.append(str(refused))
+        row = ledger.get(f"{name}-r2")
+        s0 = entry[tracks[0]]["r2"]
+        if row is None:  # pragma: no cover (the ledger has a row for every variant)
+            cells += [DASH, DASH, DASH]
+        else:
+            estimates = " / ".join(
+                DASH if row["estimate_usd"][m] is None else f"${row['estimate_usd'][m]:.2f}"
+                for m in ESTIMATE_MODELS
+            )
+            cells += [
+                str(row["model_calls"]),
+                f"{row['input_tokens']:,} / {row['output_tokens']:,}",
+                estimates,
+            ]
+        cells.append(f"{s0['model_ms_p50'] / 1000:.1f} s / {s0['model_ms_p95'] / 1000:.1f} s")
+        lines.append(f"| `{name}` | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
 # Live commands that have not been run: (what, command, multiple of the measured dev50 run).
 LIVE_COMMANDS: tuple[tuple[str, str, int], ...] = (
     (
-        "dev50, both variants, both tracks",
-        "make eval PROVIDER=anthropic MODEL={model} RECORD=1",
+        "dev50, the recorded run's variants, both tracks",
+        "make eval PROVIDER=anthropic MODEL={model} VARIANTS={variants} RECORD=1",
         50,
     ),
     (
-        "all 500, both variants, both tracks",
-        "make eval PROVIDER=anthropic MODEL={model} SUBSET=all RECORD=1",
+        "all 500, the same variants, both tracks",
+        "make eval PROVIDER=anthropic MODEL={model} VARIANTS={variants} SUBSET=all RECORD=1",
         500,
     ),
 )
+
+
+def _count_words(n: int) -> str:
+    words = ("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    return words[n] if 0 <= n < len(words) else str(n)
 
 
 def estimate_basis(reports: Sequence[tuple[str, dict[str, Any]]]) -> tuple[str, dict[str, Any]]:
@@ -205,7 +286,8 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     lines += [
         "",
         f"Estimated cost of the live runs: the token counts `{name}` measured for "
-        f"its two variants with repairs ({tokens_in:,} in / {tokens_out:,} out, both tracks), "
+        f"its {_count_words(sum(r['variant'].endswith('-r2') for r in report['ledger']))} "
+        f"variants with repairs ({tokens_in:,} in / {tokens_out:,} out, both tracks), "
         "scaled by question count, at list price with no cache hits (an upper bound on "
         "input: the planner caches its schema prefix), Claude's own tokenizer and "
         "thinking tokens not modelled:",
@@ -219,7 +301,7 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
         for m in ESTIMATE_MODELS:
             cost = estimate_cost(tokens_in * scale, tokens_out * scale, m)
             costs.append(DASH if cost is None else f"${cost:.2f}")
-        cmd = command.format(model="<model>")
+        cmd = command.format(model="<model>", variants=",".join(report["variants"]))
         lines.append(f"| {what} | `{cmd}` | " + " | ".join(costs) + " |")
     return "\n".join(lines)
 
@@ -233,6 +315,23 @@ def render_all(results: Path = RESULTS) -> dict[str, str]:
     none = "No recorded run yet: `make eval PROVIDER=ollama RECORD=1` after `make bird`."
     tables["ex"] = ex_table(reports) if reports else none
     tables["ledger"] = ledger_table(reports) if reports else none
+    # The ablation and the taxonomy describe one run, the one the labels were read from;
+    # a later run (another model, another subset) must not take their place by its name.
+    labels_path = results / "bird-failures.json"
+    labels = load_labels(labels_path) if labels_path.exists() else None
+    basis: dict[str, Any] | None = None
+    if labels is not None and reports:
+        by_name = dict(reports)
+        if labels["report"] not in by_name:
+            raise ValueError(
+                f"bird-failures.json labels {labels['report']}, which is not in {results}"
+            )
+        basis = by_name[labels["report"]]
+    elif reports:
+        _, basis = estimate_basis(reports)
+    tables["ablation"] = ablation_table(basis) if basis is not None else none
+    if labels is not None and basis is not None:
+        tables["failures"] = failures_table(labels, basis)
     return tables
 
 

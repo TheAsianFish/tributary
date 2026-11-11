@@ -138,8 +138,12 @@ flowchart LR
    (lexical). The `core` strategy adds value matching and join-path
    expansion so the subset is connected.
 3. `Planner.draft()` calls the model with a cached system prefix (dialect
-   rules, the linked schema rendered as DDL with descriptions, a few
-   examples) and the question, using structured output
+   rules, the linked schema rendered as DDL with descriptions) and a user
+   turn holding the question, optionally preceded by up to k worked examples
+   (dbt `meta.examples`, chosen by BM25 against the question) and the stored
+   values the question names (literal matching against the value index); the
+   per-question blocks stay out of the system prompt so its cache still hits.
+   It uses structured output
    (`SQLDraft{sql, tables, assumptions, confidence}`), adaptive thinking and
    the fallback setting enabled.
 4. `Guard.check(sql)` parses with sqlglot (PostgreSQL dialect) and rejects
@@ -206,7 +210,7 @@ compose.yaml, Makefile, pyproject.toml, RESULTS.md, RELEASE.md
 | Number | Metric | Command | Method |
 |---|---|---|---|
 | Execution accuracy (EX) | Fraction of questions whose predicted SQL returns the same set of rows as the gold SQL, values compared as the database driver returned them (BIRD's `calculate_ex`: order and duplicates ignored, column order and value types count), with a Wilson 95% interval; a type-blind "lenient" count beside it | `make eval` | Both queries run on the same database as a read-only role with a 30 s timeout. Every live pair is also graded by the official `calculate_ex`, compiled from the pinned upstream `evaluation_ex.py`, and disagreements are reported; `make bird` does the same on the 449 corrected-vs-official gold pairs. Reported per difficulty, per track (official, corrected) and per variant. |
-| Ablations | EX for `full`, `bm25`, `core` linking × {no repair, repair} × {single, vote-of-3} | `make eval VARIANT=...` | Same harness; each variant's cost and p50/p95 latency are logged from `usage` in the API response. |
+| Ablations | EX for a linker (`full`, `bm25-k4`, `core`) plus any of value hints (`+v`), three worked examples (`+f`), the answer-every-question rule (`+a`) and a vote over three draws by result (`+n3`), each read with and without repairs | `make eval VARIANTS=full+v+f+a,...` | Same harness; each variant's cost and p50/p95 model time per question are logged from `usage` in the API response, and each variant is compared with `full` on the same questions (exact McNemar test on the questions only one of them gets right). |
 | Model comparison | EX for `claude-haiku-5-5` (all variants), `claude-opus-5-5` (best variant, 200-question stratified subset), Ollama `qwen2.5-coder:7b` (best variant, hardware permitting) | `make eval MODEL=...` | Same harness. |
 | Schema-linking quality | Table recall@k, share of questions with every gold table linked, and precision against gold tables (parsed from gold SQL with sqlglot) | `make eval-link` | Offline, no model calls, committed catalogs; runs in CI. |
 | Guard | Block rate on the unsafe suite (must be 100%); false-block rate on 500 gold queries (target 0%) | `make eval-guard` | Offline; runs in CI. |
@@ -328,7 +332,24 @@ RELEASE.md will carry the exact steps.
     - **p95** of 10 runs is the nearest-rank value, which is the slowest run; RESULTS.md says so.
     - **The federated query** is timed and checked against the same join inside PostgreSQL, not only shown.
     - **Results.** At 20M Trino over Iceberg wins the whole-table aggregates q01–q04 and q10 by 5.5–18x over PostgreSQL (q01 from Parquet metadata alone, against an index-only scan of the primary key); PostgreSQL wins the point lookup by three orders of magnitude over Iceberg and the one-hour top-pages query; the other one-hour query is a tie within run-to-run spread; Trino over PostgreSQL beats PostgreSQL directly only on q10 and is never the fastest engine. q09 fails on both Trino engines at 20M (`EXCEEDED_LOCAL_MEMORY_LIMIT`: the exact-percentile window buffers a whole wiki's rows) and is reported as a failure, not tuned away. Trino over PostgreSQL's 8.3 s on q07 turned out to be PostgreSQL's planner choosing a sequential scan under the connector's default 4 MB `work_mem` where 64 MB gets the BRIN bitmap scan (10.5 s against 0.30 s by hand; the worker count alone changes nothing, and `work_mem` alone at the default 2 workers gives the bitmap scan; `bench/results/m6-query/q07-planner-20m.txt`).
-- [ ] M7: Agent quality — value retrieval (literal matching against the value index), few-shot examples drawn from dbt docs, self-consistency voting by result hash, the `core` linking strategy wired in and measured; the full ablation grid on Haiku 5.5 and the Opus 5.5 subset run if a key is present, otherwise recorded; failure analysis of 30 wrong answers by category. Done when RESULTS.md has the ablation table (both tracks) with cost and latency per variant and the failure taxonomy, and the chosen default variant is justified by the numbers.
+- [x] M7: Agent quality — value retrieval (literal matching against the value index), few-shot examples drawn from dbt docs, self-consistency voting by result hash, the `core` linking strategy wired in and measured; the full ablation grid on Haiku 5.5 and the Opus 5.5 subset run if a key is present, otherwise recorded; failure analysis of 30 wrong answers by category. Done when RESULTS.md has the ablation table (both tracks) with cost and latency per variant and the failure taxonomy, and the chosen default variant is justified by the numbers.
+  - *Changes made while building M7.*
+    - **Features.** The four features are `+v` value hints (`tributary/agent/values.py`, BIRD's index built by `make bird`), `+f` worked examples (`tributary/agent/examples.py`), `+a` (`BIRD_RULES_ANSWER`) and `+nN` votes by result hash (`tributary/agent/vote.py`).
+      - Hints and examples go in the user turn, not the cached system prefix.
+      - The warehouse's examples are `meta.examples` in the marts' dbt YAML. BIRD's are the 450 official questions outside dev50, same database.
+    - **`+a` was added.** It replaces the planner's "unanswerable" exit, because M4 found that exit taken on 11 of 50 answerable questions. It is a benchmark setting: the product keeps the exit.
+    - **The grid.** The planned grid (linkers × repairs × votes, on Haiku and the Opus subset) became two measured cells on the local model, `full+a` and `full+v+f+a`, beside M4's `full` and `bm25-k4`.
+      - The reason is cost in time: there is no key (per the steer), and each cell took about 75 min of this CPU.
+      - The two cells ran side by side on one Ollama server with two slots, so their model time per question was measured while sharing the CPU.
+      - The leave-one-out cells, the vote, `bm25-k4+v+f+a` and the Claude grid are under To measure with their commands. The vote is built and unit-tested but not measured.
+    - **`core`.** It stays refused until `link_core` is written. Its interface gained an optional value index (BIRD's catalogs carry no values), and the harness passes each database's index to a `core` variant. Measuring it is a To measure row.
+    - **The failure taxonomy** labels 30 of the baseline's (`full`) wrong answers rather than the default's. The baseline's failures are what the features were meant to fix, and the table shows, per category, how many each M7 cell gets right.
+    - **An unusable reply.** In the run, Ollama aborted one reply as degenerate (token repeat limit), which took the whole run down. Such a reply now fails its question and is recorded, so a replay fails it the same way. A second question looped until the client timeout, so Ollama's generation is now capped at 1,536 tokens.
+    - **Results** (dev50, `qwen2.5-coder:7b`, $0). The paired change against `full`, with exact McNemar p-values, is in RESULTS.md.
+      - `full`: 21/50 official, 18/45 corrected.
+      - `full+a`: 25/50 and 22/45, with refusals 11 → 0.
+      - `full+v+f+a`: 26/50 and 26/45, challenging 2 → 4 of 10 and 1 → 7 of 9, with 13% more input tokens.
+    - **The default.** `full+v+f+a` is `make eval`'s live default: best on both tracks, though not significant at n = 50. The product's agent keeps value hints and examples off by default until the 40 warehouse questions are re-recorded with them (To measure). M7 is done on these local-model cells per the steer.
 - [ ] M8: Release readiness — README with demo GIF, architecture diagram, design decisions, results table and roadmap; RESULTS.md complete with "To measure" for anything unrun; RELEASE.md; PyPI build and guarded publish workflow; GHCR image workflow; Dockerfile hardening (non-root, pinned digests); security pass on the API and the guard; CHANGELOG; version 0.1.0 tag prepared but not pushed. Done when a clean-checkout `pip install .` plus `docker compose up` reproduces the README quickstart, every CI job is green, and the release workflow dry-runs on a branch.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.

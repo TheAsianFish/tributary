@@ -1,0 +1,187 @@
+{
+  "labelled_by": "reading each predicted query against the gold query, both result sets and the evidence; stored values checked in the database",
+  "labels": [
+    {
+      "category": "shape",
+      "id": 23,
+      "note": "Right 1,239 schools and streets, but adds an unasked streetabr column (ABS on the difference changes no rows).",
+      "track": "official"
+    },
+    {
+      "category": "gold",
+      "id": 37,
+      "note": "Gold's NULLS FIRST picks a school with 0 test takers (NULL rate); prediction returns McClymonds High, rate 0/44, a true minimum.",
+      "track": "official"
+    },
+    {
+      "category": "shape",
+      "id": 83,
+      "note": "Same city and school count as gold (Adelanto, 1) plus an extra leading COUNT(DISTINCT city) column.",
+      "track": "official"
+    },
+    {
+      "category": "value",
+      "id": 405,
+      "note": "Evidence spells it 'Portuguese (Brasil)'; the stored value is 'Portuguese (Brazil)', so the count is 0 instead of 7.",
+      "track": "official"
+    },
+    {
+      "category": "value",
+      "id": 477,
+      "note": "Filters cards.setcode = 'Coldsnap', but setcode holds the code 'CSP'; the name is in sets.name, so 0 rows return.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 530,
+      "note": "Claimed legalities has no artist column so banned cards cannot be tied to Allen Williams; cards joins legalities on uuid.",
+      "track": "official"
+    },
+    {
+      "category": "no_query",
+      "id": 637,
+      "note": "All 3 attempts failed; last compared tags.id (bigint) to string_to_array(posts.tags) elements: operator does not exist bigint = text.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 1058,
+      "note": "Claimed the evidence gives no way to find the tallest and shortest players, though it defines them as MAX(height) and MIN(height).",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 1078,
+      "note": "Claimed the evidence contradicts the question, then stated Aaron Lennon is older in prose without returning SQL.",
+      "track": "official"
+    },
+    {
+      "category": "gold",
+      "id": 1144,
+      "note": "Two players tie at weight 243 and the heaviest has 14 attribute rows; gold's LIMIT 1 picks one arbitrarily and adds an unasked id.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 137,
+      "note": "Claimed 'Branch location 1' is not defined in the schema; gold reads it as account.district_id = 1.",
+      "track": "official"
+    },
+    {
+      "category": "evidence",
+      "id": 861,
+      "note": "Evidence says q3 LIKE '1:54%'; prediction uses '0:01:%' (0 rows) and also returns qualifying.driverid, not drivers.number.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 915,
+      "note": "Claimed the evidence gives no birth dates, although it names drivers.dob and says smaller dob means older.",
+      "track": "official"
+    },
+    {
+      "category": "no_query",
+      "id": 967,
+      "note": "All 3 attempts failed; last selected driverid beside COUNT(*) with no GROUP BY (SQLSTATE 42803).",
+      "track": "official"
+    },
+    {
+      "category": "schema",
+      "id": 990,
+      "note": "Uses constructorstandings.position = 1 (championship leader Brawn) instead of the race winner in results (McLaren).",
+      "track": "official"
+    },
+    {
+      "category": "gold",
+      "id": 1011,
+      "note": "Gold parses laptimes '1:01:30.660' as 61 s, ranking Kvyat first; the fastest lap is Hamilton's 1:07.411, which the prediction returns.",
+      "track": "official"
+    },
+    {
+      "category": "no_query",
+      "id": 1404,
+      "note": "All 3 attempts failed; last joined expense.link_to_event, which does not exist (expense links to budget via link_to_budget).",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 753,
+      "note": "Claimed colour has no 'No Colour' entry; gold filters colour = 'No Colour' and returns 15 heroes.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 775,
+      "note": "Claimed the evidence's percentage formula gives no SQL syntax or join path; superhero joins gender and colour by id.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 782,
+      "note": "Claimed the colour table's schema is missing, so eye_colour_id and hair_colour_id cannot be resolved to 'Black'.",
+      "track": "official"
+    },
+    {
+      "category": "evidence",
+      "id": 786,
+      "note": "Restricts MAX to Strength but not the outer count, so it counts every attribute at value 100 (279) instead of Strength only (63).",
+      "track": "official"
+    },
+    {
+      "category": "join",
+      "id": 792,
+      "note": "Joins superhero.id = superpower.id directly, skipping hero_power, so it returns one unrelated power instead of 8.",
+      "track": "official"
+    },
+    {
+      "category": "no_query",
+      "id": 1175,
+      "note": "All 3 attempts failed; last read HGB from examination, but HGB is in laboratory (column examination.hgb does not exist).",
+      "track": "official"
+    },
+    {
+      "category": "aggregation",
+      "id": 1257,
+      "note": "COUNT(*) over the patient-laboratory join counts lab rows (30), not distinct patients (4).",
+      "track": "official"
+    },
+    {
+      "category": "no_query",
+      "id": 1265,
+      "note": "All 3 attempts failed; last read RNP from examination, but RNP is in laboratory (column e.RNP does not exist).",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 198,
+      "note": "Claimed the tables give no direct way to count single-bonded atoms per molecule; bond, atom and molecule join on molecule_id.",
+      "track": "official"
+    },
+    {
+      "category": "evidence",
+      "id": 200,
+      "note": "Drops the evidence's carcinogenic filter label = '+', so TR377 is returned alongside TR041 and TR499.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 228,
+      "note": "Claimed the evidence computes a percentage while the question asks for an amount, though the question asks for a percentage.",
+      "track": "official"
+    },
+    {
+      "category": "refusal",
+      "id": 327,
+      "note": "Claimed no table gives the number of atoms per molecule; atom has molecule_id, so COUNT(atom_id) per molecule works.",
+      "track": "official"
+    },
+    {
+      "category": "ordering",
+      "id": 37,
+      "note": "Corrected gold returns all 17 schools tied at rate 0; LIMIT 1 keeps only McClymonds High.",
+      "track": "corrected"
+    }
+  ],
+  "report": "bird-dev50-ollama-qwen2.5-coder-7b.json",
+  "variant": "full"
+}
