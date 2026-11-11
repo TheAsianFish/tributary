@@ -47,9 +47,14 @@ def test_the_replay_reproduces_every_verdict(
                 assert got["ex_wilson95"] == want["ex_wilson95"]
 
 
-def test_the_run_covers_both_variants_and_tracks_on_dev50(recorded: dict[str, Any]) -> None:
+def test_the_run_covers_every_variant_and_track_on_dev50(recorded: dict[str, Any]) -> None:
     assert recorded["subset"] == "dev50"
-    assert set(recorded["variants"]) == {"full", "bm25-k4"}
+    assert set(recorded["variants"]) == {"full", "bm25-k4", "full+a", "full+v+f+a"}
+    # M7's cells were added by resuming M4's run: its rows must not have moved.
+    m4 = {("full", "official"): 21, ("full", "corrected"): 18, ("bm25-k4", "official"): 21}
+    m4[("bm25-k4", "corrected")] = 17
+    for (variant, track), correct in m4.items():
+        assert recorded["variants"][variant][track]["r2"]["correct"] == correct
     for tracks in recorded["variants"].values():
         assert tracks["official"]["r2"]["total"] == 50
         assert tracks["corrected"]["r2"]["total"] == 45

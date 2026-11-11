@@ -528,6 +528,14 @@ every query the run sent to PostgreSQL in
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
 | qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
+| qwen2.5-coder:7b (ollama) | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
+| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
 <!-- /bird:ex -->
 
 The `-r0` rows are the same run read at its first attempt (the first model
@@ -602,22 +610,63 @@ report in 0.4 s with no model and no database.
 <!-- bird:ledger -->
 | Run | Variant | Model calls | Tokens in / out | Cost | Same tokens on `claude-haiku-5-5` / `claude-opus-5-5` |
 |---|---|---:|---:|---:|---:|
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+a-r0` | 63 | 140,117 / 13,557 | $0.00 | $0.02 / $0.83 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+a-r2` | 88 | 206,276 / 19,404 | $0.00 | $0.03 / $1.21 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r0` | 63 | 166,385 / 13,688 | $0.00 | $0.02 / $0.94 |
+| `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r2` | 85 | 233,842 / 18,570 | $0.00 | $0.03 / $1.31 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r0` | 63 | 140,054 / 11,175 | $0.00 | $0.02 / $0.78 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r2` | 83 | 193,346 / 15,209 | $0.00 | $0.03 / $1.08 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r0` | 63 | 117,031 / 11,469 | $0.00 | $0.02 / $0.70 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r2` | 78 | 153,384 / 14,736 | $0.00 | $0.02 / $0.91 |
 
-Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its two variants with repairs (346,730 in / 29,945 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
+Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its four variants with repairs (786,848 in / 67,919 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
 
 | What | Command | `claude-haiku-5-5` | `claude-opus-5-5` |
 |---|---|---:|---:|
-| dev50, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> RECORD=1` | $0.05 | $1.99 |
-| all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
+| dev50, the recorded run's variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> VARIANTS=bm25-k4,full,full+a,full+v+f+a RECORD=1` | $0.11 | $4.51 |
+| all 500, the same variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> VARIANTS=bm25-k4,full,full+a,full+v+f+a SUBSET=all RECORD=1` | $1.13 | $45.06 |
 <!-- /bird:ledger -->
 
 ## Agent quality: what each planner feature buys (M7)
 
 <!-- m7:intro -->
+`make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b
+VARIANTS=full,bm25-k4,full+a,full+v+f+a RECORD=1 RESUME=1`: the same 50
+dev50 questions, both label tracks, the same planner, guard, executor and
+scorer as M4, with features layered on the M4 baseline (`full`: every table,
+the bare question, up to two repairs). The features are:
+
+- `+v`, value hints. The stored values the question and its evidence name,
+  found by literal matching against the value index
+  (`eval/bird/data/values.json.gz`, built by `make bird`). On dev50, 39 of
+  50 questions get at least one hint, and 31 get a hint whose value the gold
+  SQL uses as a literal (`uv run python -m eval.bird.values --coverage`; 287
+  of 500 over the whole set).
+- `+f`, three worked examples. These are the official questions most similar
+  to the asked one by BM25, from the same database and outside dev50 (450
+  candidates).
+- `+a`, the answer-every-question rule. It replaces the planner's
+  "unanswerable" exit with "write your best query".
+
+Value hints and examples go in the user turn, so each database's system
+prompt is unchanged and stays cached. The `full` and `bm25-k4` rows are M4's
+recorded run, replayed with this run's executions.
+
+The grid is two cells, not the planned full one, because this session had a
+fixed time budget. At about 1 model call per minute on this CPU, each cell is
+about 75 minutes. The two cells were run side by side on one Ollama server
+with two slots (`OLLAMA_NUM_PARALLEL=2`; Ollama 0.40.16, temperature 0, seed
+0, 16k context). Their model time per question was therefore measured while
+sharing the CPU and is not comparable with M4's serial rows. The calls and
+token counts are exact. The remaining cells (leave-one-out, the vote,
+`bm25-k4` with every feature, `core`) are under
+[To measure](#to-measure) with their commands. Cost $0 (local model).
+
+"vs `full`" counts the questions the variant gets right that `full` gets
+wrong (+) and the reverse (-) on the same questions, with the exact two-sided
+McNemar p-value on those discordant questions. At n = 50 a change of a few
+questions is noise; the p-value says how much.
+<!-- /m7:intro -->
 
 ### The ablation grid
 
@@ -626,6 +675,8 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `full` | **21/50** (42.0%, 29.4%–55.8%) | **18/45** (40.0%, 27.0%–54.5%) | – | – | 21/50 | 11 | 83 | 193,346 / 15,209 | $0.03 / $1.08 | 42.5 s / 225.1 s |
 | `bm25-k4` | **21/50** (42.0%, 29.4%–55.8%) | **17/45** (37.8%, 25.1%–52.4%) | +3 -3 (1.00) | +3 -4 (1.00) | 21/50 | 11 | 78 | 153,384 / 14,736 | $0.02 / $0.91 | 51.2 s / 191.9 s |
+| `full+a` | **25/50** (50.0%, 36.6%–63.4%) | **22/45** (48.9%, 35.0%–63.0%) | +7 -3 (0.34) | +5 -1 (0.22) | 24/50 | 0 | 88 | 206,276 / 19,404 | $0.03 / $1.21 | 80.4 s / 308.9 s |
+| `full+v+f+a` | **26/50** (52.0%, 38.5%–65.2%) | **26/45** (57.8%, 43.3%–71.0%) | +8 -3 (0.23) | +13 -5 (0.10) | 25/50 | 1 | 85 | 233,842 / 18,570 | $0.03 / $1.31 | 77.8 s / 303.3 s |
 <!-- /bird:ablation -->
 
 ### Why the default is what it is
@@ -635,19 +686,19 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 ### Thirty wrong answers, by cause
 
 <!-- bird:failures -->
-| Category | What it covers | Wrong answers | Share | Right with `bm25-k4` | Questions |
-|---|---|---:|---:|---:|---|
-| Refused | set answerable to false on an answerable question | 11 | 37% | 1 | 137, 198, 228, 327, 530, 753, 775, 782, 915, 1058, 1078 |
-| No query ran | every attempt was blocked or failed in PostgreSQL | 5 | 17% | 0 | 637, 967, 1175, 1265, 1404 |
-| Wrong table or column | read a column or table that does not hold the asked fact | 1 | 3% | 1 | 990 |
-| Wrong literal | filtered on a value not stored in that form (case, spelling, code) | 2 | 7% | 0 | 405, 477 |
-| Wrong join | a missing, extra or wrongly keyed join | 1 | 3% | 1 | 792 |
-| Evidence not followed | ignored or misapplied the formula or mapping given | 3 | 10% | 0 | 200, 786, 861 |
-| Wrong aggregation | wrong aggregate, grouping, DISTINCT or count target | 1 | 3% | 0 | 1257 |
-| Ordering or limit | wrong sort direction, tie handling or row limit | 1 | 3% | 0 | 37 (c) |
-| Output shape | the right facts with extra, missing or reordered columns | 2 | 7% | 0 | 23, 83 |
-| Gold is questionable | the gold answer is wrong or the question is ambiguous | 3 | 10% | 0 | 37, 1011, 1144 |
-| **Total** | | **30** | 100% | **3** | |
+| Category | What it covers | Wrong answers | Share | Right with `full+a` | Right with `bm25-k4` | Right with `full+v+f+a` | Questions |
+|---|---|---:|---:|---:|---:|---:|---|
+| Refused | set answerable to false on an answerable question | 11 | 37% | 4 | 1 | 3 | 137, 198, 228, 327, 530, 753, 775, 782, 915, 1058, 1078 |
+| No query ran | every attempt was blocked or failed in PostgreSQL | 5 | 17% | 1 | 0 | 1 | 637, 967, 1175, 1265, 1404 |
+| Wrong table or column | read a column or table that does not hold the asked fact | 1 | 3% | 0 | 1 | 0 | 990 |
+| Wrong literal | filtered on a value not stored in that form (case, spelling, code) | 2 | 7% | 0 | 0 | 1 | 405, 477 |
+| Wrong join | a missing, extra or wrongly keyed join | 1 | 3% | 0 | 1 | 1 | 792 |
+| Evidence not followed | ignored or misapplied the formula or mapping given | 3 | 10% | 1 | 0 | 2 | 200, 786, 861 |
+| Wrong aggregation | wrong aggregate, grouping, DISTINCT or count target | 1 | 3% | 0 | 0 | 0 | 1257 |
+| Ordering or limit | wrong sort direction, tie handling or row limit | 1 | 3% | 0 | 0 | 0 | 37 (c) |
+| Output shape | the right facts with extra, missing or reordered columns | 2 | 7% | 1 | 0 | 0 | 23, 83 |
+| Gold is questionable | the gold answer is wrong or the question is ambiguous | 3 | 10% | 0 | 0 | 0 | 37, 1011, 1144 |
+| **Total** | | **30** | 100% | **7** | **3** | **8** | |
 <!-- /bird:failures -->
 
 ## Ingest under faults and at scale (M5)
@@ -1045,3 +1096,6 @@ The Trino query joins the Iceberg events with `marts.dim_wiki`, which dbt builds
 | BIRD, all 500 questions on Claude Haiku 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 SUBSET=all RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD dev50 on Claude Opus 5.5 | `... make eval PROVIDER=anthropic MODEL=claude-opus-5-5 RECORD=1` | M7 | see [Cost](#cost) |
 | BIRD, all 500 questions on the local model (about 13 h of CPU at this run's pace) | `make bird && make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=all RECORD=1` | M7 | $0 |
+| The rest of the M7 grid on the local model: the leave-one-out cells `full+v+a`, `full+f+a`, `full+v+f`, the vote `full+v+f+a+n3`, and `bm25-k4+v+f+a`, so each feature's share of the gain is measured rather than inferred | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,full+v+a,full+f+a,full+v+f,full+v+f+a+n3,bm25-k4+v+f+a RECORD=1 RESUME=1` (the recorded cells replay; about 75 min of CPU per new cell here, and up to twice that for the vote) | M7 | $0 |
+| The `core` linker in the grid, once `link_core` is written | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,core-k4+v+f+a RECORD=1 RESUME=1`, then `make eval-link` | M7 | $0 |
+| The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |
