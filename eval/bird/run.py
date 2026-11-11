@@ -106,6 +106,8 @@ VARIANT_HELP = (
     "+f K few-shot examples (3), +a the answer-every-question rule, +nN vote over N draws"
 )
 DEFAULT_EXAMPLES = 3
+# The baseline and the default variant M7 chose (RESULTS.md, "Agent quality").
+DEFAULT_LIVE_VARIANTS = "full,full+v+f+a"
 
 
 @dataclass(frozen=True, slots=True)
@@ -629,7 +631,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--variants",
         default=None,
         help=f"comma-separated, each {VARIANT_HELP} (default: a replay replays the recorded "
-        "run's variants, a live run full,bm25-k4)",
+        f"run's variants, a live run {DEFAULT_LIVE_VARIANTS})",
     )
     parser.add_argument("--tracks", default="official,corrected")
     parser.add_argument("--subset", default="dev50")
@@ -656,7 +658,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             recorded_variants = json.loads(args.recorded.read_text(encoding="utf-8"))["variants"]
             args.variants = ",".join(recorded_variants)
         else:
-            args.variants = "full,bm25-k4"
+            args.variants = DEFAULT_LIVE_VARIANTS
     try:
         variants = [Variant.parse(v) for v in args.variants.split(",") if v]
     except ValueError as exc:

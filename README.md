@@ -403,7 +403,11 @@ flowchart LR
     ARC[Arcwise corrections<br/>SQLite gold] --> TV[transpile + verify<br/>same rows on both engines]
     TV --> CG[corrected gold]
     Q[question + evidence] --> LK[linker<br/>full / bm25 / core]
-    LK --> PL[planner] --> GD[guard] --> RUN[executor]
+    Q --> CX[context<br/>value hints, examples]
+    VI[(value index)] --> CX
+    EX[(held-out questions)] --> CX
+    LK --> PL[planner<br/>optional vote] --> GD[guard] --> RUN[executor]
+    CX --> PL
     RUN --> PG
     RUN -->|rows| SC[scorer<br/>BIRD calculate_ex rule]
     OG[official gold] --> SC
@@ -417,6 +421,19 @@ Schema linking is a strategy behind one interface
 (`tributary/agent/linker.py`): `full` sends every table, `bm25` the k best
 lexical matches; `make eval-link` measures what each one finds before any
 model sees it.
+
+On top of the linked schema, the planner can add per-question context to
+the user turn (never to the cached system prompt): the stored values the
+question names, found by literal matching against a value index
+(`tributary/agent/values.py`; "schools in Alameda County" brings
+`california_schools.schools.county = 'Alameda'`, the column the question
+names first), and
+the most similar worked examples, which on the warehouse are the queries
+documented under each mart's `meta.examples` in dbt
+(`tributary/agent/examples.py`). A `VotingPlanner`
+(`tributary/agent/vote.py`) can ask several times and answer with the rows
+most draws agree on. Each of these is a variant flag in `make eval`
+(`full+v+f+a+n3`), and RESULTS.md measures what each one buys.
 
 ### Design decisions
 
@@ -486,7 +503,9 @@ runs are listed there under "To measure", with their estimated cost.
 | Partition pruning, one hour of 20M rows on Trino | Partitioned and compacted: 1 file, 0.6 MB read, 82 ms; unpartitioned (1 file): all 20M rows, 32 MB, 348 ms; as streamed, uncompacted: 183 files, 6.6 MB, 341 ms (six hours: 85 ms against 732 ms) |
 | Storage for 20M rows | PostgreSQL heap 4.4 GB (+ 631 MB primary key); Iceberg zstd Parquet 958 MB by hour, 1.6 GB in 44,357 files as streamed |
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
-| Replay of the BIRD run (what CI tests) | All 190 verdicts in 0.4 s, no model and no database, against 69 min live |
+| BIRD dev50, M7 planner features (`make eval`, `qwen2.5-coder:7b`, $0) | Dropping the "unanswerable" exit: 21 → 25 / 50 (refusals 11 → 0, but only 4 of the 11 become right). Adding value hints and three worked examples: 26 / 50 official and 18 → 26 / 45 corrected, challenging questions 2 → 4 of 10 official and 1 → 7 of 9 corrected, for 13% more input tokens; neither pairing against the baseline is significant at n = 50 (McNemar p = 0.23 and 0.10) |
+| Failure taxonomy (30 baseline failures, hand-labelled) | 11 refusals, 5 queries that never ran, 3 questionable gold labels; the rest are wrong literals, misread evidence, joins and shape |
+| Replay of the BIRD run (what CI tests) | All 380 verdicts of four variants in 10 s (mostly loading the value index), no model and no database |
 
 ## Development
 
@@ -502,7 +521,7 @@ run of the 40 questions waits for a key); M4 BIRD harness and schema
 linking (done on local-model recordings; the Claude runs are costed in
 RESULTS.md); M5 fault-injection and scaling benchmarks (done: no loss under 18 kills
 and no Iceberg duplicate, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
-over Iceberg (done: where each engine wins at 1M and 20M rows, pruning and compaction measured); M7 agent quality; M8 release. Beyond that: an Iceberg REST
+over Iceberg (done: where each engine wins at 1M and 20M rows, pruning and compaction measured); M7 agent quality (done on local-model recordings: value hints, examples from dbt docs and self-consistency voting, two cells of the ablation grid measured, the rest and the Claude grid costed under To measure); M8 release. Beyond that: an Iceberg REST
 catalog in place of the JDBC catalog, and a Trino dialect for the guard.
 Details in PLAN.md.
 

@@ -603,7 +603,10 @@ replay could have graded a different reply than the live run did), and
 calls live (69 min). Every reported verdict is therefore graded from the
 recorded reply and from this run's own query executions, and the offline
 replay (`make eval`, which CI runs) reproduces all 190 verdicts of the
-report in 0.4 s with no model and no database.
+report in 0.4 s with no model and no database. Since M7 the same report also
+holds the `full+a` and `full+v+f+a` cells (the table above includes their
+rows; see [Agent quality](#agent-quality-what-each-planner-feature-buys-m7)),
+and the replay checks all 380 verdicts.
 
 ### Cost
 
@@ -652,8 +655,8 @@ Value hints and examples go in the user turn, so each database's system
 prompt is unchanged and stays cached. The `full` and `bm25-k4` rows are M4's
 recorded run, replayed with this run's executions.
 
-The grid is two cells, not the planned full one, because this session had a
-fixed time budget. At about 1 model call per minute on this CPU, each cell is
+The grid is two cells, not the planned full one, because I time-boxed the
+milestone's CPU budget to about two hours. At about 1 model call per minute on this CPU, each cell is
 about 75 minutes. The two cells were run side by side on one Ollama server
 with two slots (`OLLAMA_NUM_PARALLEL=2`; Ollama 0.40.16, temperature 0, seed
 0, 16k context). Their model time per question was therefore measured while
@@ -682,8 +685,47 @@ questions is noise; the p-value says how much.
 ### Why the default is what it is
 
 <!-- m7:default -->
+**What the numbers say.**
+
+- **The refusal exit cost 4 questions, and removing it fixed 4 of its 11 refusals.** `full+a` refuses nothing (11 → 0), and EX moves from 21 to 25 / 50 on the official track and from 18 to 22 / 45 on the corrected one. Of the 11 questions the baseline refused, `full+a` answers 4 correctly. The other 7 still end wrong: 5 with a query that returns the wrong rows, and 2 that fail every attempt. So the exit was mostly hiding questions the model could not answer anyway. Paired against `full`, the official track is +7 -3 (p = 0.34) and the corrected +5 -1 (p = 0.22). That is in the right direction on both tracks, but not significant at n = 50.
+- **Value hints and examples move many answers both ways.** On top of `+a`, `+v+f` gains 8 and loses 7 official questions (25 → 26), and gains 11 and loses 7 on the corrected track (22 → 26). Against `full`, `full+v+f+a` is +8 -3 (p = 0.23) and +13 -5 (p = 0.10).
+  - The gain is in the hard questions: challenging goes from 2 to 4 of 10 on the official track and from 1 to 7 of 9 on the corrected one.
+  - The losses are in the simple ones: 8 → 7 of 15 official, 7 → 6 of 13 corrected. Examples pull a 7B model toward the shape of a similar question, which helps a multi-step question and sometimes over-complicates a lookup.
+  - In the taxonomy below, `+v+f` is the only cell that fixes a wrong literal: on 477 it now looks `'Coldsnap'` up in `sets.name` instead of comparing it with the set code. It also fixes two of the three "evidence not followed" answers. Question 405 (`'Portuguese (Brasil)'` in the evidence, `'Portuguese (Brazil)'` stored) is still wrong, because the matcher is exact up to case. A fuzzy match is the next step for value retrieval.
+- **Cost.** `full+v+f+a` sends 13% more input tokens than `full+a` (233,842 against 206,276 over both tracks, with repairs): about 320 tokens of examples and hints per call. On Claude at list price that is $0.03 vs $0.03 on Haiku 5.5 and $1.31 vs $1.21 on Opus 5.5 for the whole cell. Calls are about equal (85 against 88).
+- **Model time.** The two M7 cells took 78–80 s per question at the median. They ran side by side, sharing the CPU, so this is not comparable with M4's serial 42 s. Their token counts are.
+
+**The default.** `make eval`'s live default is now `full,full+v+f+a`: the baseline and the variant that is best on both tracks, for 13% more input tokens than the next best. It is the only cell that improved the challenging questions, and neither pairing against `full` is significant at this size, which is what a larger subset (`SUBSET=all`, under To measure) would settle.
+
+The product's agent keeps value hints and worked examples **off** by default (`TRIBUTARY_AGENT_VALUES=false`, `TRIBUTARY_AGENT_EXAMPLES=0`), for three reasons:
+
+- The BIRD gain over `full+a` is 1 and 4 questions, against 7 losses on each track.
+- The warehouse prompt already lists every indexed value in its DDL.
+- The 40 warehouse questions have not been re-recorded with them.
+
+Turning them on is one setting each, and the re-recording that would justify it is under To measure. `+a` stays a benchmark setting: the warehouse gets genuinely unanswerable questions.
+
+Not measured here, and listed under [To measure](#to-measure):
+
+- each feature's own share: the leave-one-out cells `full+v+a` and `full+f+a`;
+- the vote `full+v+f+a+n3`, which is built and unit-tested;
+- `bm25-k4` with every feature;
+- `core`, once `link_core` exists;
+- the whole grid on Claude.
+<!-- /m7:default -->
 
 ### Thirty wrong answers, by cause
+
+`eval/results/bird-failures.json` holds 30 of the baseline's (`full`)
+wrong answers: all 29 on the official track, plus question 37 on the
+corrected track, which is worded differently there. Each was labelled by
+reading the predicted query against the gold query, both result sets
+(`uv run python -m eval.bird.failures --report ... --variant full --dump
+FILE` writes them out) and the evidence, with stored values checked in the
+database. Each answer got one category from a list fixed before labelling:
+the error that, fixed alone, gets closest to the gold. The "Right with"
+columns are computed from the verdicts, not labelled, and `make results`
+fails if a label names an answer that is not wrong in the run.
 
 <!-- bird:failures -->
 | Category | What it covers | Wrong answers | Share | Right with `full+a` | Right with `bm25-k4` | Right with `full+v+f+a` | Questions |
@@ -700,6 +742,26 @@ questions is noise; the p-value says how much.
 | Gold is questionable | the gold answer is wrong or the question is ambiguous | 3 | 10% | 0 | 0 | 0 | 37, 1011, 1144 |
 | **Total** | | **30** | 100% | **7** | **3** | **8** | |
 <!-- /bird:failures -->
+
+- **Half the baseline's failures were not wrong SQL at all.** 11 were
+  refusals and 5 were queries that never ran. The model claimed, for
+  example, that `drivers.dob` was missing when the evidence names it (915),
+  and that `colour` has no 'No Colour' row when it has one (753). This is why
+  `+a` came first, and why its gain is real but bounded: answering is
+  necessary, not sufficient (4 of 11 become right).
+- **3 of 30 are the benchmark's fault.**
+  - 1011: the gold reads the lap time `1:01:30.660` as 61 s, while the model
+    returns the true fastest lap.
+  - 37: the gold's `NULLS FIRST` picks a school with no test takers.
+  - 1144: a tie that the gold breaks arbitrarily.
+
+  The corrected track exists for this; its gold for 37 is different again,
+  a 17-way tie.
+- **Literal and evidence errors are what the context features target, and
+  they moved.** `+v+f` fixes 1 of 2 wrong literals and 2 of 3 evidence
+  misreadings, which `+a` alone does not. The remaining literal (405) is a
+  spelling mismatch between BIRD's evidence and the data, which exact
+  matching cannot bridge.
 
 ## Ingest under faults and at scale (M5)
 
