@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist
+.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -50,6 +50,9 @@ dbt: ## Build and test the warehouse (seeds, staging, marts, quality tests)
 
 test-warehouse: ## dbt and DAG tests against PostgreSQL alone (TRIBUTARY_PG_*)
 	uv run pytest tests/warehouse -m warehouse
+
+test-live: ## The provider against the real Anthropic API (skipped without ANTHROPIC_API_KEY)
+	uv run pytest tests/live -m live
 
 demo-data: ## Re-capture the committed sample from the live stream (~45 min)
 	uv run tributary sample capture --count 50000

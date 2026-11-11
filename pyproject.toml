@@ -94,4 +94,5 @@ markers = [
     "integration: needs the Compose services (Kafka, Spark, PostgreSQL, MinIO)",
     "warehouse: needs PostgreSQL only (TRIBUTARY_PG_*), with dbt and Airflow installed",
     "lakehouse: needs the Compose stack with the lakehouse profile (Trino)",
+    "live: calls a real model API (needs ANTHROPIC_API_KEY; skipped without it)",
 ]
