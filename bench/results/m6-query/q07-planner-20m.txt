@@ -82,3 +82,37 @@ EXPLAIN (ANALYZE, BUFFERS, COSTS) SELECT wiki, length_old, length_new FROM bench
  Execution Time: 302.975 ms
 (18 rows)
 
+
+# Added 2026-11-11T02:32:07Z: work_mem alone (a new session, workers at the default 2), run four times; the output below is the fourth, and the first read the heap blocks from disk.
+SHOW max_parallel_workers_per_gather;
+ max_parallel_workers_per_gather 
+---------------------------------
+ 2
+(1 row)
+
+SET work_mem = '64MB';
+SET
+EXPLAIN (ANALYZE, BUFFERS, COSTS) SELECT wiki, length_old, length_new FROM bench.events_20m WHERE event_ts >= '2026-10-22 00:00:00+00' AND event_ts < '2026-10-22 06:00:00+00' AND event_type = 'edit';
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on events_20m  (cost=137.94..559584.33 rows=253789 width=18) (actual time=101.226..190.413 rows=239692 loops=1)
+   Recheck Cond: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone))
+   Rows Removed by Index Recheck: 41506
+   Filter: (event_type = 'edit'::text)
+   Rows Removed by Filter: 255608
+   Heap Blocks: lossy=14336
+   Buffers: shared hit=14368
+   ->  Bitmap Index Scan on events_20m_event_ts_brin  (cost=0.00..74.49 rows=522322 width=0) (actual time=0.793..0.794 rows=143360 loops=1)
+         Index Cond: ((event_ts >= '2026-10-22 00:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-22 06:00:00+00'::timestamp with time zone))
+         Buffers: shared hit=32
+ Planning:
+   Buffers: shared hit=101
+ Planning Time: 0.365 ms
+ JIT:
+   Functions: 6
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.378 ms (Deform 0.235 ms), Inlining 55.151 ms, Optimization 26.921 ms, Emission 17.828 ms, Total 100.278 ms
+ Execution Time: 215.274 ms
+(18 rows)
+
+# Earlier runs of the same statement in this session: 1390.259 ms (first), 394.286 ms, 274.455 ms.
