@@ -1,6 +1,6 @@
 [project]
 name = "tributary-platform"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Streaming data platform with an evaluated analytics agent"
 readme = "README.md"
 license = "MIT"
