@@ -615,6 +615,28 @@ Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-cod
 | all 500, both variants, both tracks | `make eval PROVIDER=anthropic MODEL=<model> SUBSET=all RECORD=1` | $0.50 | $19.86 |
 <!-- /bird:ledger -->
 
+## Agent quality: what each planner feature buys (M7)
+
+<!-- m7:intro -->
+
+### The ablation grid
+
+<!-- bird:ablation -->
+| Variant | Official EX | Corrected EX | vs `full`, official: +gained -lost (p) | vs `full`, corrected: +gained -lost (p) | Official EX, no repairs | Refused | Model calls | Tokens in / out | `claude-haiku-5-5` / `claude-opus-5-5` | Model time per question, p50 / p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `full` | **21/50** (42.0%, 29.4%–55.8%) | **18/45** (40.0%, 27.0%–54.5%) | – | – | 21/50 | 11 | 83 | 193,346 / 15,209 | $0.03 / $1.08 | 42.5 s / 225.1 s |
+| `bm25-k4` | **21/50** (42.0%, 29.4%–55.8%) | **17/45** (37.8%, 25.1%–52.4%) | +3 -3 (1.00) | +3 -4 (1.00) | 21/50 | 11 | 78 | 153,384 / 14,736 | $0.02 / $0.91 | 51.2 s / 191.9 s |
+<!-- /bird:ablation -->
+
+### Why the default is what it is
+
+<!-- m7:default -->
+
+### Thirty wrong answers, by cause
+
+<!-- bird:failures -->
+<!-- /bird:failures -->
+
 ## Ingest under faults and at scale (M5)
 
 These numbers come from `make bench` and `make bench-scale`. They make no model calls and cost $0. Raw output for every
