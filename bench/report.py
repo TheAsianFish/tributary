@@ -1,4 +1,4 @@
-"""Render RESULTS.md's ingest tables from ``bench/results/`` (``make bench-results``).
+"""Render RESULTS.md's benchmark tables from ``bench/results/`` (``make bench-results``).
 
 Every number in the tables is read from a committed raw file; ``--check``
 fails if RESULTS.md differs from what the files say (a unit test runs it).
@@ -17,7 +17,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from bench import rules
+from bench import query_report, rules
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_MD = ROOT / "RESULTS.md"
@@ -410,6 +410,7 @@ def render_all() -> dict[str, str]:
             iceberg=iceberg_table(),
             environment=environment_table(),
         )
+    tables.update(query_report.render())
     return tables
 
 
@@ -441,7 +442,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("RESULTS.md matches bench/results/")
         return 0
     RESULTS_MD.write_text(rendered, encoding="utf-8")
-    print("RESULTS.md ingest tables rendered from bench/results/")
+    print("RESULTS.md benchmark tables rendered from bench/results/")
     return 0
 
 

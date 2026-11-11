@@ -834,6 +834,41 @@ Every `warehouse_refresh` during the fault runs passed every check: 4 of 4 runs,
 Freshness of what the agent reads is therefore bounded by dbt's run time, not by Kafka or Spark. That is the number to look at before tightening the 60-minute freshness threshold. Faster refreshes would need incremental models for the other marts, or less contention on the box.
 
 
+## Query engines: PostgreSQL vs Trino over Iceberg (M6)
+
+<!-- m6:intro -->
+
+<!-- bench:query-environment -->
+<!-- /bench:query-environment -->
+
+### The data in each store
+
+<!-- bench:query-storage -->
+<!-- /bench:query-storage -->
+
+### Warm latency: query × engine × scale
+
+<!-- bench:query-latency -->
+<!-- /bench:query-latency -->
+
+### Cold: first run after a restart
+
+<!-- bench:query-cold -->
+<!-- /bench:query-cold -->
+
+### Pruning: partitioned vs unpartitioned vs uncompacted
+
+<!-- bench:query-pruning -->
+<!-- /bench:query-pruning -->
+
+### A federated query: lake events joined with a warehouse mart
+
+<!-- bench:query-federated -->
+<!-- /bench:query-federated -->
+
+<!-- bench:query-federated-result -->
+<!-- /bench:query-federated-result -->
+
 ## To measure
 
 | What | Command | Milestone | Cost |
