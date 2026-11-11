@@ -1,0 +1,2413 @@
+{
+ "cells": {
+  "q05_hour_pages/partitioned": {
+   "engine": "trino-iceberg",
+   "layout": "partitioned",
+   "plan": "Trino version: 484\nQueued: 227.86us, Analysis: 13.47ms, Planning: 16.43ms, Execution: 194.36ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 433.56us, Scheduled: 691.84us, Blocked 178.72ms (Input: 117.85ms, Output: 0.00ns), Input: 10 rows (799B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 1kB, Tasks count: 1; per task: max: 1kB\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   Estimates: {rows: 10 (348B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 61.00ms (11.55%), Output: 10 rows (799B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, title:varchar, count:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 118.00ms (22.35%), Output: 10 rows (799B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 14.73ms, Scheduled: 18.70ms, Blocked 348.22ms (Input: 92.62ms, Output: 0.00ns), Input: 25577 rows (1.48MB); per task: avg.: 25577.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 1kB, Tasks count: 1; per task: max: 1kB\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 54.00ms (10.23%), Output: 10 rows (799B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 100.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 108.00ms (20.45%), Output: 20 rows (1.50kB)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                \u2502   CPU: 2.00ms (6.06%), Scheduled: 2.00ms (4.35%), Blocked: 0.00ns (0.00%), Output: 20 rows (1.50kB)\n                \u2502   Input avg.: 12788.50 rows, Input std.dev.: 0.20%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki, title]]\n                   \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                   \u2502   Estimates: {rows: ? (?), cpu: 2.76M, memory: ?, network: 0B}\n                   \u2502   CPU: 8.00ms (24.24%), Scheduled: 11.00ms (23.91%), Blocked: 0.00ns (0.00%), Output: 25577 rows (1.48MB)\n                   \u2502   Input avg.: 12788.50 rows, Input std.dev.: 0.20%\n                   \u2502   count := count(count_0)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar, title::varchar]]\n                      \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                      \u2502   Estimates: {rows: 83149 (2.76MB), cpu: 2.76M, memory: 0B, network: 0B}\n                      \u2502   CPU: 3.00ms (9.09%), Scheduled: 5.00ms (10.87%), Blocked: 94.00ms (17.80%), Output: 25577 rows (1.48MB)\n                      \u2502   Input avg.: 12788.50 rows, Input std.dev.: 100.00%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                             CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 93.00ms (17.61%), Output: 25577 rows (1.48MB)\n                             Input avg.: 12788.50 rows, Input std.dev.: 100.00%\n\nFragment 3 [SOURCE]\n    CPU: 19.87ms, Scheduled: 28.09ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 83149 rows (4.68MB); per task: avg.: 83149.00 std.dev.: 0.00, Output: 25577 rows (1.48MB)\n    Peak Memory: 1.78MB, Tasks count: 1; per task: max: 1.78MB\n    Output layout: [wiki, title, count_0]\n    Output partitioning: HASH [wiki, title]\n    Aggregate[type = PARTIAL, keys = [wiki, title]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n    \u2502   Estimates: {rows: 83149 (2.76MB), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 16.00ms (48.48%), Scheduled: 19.00ms (41.30%), Blocked: 0.00ns (0.00%), Output: 25577 rows (1.48MB)\n    \u2502   Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n    \u2502   count_0 := count(*)\n    \u2514\u2500 TableScan[table = iceberg:bench.events_1m$data@2025414347263909325 constraint on [event_ts]]\n           Layout: [wiki:varchar, title:varchar]\n           Estimates: {rows: 83149 (2.04MB), cpu: 2.04M, memory: 0B, network: 0B}\n           CPU: 4.00ms (12.12%), Scheduled: 9.00ms (19.57%), Blocked: 0.00ns (0.00%), Output: 83149 rows (4.68MB)\n           Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n           wiki := 5:wiki:varchar\n           title := 9:title:varchar\n           2:event_ts:timestamp(6) with time zone\n               :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 06:00:00.000000 UTC)]\n           Input: 83149 rows (4.68MB), Physical input: 593.41kB, Physical input time: 67.57us, Splits: 1, Splits generation wait time: 10.17ms\n\n",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 4680000.0,
+    "physical_input_bytes": 593410.0,
+    "rows": 83149,
+    "splits": 1
+   },
+   "seconds": [
+    0.08006182099961734,
+    0.06807968800058006,
+    0.07072839299871703,
+    0.08590816600008111,
+    0.07339857800070604,
+    0.07745600700036448,
+    0.0766413109995483,
+    0.0786540570006764,
+    0.0708023420011159,
+    0.08209403200089582
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 38,
+     "elapsedTimeMillis": 74,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020242_00230_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 40
+    },
+    {
+     "cpuTimeMillis": 31,
+     "elapsedTimeMillis": 63,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020242_00231_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 31
+    },
+    {
+     "cpuTimeMillis": 34,
+     "elapsedTimeMillis": 65,
+     "peakMemoryBytes": 3160368,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00232_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 35
+    },
+    {
+     "cpuTimeMillis": 33,
+     "elapsedTimeMillis": 80,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00233_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 42
+    },
+    {
+     "cpuTimeMillis": 30,
+     "elapsedTimeMillis": 68,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00234_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 31
+    },
+    {
+     "cpuTimeMillis": 32,
+     "elapsedTimeMillis": 73,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00235_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 37
+    },
+    {
+     "cpuTimeMillis": 37,
+     "elapsedTimeMillis": 71,
+     "peakMemoryBytes": 3184656,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00236_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 43
+    },
+    {
+     "cpuTimeMillis": 34,
+     "elapsedTimeMillis": 74,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00237_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 34
+    },
+    {
+     "cpuTimeMillis": 30,
+     "elapsedTimeMillis": 65,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00238_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 34
+    },
+    {
+     "cpuTimeMillis": 33,
+     "elapsedTimeMillis": 75,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020243_00239_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 37
+    }
+   ],
+   "summary": {
+    "max": 0.08590816600008111,
+    "median": 0.07704865899995639,
+    "min": 0.06807968800058006,
+    "p95": 0.08590816600008111
+   },
+   "warmup_seconds": 0.11286461099916778,
+   "window_files": {
+    "bytes": 4047651,
+    "files": 1
+   }
+  },
+  "q05_hour_pages/postgres": {
+   "buffers": {
+    "blocks": 3074,
+    "scans": [
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan using events_1m_event_ts_brin"
+    ],
+    "shared_hit_blocks": 3074,
+    "shared_read_blocks": 0
+   },
+   "execution_ms": 55.601,
+   "plan": {
+    "Execution Time": 55.601,
+    "Plan": {
+     "Actual Loops": 1,
+     "Actual Rows": 10,
+     "Actual Startup Time": 55.519,
+     "Actual Total Time": 55.522,
+     "Async Capable": false,
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Node Type": "Limit",
+     "Parallel Aware": false,
+     "Plan Rows": 10,
+     "Plan Width": 55,
+     "Plans": [
+      {
+       "Actual Loops": 1,
+       "Actual Rows": 10,
+       "Actual Startup Time": 55.518,
+       "Actual Total Time": 55.52,
+       "Async Capable": false,
+       "Local Dirtied Blocks": 0,
+       "Local Hit Blocks": 0,
+       "Local Read Blocks": 0,
+       "Local Written Blocks": 0,
+       "Node Type": "Sort",
+       "Parallel Aware": false,
+       "Parent Relationship": "Outer",
+       "Plan Rows": 57771,
+       "Plan Width": 55,
+       "Plans": [
+        {
+         "Actual Loops": 1,
+         "Actual Rows": 25577,
+         "Actual Startup Time": 47.857,
+         "Actual Total Time": 52.148,
+         "Async Capable": false,
+         "Disk Usage": 0,
+         "Group Key": [
+          "wiki",
+          "title"
+         ],
+         "HashAgg Batches": 1,
+         "Local Dirtied Blocks": 0,
+         "Local Hit Blocks": 0,
+         "Local Read Blocks": 0,
+         "Local Written Blocks": 0,
+         "Node Type": "Aggregate",
+         "Parallel Aware": false,
+         "Parent Relationship": "Outer",
+         "Partial Mode": "Simple",
+         "Peak Memory Usage": 5649,
+         "Plan Rows": 57771,
+         "Plan Width": 55,
+         "Planned Partitions": 0,
+         "Plans": [
+          {
+           "Actual Loops": 1,
+           "Actual Rows": 83149,
+           "Actual Startup Time": 1.073,
+           "Actual Total Time": 18.256,
+           "Alias": "events_1m",
+           "Async Capable": false,
+           "Exact Heap Blocks": 0,
+           "Local Dirtied Blocks": 0,
+           "Local Hit Blocks": 0,
+           "Local Read Blocks": 0,
+           "Local Written Blocks": 0,
+           "Lossy Heap Blocks": 3072,
+           "Node Type": "Bitmap Heap Scan",
+           "Parallel Aware": false,
+           "Parent Relationship": "Outer",
+           "Plan Rows": 82594,
+           "Plan Width": 47,
+           "Plans": [
+            {
+             "Actual Loops": 1,
+             "Actual Rows": 30720,
+             "Actual Startup Time": 0.099,
+             "Actual Total Time": 0.1,
+             "Async Capable": false,
+             "Index Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 06:00:00+00'::timestamp with time zone))",
+             "Index Name": "events_1m_event_ts_brin",
+             "Local Dirtied Blocks": 0,
+             "Local Hit Blocks": 0,
+             "Local Read Blocks": 0,
+             "Local Written Blocks": 0,
+             "Node Type": "Bitmap Index Scan",
+             "Parallel Aware": false,
+             "Parent Relationship": "Outer",
+             "Plan Rows": 86125,
+             "Plan Width": 0,
+             "Shared Dirtied Blocks": 0,
+             "Shared Hit Blocks": 2,
+             "Shared Read Blocks": 0,
+             "Shared Written Blocks": 0,
+             "Startup Cost": 0.0,
+             "Temp Read Blocks": 0,
+             "Temp Written Blocks": 0,
+             "Total Cost": 12.58
+            }
+           ],
+           "Recheck Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 06:00:00+00'::timestamp with time zone))",
+           "Relation Name": "events_1m",
+           "Rows Removed by Index Recheck": 31751,
+           "Shared Dirtied Blocks": 0,
+           "Shared Hit Blocks": 3074,
+           "Shared Read Blocks": 0,
+           "Shared Written Blocks": 0,
+           "Startup Cost": 33.22,
+           "Temp Read Blocks": 0,
+           "Temp Written Blocks": 0,
+           "Total Cost": 28045.1
+          }
+         ],
+         "Shared Dirtied Blocks": 0,
+         "Shared Hit Blocks": 3074,
+         "Shared Read Blocks": 0,
+         "Shared Written Blocks": 0,
+         "Startup Cost": 28664.55,
+         "Strategy": "Hashed",
+         "Temp Read Blocks": 0,
+         "Temp Written Blocks": 0,
+         "Total Cost": 29242.26
+        }
+       ],
+       "Shared Dirtied Blocks": 0,
+       "Shared Hit Blocks": 3074,
+       "Shared Read Blocks": 0,
+       "Shared Written Blocks": 0,
+       "Sort Key": [
+        "(count(*)) DESC",
+        "wiki",
+        "title"
+       ],
+       "Sort Method": "top-N heapsort",
+       "Sort Space Type": "Memory",
+       "Sort Space Used": 27,
+       "Startup Cost": 30490.68,
+       "Temp Read Blocks": 0,
+       "Temp Written Blocks": 0,
+       "Total Cost": 30635.1
+      }
+     ],
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 3074,
+     "Shared Read Blocks": 0,
+     "Shared Written Blocks": 0,
+     "Startup Cost": 30490.68,
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0,
+     "Total Cost": 30490.7
+    },
+    "Planning": {
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 1,
+     "Shared Read Blocks": 2,
+     "Shared Written Blocks": 0,
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.205,
+    "Triggers": []
+   },
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 06:00:00+00'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10"
+  },
+  "q05_hour_pages/uncompacted": {
+   "engine": "trino-iceberg",
+   "layout": "uncompacted",
+   "plan": "Trino version: 484\nQueued: 318.58us, Analysis: 12.84ms, Planning: 32.34ms, Execution: 311.75ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 389.06us, Scheduled: 430.02us, Blocked 483.73ms (Input: 321.27ms, Output: 0.00ns), Input: 10 rows (799B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 1kB, Tasks count: 1; per task: max: 1kB\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   Estimates: {rows: 10 (665B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 163.00ms (10.58%), Output: 10 rows (799B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, title:varchar, count:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 321.00ms (20.84%), Output: 10 rows (799B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 30.42ms, Scheduled: 42.68ms, Blocked 1.06s (Input: 286.67ms, Output: 0.00ns), Input: 64263 rows (3.86MB); per task: avg.: 64263.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 1kB, Tasks count: 1; per task: max: 1kB\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 20.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 159.00ms (10.32%), Output: 20 rows (1.50kB)\n       \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (1.50kB)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 1.00ms (0.42%), Blocked: 318.00ms (20.65%), Output: 20 rows (1.50kB)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                \u2502   CPU: 2.00ms (1.16%), Scheduled: 2.00ms (0.84%), Blocked: 0.00ns (0.00%), Output: 20 rows (1.50kB)\n                \u2502   Input avg.: 12788.50 rows, Input std.dev.: 0.20%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki, title]]\n                   \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                   \u2502   Estimates: {rows: ? (?), cpu: 5.27M, memory: ?, network: 0B}\n                   \u2502   CPU: 19.00ms (11.05%), Scheduled: 22.00ms (9.21%), Blocked: 0.00ns (0.00%), Output: 25577 rows (1.48MB)\n                   \u2502   Input avg.: 32131.50 rows, Input std.dev.: 0.24%\n                   \u2502   count := count(count_0)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar, title::varchar]]\n                      \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                      \u2502   Estimates: {rows: 83149 (5.27MB), cpu: 5.27M, memory: 0B, network: 0B}\n                      \u2502   CPU: 8.00ms (4.65%), Scheduled: 14.00ms (5.86%), Blocked: 292.00ms (18.96%), Output: 64263 rows (3.86MB)\n                      \u2502   Input avg.: 32131.50 rows, Input std.dev.: 7.71%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                             CPU: 1.00ms (0.58%), Scheduled: 1.00ms (0.42%), Blocked: 287.00ms (18.64%), Output: 64263 rows (3.86MB)\n                             Input avg.: 32131.50 rows, Input std.dev.: 7.71%\n\nFragment 3 [SOURCE]\n    CPU: 143.77ms, Scheduled: 201.80ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 83149 rows (4.83MB); per task: avg.: 83149.00 std.dev.: 0.00, Output: 64263 rows (3.86MB)\n    Peak Memory: 3.41MB, Tasks count: 1; per task: max: 3.83MB\n    Output layout: [wiki, title, count_0]\n    Output partitioning: HASH [wiki, title]\n    Aggregate[type = PARTIAL, keys = [wiki, title]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n    \u2502   Estimates: {rows: 83149 (5.27MB), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 53.00ms (30.81%), Scheduled: 79.00ms (33.05%), Blocked: 0.00ns (0.00%), Output: 64263 rows (3.86MB)\n    \u2502   Input avg.: 454.37 rows, Input std.dev.: 21.16%\n    \u2502   count_0 := count(*)\n    \u2514\u2500 TableScan[table = iceberg:bench.events_1m_stream$data@3034433259477352165 constraint on [event_ts]]\n           Layout: [wiki:varchar, title:varchar]\n           Estimates: {rows: 83149 (4.56MB), cpu: 4.56M, memory: 0B, network: 0B}\n           CPU: 89.00ms (51.74%), Scheduled: 120.00ms (50.21%), Blocked: 0.00ns (0.00%), Output: 83149 rows (4.83MB)\n           Input avg.: 454.37 rows, Input std.dev.: 21.16%\n           wiki := 5:wiki:varchar\n           title := 9:title:varchar\n           2:event_ts:timestamp(6) with time zone\n               :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 06:00:00.000000 UTC)]\n           Input: 83149 rows (4.83MB), Physical input: 6.30MB, Physical input time: 1.31ms, Splits: 183, Splits generation wait time: 39.59ms\n\n",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 4830000.0,
+    "physical_input_bytes": 6300000.0,
+    "rows": 83149,
+    "splits": 183
+   },
+   "seconds": [
+    0.3540836899992428,
+    0.2892693899993901,
+    0.19744505699964066,
+    0.2575965769992763,
+    0.2909767119999742,
+    0.27135336399987864,
+    0.29778381199867,
+    0.2170867469994846,
+    0.17879447800078196,
+    0.18820019799932197
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM iceberg.bench.events_1m_stream\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 220,
+     "elapsedTimeMillis": 335,
+     "peakMemoryBytes": 4854848,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020247_00256_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 193,
+     "wallTimeMillis": 463
+    },
+    {
+     "cpuTimeMillis": 201,
+     "elapsedTimeMillis": 280,
+     "peakMemoryBytes": 4854840,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020247_00257_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 193,
+     "wallTimeMillis": 452
+    },
+    {
+     "cpuTimeMillis": 194,
+     "elapsedTimeMillis": 191,
+     "peakMemoryBytes": 4301368,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465005,
+     "processedRows": 83149,
+     "queryId": "20261111_020247_00258_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 193,
+     "wallTimeMillis": 324
+    },
+    {
+     "cpuTimeMillis": 191,
+     "elapsedTimeMillis": 252,
+     "peakMemoryBytes": 4854832,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020248_00259_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 193,
+     "wallTimeMillis": 392
+    },
+    {
+     "cpuTimeMillis": 199,
+     "elapsedTimeMillis": 282,
+     "peakMemoryBytes": 4854832,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020248_00260_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 193,
+     "wallTimeMillis": 459
+    },
+    {
+     "cpuTimeMillis": 191,
+     "elapsedTimeMillis": 261,
+     "peakMemoryBytes": 4854776,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465005,
+     "processedRows": 83149,
+     "queryId": "20261111_020248_00261_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 193,
+     "wallTimeMillis": 329
+    },
+    {
+     "cpuTimeMillis": 187,
+     "elapsedTimeMillis": 289,
+     "peakMemoryBytes": 4990872,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465005,
+     "processedRows": 83149,
+     "queryId": "20261111_020248_00262_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 193,
+     "wallTimeMillis": 329
+    },
+    {
+     "cpuTimeMillis": 180,
+     "elapsedTimeMillis": 210,
+     "peakMemoryBytes": 4854832,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020249_00263_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 193,
+     "wallTimeMillis": 354
+    },
+    {
+     "cpuTimeMillis": 179,
+     "elapsedTimeMillis": 169,
+     "peakMemoryBytes": 4854840,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10465094,
+     "processedRows": 83149,
+     "queryId": "20261111_020249_00264_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 193,
+     "wallTimeMillis": 263
+    },
+    {
+     "cpuTimeMillis": 179,
+     "elapsedTimeMillis": 181,
+     "peakMemoryBytes": 4854704,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 10464916,
+     "processedRows": 83149,
+     "queryId": "20261111_020249_00265_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 193,
+     "wallTimeMillis": 260
+    }
+   ],
+   "summary": {
+    "max": 0.3540836899992428,
+    "median": 0.26447497049957747,
+    "min": 0.17879447800078196,
+    "p95": 0.3540836899992428
+   },
+   "warmup_seconds": 0.8062706140008231,
+   "window_files": {
+    "bytes": 6611037,
+    "files": 183
+   }
+  },
+  "q05_hour_pages/unpartitioned": {
+   "engine": "trino-iceberg",
+   "layout": "unpartitioned",
+   "plan": "Trino version: 484\nQueued: 1.35ms, Analysis: 43.04ms, Planning: 51.01ms, Execution: 255.98ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 506.70us, Scheduled: 1.53ms, Blocked 510.97ms (Input: 340.20ms, Output: 0.00ns), Input: 10 rows (799B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 1kB, Tasks count: 1; per task: max: 1kB\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   Estimates: {rows: 10 (250B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: 10 (250B), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 1.00ms (0.70%), Blocked: 171.00ms (11.03%), Output: 10 rows (799B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, title:varchar, count:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 340.00ms (21.94%), Output: 10 rows (799B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 15.74ms, Scheduled: 30.20ms, Blocked 1.03s (Input: 282.42ms, Output: 0.00ns), Input: 25577 rows (1.48MB); per task: avg.: 25577.00 std.dev.: 0.00, Output: 10 rows (799B)\n    Peak Memory: 0B, Tasks count: 1; per task: max: 0B\n    Output layout: [wiki, title, count]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n    \u2502   Estimates: {rows: 10 (250B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (799B)\n    \u2502   Input avg.: 20.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n       \u2502   Estimates: {rows: 10 (250B), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 156.00ms (10.06%), Output: 20 rows (1.50kB)\n       \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n          \u2502   Estimates: {rows: 10 (250B), cpu: ?, memory: ?, network: ?}\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (1.50kB)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n             \u2502   Estimates: {rows: 10 (250B), cpu: 250, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 1.00ms (0.70%), Blocked: 309.00ms (19.94%), Output: 20 rows (1.50kB)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [count DESC NULLS LAST, wiki ASC NULLS LAST, title ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                \u2502   Estimates: {rows: 10 (250B), cpu: ?, memory: ?, network: ?}\n                \u2502   CPU: 2.00ms (2.44%), Scheduled: 3.00ms (2.11%), Blocked: 0.00ns (0.00%), Output: 20 rows (1.50kB)\n                \u2502   Input avg.: 12788.50 rows, Input std.dev.: 0.20%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki, title]]\n                   \u2502   Layout: [wiki:varchar, title:varchar, count:bigint]\n                   \u2502   Estimates: {rows: 82609 (1.97MB), cpu: 1.97M, memory: 1.97MB, network: 0B}\n                   \u2502   CPU: 10.00ms (12.20%), Scheduled: 16.00ms (11.27%), Blocked: 0.00ns (0.00%), Output: 25577 rows (1.48MB)\n                   \u2502   Input avg.: 12788.50 rows, Input std.dev.: 0.20%\n                   \u2502   count := count(count_0)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar, title::varchar]]\n                      \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                      \u2502   Estimates: {rows: 82609 (1.97MB), cpu: 1.97M, memory: 0B, network: 0B}\n                      \u2502   CPU: 3.00ms (3.66%), Scheduled: 9.00ms (6.34%), Blocked: 292.00ms (18.84%), Output: 25577 rows (1.48MB)\n                      \u2502   Input avg.: 12788.50 rows, Input std.dev.: 35.64%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, title:varchar, count_0:bigint]\n                             CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 282.00ms (18.19%), Output: 25577 rows (1.48MB)\n                             Input avg.: 12788.50 rows, Input std.dev.: 35.64%\n\nFragment 3 [SOURCE]\n    CPU: 66.57ms, Scheduled: 111.53ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 1000000 rows (24.39MB); per task: avg.: 1000000.00 std.dev.: 0.00, Output: 25577 rows (1.48MB)\n    Peak Memory: 1.78MB, Tasks count: 1; per task: max: 1.78MB\n    Output layout: [wiki, title, count_0]\n    Output partitioning: HASH [wiki, title]\n    Aggregate[type = PARTIAL, keys = [wiki, title]]\n    \u2502   Layout: [wiki:varchar, title:varchar, count_0:bigint]\n    \u2502   Estimates: {rows: 82609 (1.97MB), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 22.00ms (26.83%), Scheduled: 29.00ms (20.42%), Blocked: 0.00ns (0.00%), Output: 25577 rows (1.48MB)\n    \u2502   Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n    \u2502   count_0 := count(*)\n    \u2514\u2500 ScanFilterProject[table = iceberg:bench.events_1m_flat$data@7026966909655206721, filterPredicate = ((timestamp(6) with time zone '2026-10-17 05:00:00.000000 UTC' <= event_ts) AND (event_ts < timestamp(6) with time zone '2026-10-17 06:00:00.000000 UTC'))]\n           Layout: [wiki:varchar, title:varchar]\n           Estimates: {rows: 1000000 (15.23MB), cpu: 27.62M, memory: 0B, network: 0B}/{rows: 82609 (1.26MB), cpu: 27.62M, memory: 0B, network: 0B}/{rows: 82609 (1.26MB), cpu: 1.26M, memory: 0B, network: 0B}\n           CPU: 45.00ms (54.88%), Scheduled: 83.00ms (58.45%), Blocked: 0.00ns (0.00%), Output: 83149 rows (4.68MB)\n           Input avg.: 1000000.00 rows, Input std.dev.: 0.00%\n           event_ts := 2:event_ts:timestamp(6) with time zone\n           wiki := 5:wiki:varchar\n           title := 9:title:varchar\n           Input: 1000000 rows (24.39MB), Filtered: 91.69%, Physical input: 3.74MB, Physical input time: 43.09ms, Splits: 1, Splits generation wait time: 12.07ms\n\n",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 24390000.0,
+    "physical_input_bytes": 3740000.0,
+    "rows": 1000000,
+    "splits": 1
+   },
+   "seconds": [
+    0.15460752199942362,
+    0.19962433199907537,
+    0.12232133900033659,
+    0.1248762010000064,
+    0.1340900529994542,
+    0.13316454399864597,
+    0.15052298299997346,
+    0.1740457729993068,
+    0.17924170399965078,
+    0.21221266599968658
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM iceberg.bench.events_1m_flat\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 82,
+     "elapsedTimeMillis": 144,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020244_00243_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 90
+    },
+    {
+     "cpuTimeMillis": 66,
+     "elapsedTimeMillis": 189,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020244_00244_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 133
+    },
+    {
+     "cpuTimeMillis": 61,
+     "elapsedTimeMillis": 118,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020244_00245_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 68
+    },
+    {
+     "cpuTimeMillis": 68,
+     "elapsedTimeMillis": 120,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020244_00246_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 77
+    },
+    {
+     "cpuTimeMillis": 69,
+     "elapsedTimeMillis": 130,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020244_00247_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 76
+    },
+    {
+     "cpuTimeMillis": 66,
+     "elapsedTimeMillis": 128,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020245_00248_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 76
+    },
+    {
+     "cpuTimeMillis": 70,
+     "elapsedTimeMillis": 145,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020245_00249_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 91
+    },
+    {
+     "cpuTimeMillis": 75,
+     "elapsedTimeMillis": 162,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020245_00250_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 109
+    },
+    {
+     "cpuTimeMillis": 66,
+     "elapsedTimeMillis": 170,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020245_00251_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 89
+    },
+    {
+     "cpuTimeMillis": 75,
+     "elapsedTimeMillis": 206,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 3926277,
+     "processedBytes": 5405868,
+     "processedRows": 1000000,
+     "queryId": "20261111_020245_00252_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 134
+    }
+   ],
+   "summary": {
+    "max": 0.21221266599968658,
+    "median": 0.15256525249969854,
+    "min": 0.12232133900033659,
+    "p95": 0.21221266599968658
+   },
+   "warmup_seconds": 0.2304953660004685,
+   "window_files": {
+    "bytes": 38840920,
+    "files": 1
+   }
+  },
+  "q06_hour_editors/partitioned": {
+   "engine": "trino-iceberg",
+   "layout": "partitioned",
+   "plan": "Trino version: 484\nQueued: 194.62us, Analysis: 14.73ms, Planning: 21.56ms, Execution: 84.67ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 889.65us, Scheduled: 1.25ms, Blocked 211.45ms (Input: 81.22ms, Output: 0.00ns), Input: 2 rows (54B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (27B)\n    Peak Memory: 224B, Tasks count: 1; per task: max: 224B\n    Output layout: [count_0, count_1, count]\n    Output partitioning: SINGLE []\n    Project[]\n    \u2502   Layout: [count_0:bigint, count_1:bigint, count:bigint]\n    \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n    \u2502   Input avg.: 0.50 rows, Input std.dev.: 100.00%\n    \u2502   count := COALESCE(coalesce_expr, bigint '0')\n    \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n       \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n       \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 86.00ms (27.30%), Output: 1 row (27B)\n       \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 Aggregate[type = FINAL]\n          \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n          \u2502   Estimates: {rows: 1 (27B), cpu: ?, memory: 27B, network: 0B}\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n          \u2502   Input avg.: 2.00 rows, Input std.dev.: 0.00%\n          \u2502   count_0 := count(count_3)\n          \u2502   count_1 := count(count_4)\n          \u2502   coalesce_expr := any_value(any_value)\n          \u2514\u2500 LocalExchange[partitioning = SINGLE]\n             \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 42.00ms (13.33%), Output: 2 rows (54B)\n             \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n                    Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n                    CPU: 0.00ns (0.00%), Scheduled: 1.00ms (5.26%), Blocked: 81.00ms (25.71%), Output: 2 rows (54B)\n                    Input avg.: 1.00 rows, Input std.dev.: 0.00%\n\nFragment 2 [HASH]\n    CPU: 2.14ms, Scheduled: 2.71ms, Blocked 105.43ms (Input: 55.80ms, Output: 0.00ns), Input: 2367 rows (90.75kB); per task: avg.: 2367.00 std.dev.: 0.00, Output: 2 rows (54B)\n    Peak Memory: 448B, Tasks count: 1; per task: max: 448B\n    Output layout: [count_3, count_4, any_value]\n    Output partitioning: SINGLE []\n    Aggregate[type = PARTIAL]\n    \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 2 rows (54B)\n    \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n    \u2502   count_3 := count(user_name) (mask = gid_filter)\n    \u2502   count_4 := count(wiki) (mask = gid_filter_2)\n    \u2502   any_value := any_value(inner) (mask = non_distinct_gid_filter)\n    \u2514\u2500 Project[]\n       \u2502   Layout: [non_distinct_gid_filter:boolean, gid_filter:boolean, gid_filter_2:boolean, user_name:varchar, wiki:varchar, inner:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 2367 rows (83.82kB)\n       \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n       \u2502   non_distinct_gid_filter := (group = bigint '0')\n       \u2502   gid_filter := (group = bigint '1')\n       \u2502   gid_filter_2 := (group = bigint '2')\n       \u2514\u2500 Aggregate[type = FINAL, keys = [user_name, wiki, group]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, inner:bigint]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n          \u2502   CPU: 1.00ms (5.88%), Scheduled: 1.00ms (5.26%), Blocked: 0.00ns (0.00%), Output: 2367 rows (90.75kB)\n          \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n          \u2502   inner := count(count_5)\n          \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [user_name::varchar, wiki::varchar, group::bigint]]\n             \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 50.00ms (15.87%), Output: 2367 rows (90.75kB)\n             \u2502   Input avg.: 1183.50 rows, Input std.dev.: 100.00%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                    Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n                    CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 56.00ms (17.78%), Output: 2367 rows (90.75kB)\n                    Input avg.: 1183.50 rows, Input std.dev.: 100.00%\n\nFragment 3 [SOURCE]\n    CPU: 16.48ms, Scheduled: 18.30ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 83149 rows (3.00MB); per task: avg.: 83149.00 std.dev.: 0.00, Output: 2367 rows (90.75kB)\n    Peak Memory: 108.96kB, Tasks count: 1; per task: max: 108.96kB\n    Output layout: [user_name, wiki, group, count_5]\n    Output partitioning: HASH [user_name, wiki, group]\n    Aggregate[type = PARTIAL, keys = [user_name, wiki, group]]\n    \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n    \u2502   CPU: 13.00ms (76.47%), Scheduled: 13.00ms (68.42%), Blocked: 0.00ns (0.00%), Output: 2367 rows (90.75kB)\n    \u2502   Input avg.: 249447.00 rows, Input std.dev.: 0.00%\n    \u2502   count_5 := count(*)\n    \u2514\u2500 Filter[filterPredicate = ((bigint '0' <= group) AND (group <= bigint '2'))]\n       \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 1.00ms (5.88%), Scheduled: 1.00ms (5.26%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.72MB)\n       \u2502   Input avg.: 249447.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 GroupId[symbols = [[], [user_name], [wiki]]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.73MB)\n          \u2502   Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n          \u2502   user_name := user_name\n          \u2502   wiki := wiki\n          \u2514\u2500 TableScan[table = iceberg:bench.events_1m$data@2025414347263909325 constraint on [event_ts]]\n                 Layout: [wiki:varchar, user_name:varchar]\n                 Estimates: {rows: 83149 (1.15MB), cpu: 1.15M, memory: 0B, network: 0B}\n                 CPU: 2.00ms (11.76%), Scheduled: 3.00ms (15.79%), Blocked: 0.00ns (0.00%), Output: 83149 rows (3.00MB)\n                 Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n                 user_name := 10:user_name:varchar\n                 wiki := 5:wiki:varchar\n                 2:event_ts:timestamp(6) with time zone\n                     :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 06:00:00.000000 UTC)]\n                 Input: 83149 rows (3.00MB), Physical input: 693.13kB, Physical input time: 69.53us, Splits: 1, Splits generation wait time: 7.55ms\n\n",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "scan": {
+    "input_bytes": 3000000.0,
+    "physical_input_bytes": 693130.0,
+    "rows": 83149,
+    "splits": 1
+   },
+   "seconds": [
+    0.07051999099894601,
+    0.07709552999949665,
+    0.10576540200054296,
+    0.08462401799988584,
+    0.07709668200004671,
+    0.0602580200011289,
+    0.08329711599981238,
+    0.08018428500145092,
+    0.07738341199910792,
+    0.06892253000114579
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'",
+   "stats": [
+    {
+     "cpuTimeMillis": 17,
+     "elapsedTimeMillis": 64,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020250_00269_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 17
+    },
+    {
+     "cpuTimeMillis": 20,
+     "elapsedTimeMillis": 72,
+     "peakMemoryBytes": 1049344,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020250_00270_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 20
+    },
+    {
+     "cpuTimeMillis": 25,
+     "elapsedTimeMillis": 99,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00271_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 27
+    },
+    {
+     "cpuTimeMillis": 22,
+     "elapsedTimeMillis": 78,
+     "peakMemoryBytes": 1052576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00272_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 23
+    },
+    {
+     "cpuTimeMillis": 22,
+     "elapsedTimeMillis": 71,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00273_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 23
+    },
+    {
+     "cpuTimeMillis": 15,
+     "elapsedTimeMillis": 55,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00274_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 15
+    },
+    {
+     "cpuTimeMillis": 25,
+     "elapsedTimeMillis": 78,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00275_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 26
+    },
+    {
+     "cpuTimeMillis": 20,
+     "elapsedTimeMillis": 75,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00276_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 22
+    },
+    {
+     "cpuTimeMillis": 21,
+     "elapsedTimeMillis": 72,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00277_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 21
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 63,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020251_00278_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 16
+    }
+   ],
+   "summary": {
+    "max": 0.10576540200054296,
+    "median": 0.07724004699957732,
+    "min": 0.0602580200011289,
+    "p95": 0.10576540200054296
+   },
+   "warmup_seconds": 0.07390956000017468,
+   "window_files": {
+    "bytes": 4047651,
+    "files": 1
+   }
+  },
+  "q06_hour_editors/postgres": {
+   "buffers": {
+    "blocks": 3074,
+    "scans": [
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan using events_1m_event_ts_brin"
+    ],
+    "shared_hit_blocks": 3074,
+    "shared_read_blocks": 0
+   },
+   "execution_ms": 91.346,
+   "plan": {
+    "Execution Time": 91.346,
+    "Plan": {
+     "Actual Loops": 1,
+     "Actual Rows": 1,
+     "Actual Startup Time": 91.31,
+     "Actual Total Time": 91.312,
+     "Async Capable": false,
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Node Type": "Aggregate",
+     "Parallel Aware": false,
+     "Partial Mode": "Simple",
+     "Plan Rows": 1,
+     "Plan Width": 24,
+     "Plans": [
+      {
+       "Actual Loops": 1,
+       "Actual Rows": 83149,
+       "Actual Startup Time": 64.661,
+       "Actual Total Time": 71.067,
+       "Async Capable": false,
+       "Local Dirtied Blocks": 0,
+       "Local Hit Blocks": 0,
+       "Local Read Blocks": 0,
+       "Local Written Blocks": 0,
+       "Node Type": "Sort",
+       "Parallel Aware": false,
+       "Parent Relationship": "Outer",
+       "Plan Rows": 82594,
+       "Plan Width": 21,
+       "Plans": [
+        {
+         "Actual Loops": 1,
+         "Actual Rows": 83149,
+         "Actual Startup Time": 1.107,
+         "Actual Total Time": 22.109,
+         "Alias": "events_1m",
+         "Async Capable": false,
+         "Exact Heap Blocks": 0,
+         "Local Dirtied Blocks": 0,
+         "Local Hit Blocks": 0,
+         "Local Read Blocks": 0,
+         "Local Written Blocks": 0,
+         "Lossy Heap Blocks": 3072,
+         "Node Type": "Bitmap Heap Scan",
+         "Parallel Aware": false,
+         "Parent Relationship": "Outer",
+         "Plan Rows": 82594,
+         "Plan Width": 21,
+         "Plans": [
+          {
+           "Actual Loops": 1,
+           "Actual Rows": 30720,
+           "Actual Startup Time": 0.066,
+           "Actual Total Time": 0.067,
+           "Async Capable": false,
+           "Index Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 06:00:00+00'::timestamp with time zone))",
+           "Index Name": "events_1m_event_ts_brin",
+           "Local Dirtied Blocks": 0,
+           "Local Hit Blocks": 0,
+           "Local Read Blocks": 0,
+           "Local Written Blocks": 0,
+           "Node Type": "Bitmap Index Scan",
+           "Parallel Aware": false,
+           "Parent Relationship": "Outer",
+           "Plan Rows": 86125,
+           "Plan Width": 0,
+           "Shared Dirtied Blocks": 0,
+           "Shared Hit Blocks": 2,
+           "Shared Read Blocks": 0,
+           "Shared Written Blocks": 0,
+           "Startup Cost": 0.0,
+           "Temp Read Blocks": 0,
+           "Temp Written Blocks": 0,
+           "Total Cost": 12.58
+          }
+         ],
+         "Recheck Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 06:00:00+00'::timestamp with time zone))",
+         "Relation Name": "events_1m",
+         "Rows Removed by Index Recheck": 31751,
+         "Shared Dirtied Blocks": 0,
+         "Shared Hit Blocks": 3074,
+         "Shared Read Blocks": 0,
+         "Shared Written Blocks": 0,
+         "Startup Cost": 33.22,
+         "Temp Read Blocks": 0,
+         "Temp Written Blocks": 0,
+         "Total Cost": 28045.1
+        }
+       ],
+       "Shared Dirtied Blocks": 0,
+       "Shared Hit Blocks": 3074,
+       "Shared Read Blocks": 0,
+       "Shared Written Blocks": 0,
+       "Sort Key": [
+        "user_name"
+       ],
+       "Sort Method": "quicksort",
+       "Sort Space Type": "Memory",
+       "Sort Space Used": 6427,
+       "Startup Cost": 34790.45,
+       "Temp Read Blocks": 0,
+       "Temp Written Blocks": 0,
+       "Total Cost": 34996.93
+      }
+     ],
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 3074,
+     "Shared Read Blocks": 0,
+     "Shared Written Blocks": 0,
+     "Startup Cost": 35616.39,
+     "Strategy": "Plain",
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0,
+     "Total Cost": 35616.4
+    },
+    "Planning": {
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 1,
+     "Shared Read Blocks": 0,
+     "Shared Written Blocks": 0,
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.089,
+    "Triggers": []
+   },
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 06:00:00+00'"
+  },
+  "q06_hour_editors/uncompacted": {
+   "engine": "trino-iceberg",
+   "layout": "uncompacted",
+   "plan": "Trino version: 484\nQueued: 244.86us, Analysis: 13.55ms, Planning: 32.18ms, Execution: 349.04ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 647.74us, Scheduled: 2.18ms, Blocked 985.88ms (Input: 392.43ms, Output: 0.00ns), Input: 2 rows (54B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (27B)\n    Peak Memory: 224B, Tasks count: 1; per task: max: 224B\n    Output layout: [count_0, count_1, count]\n    Output partitioning: SINGLE []\n    Project[]\n    \u2502   Layout: [count_0:bigint, count_1:bigint, count:bigint]\n    \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n    \u2502   Input avg.: 0.50 rows, Input std.dev.: 100.00%\n    \u2502   count := COALESCE(coalesce_expr, bigint '0')\n    \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n       \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n       \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 397.00ms (22.95%), Output: 1 row (27B)\n       \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 Aggregate[type = FINAL]\n          \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n          \u2502   Estimates: {rows: 1 (27B), cpu: ?, memory: 27B, network: 0B}\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n          \u2502   Input avg.: 2.00 rows, Input std.dev.: 0.00%\n          \u2502   count_0 := count(count_3)\n          \u2502   count_1 := count(count_4)\n          \u2502   coalesce_expr := any_value(any_value)\n          \u2514\u2500 LocalExchange[partitioning = SINGLE]\n             \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 1.00ms (0.19%), Blocked: 197.00ms (11.39%), Output: 2 rows (54B)\n             \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n                    Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n                    CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 392.00ms (22.66%), Output: 2 rows (54B)\n                    Input avg.: 1.00 rows, Input std.dev.: 0.00%\n\nFragment 2 [HASH]\n    CPU: 11.93ms, Scheduled: 23.04ms, Blocked 739.33ms (Input: 368.66ms, Output: 0.00ns), Input: 28971 rows (1.06MB); per task: avg.: 28971.00 std.dev.: 0.00, Output: 2 rows (54B)\n    Peak Memory: 448B, Tasks count: 1; per task: max: 448B\n    Output layout: [count_3, count_4, any_value]\n    Output partitioning: SINGLE []\n    Aggregate[type = PARTIAL]\n    \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 2 rows (54B)\n    \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n    \u2502   count_3 := count(user_name) (mask = gid_filter)\n    \u2502   count_4 := count(wiki) (mask = gid_filter_2)\n    \u2502   any_value := any_value(inner) (mask = non_distinct_gid_filter)\n    \u2514\u2500 Project[]\n       \u2502   Layout: [non_distinct_gid_filter:boolean, gid_filter:boolean, gid_filter_2:boolean, user_name:varchar, wiki:varchar, inner:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 1.00ms (0.43%), Scheduled: 1.00ms (0.19%), Blocked: 0.00ns (0.00%), Output: 2367 rows (83.82kB)\n       \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n       \u2502   non_distinct_gid_filter := (group = bigint '0')\n       \u2502   gid_filter := (group = bigint '1')\n       \u2502   gid_filter_2 := (group = bigint '2')\n       \u2514\u2500 Aggregate[type = FINAL, keys = [user_name, wiki, group]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, inner:bigint]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n          \u2502   CPU: 7.00ms (3.03%), Scheduled: 8.00ms (1.52%), Blocked: 0.00ns (0.00%), Output: 2367 rows (90.75kB)\n          \u2502   Input avg.: 14485.50 rows, Input std.dev.: 0.36%\n          \u2502   inner := count(count_5)\n          \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [user_name::varchar, wiki::varchar, group::bigint]]\n             \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 3.00ms (1.30%), Scheduled: 13.00ms (2.47%), Blocked: 375.00ms (21.68%), Output: 28971 rows (1.06MB)\n             \u2502   Input avg.: 14485.50 rows, Input std.dev.: 67.73%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                    Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n                    CPU: 1.00ms (0.43%), Scheduled: 1.00ms (0.19%), Blocked: 369.00ms (21.33%), Output: 28971 rows (1.06MB)\n                    Input avg.: 14485.50 rows, Input std.dev.: 67.73%\n\nFragment 3 [SOURCE]\n    CPU: 219.15ms, Scheduled: 502.39ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 83149 rows (2.94MB); per task: avg.: 83149.00 std.dev.: 0.00, Output: 28971 rows (1.06MB)\n    Peak Memory: 3.06MB, Tasks count: 1; per task: max: 4.06MB\n    Output layout: [user_name, wiki, group, count_5]\n    Output partitioning: HASH [user_name, wiki, group]\n    Aggregate[type = PARTIAL, keys = [user_name, wiki, group]]\n    \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n    \u2502   CPU: 67.00ms (29.00%), Scheduled: 187.00ms (35.55%), Blocked: 0.00ns (0.00%), Output: 28971 rows (1.06MB)\n    \u2502   Input avg.: 1363.10 rows, Input std.dev.: 21.16%\n    \u2502   count_5 := count(*)\n    \u2514\u2500 Filter[filterPredicate = ((bigint '0' <= group) AND (group <= bigint '2'))]\n       \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 50.00ms (21.65%), Scheduled: 97.00ms (18.44%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.18MB)\n       \u2502   Input avg.: 1363.10 rows, Input std.dev.: 21.16%\n       \u2514\u2500 GroupId[symbols = [[], [user_name], [wiki]]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n          \u2502   CPU: 15.00ms (6.49%), Scheduled: 34.00ms (6.46%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.67MB)\n          \u2502   Input avg.: 454.37 rows, Input std.dev.: 21.16%\n          \u2502   user_name := user_name\n          \u2502   wiki := wiki\n          \u2514\u2500 TableScan[table = iceberg:bench.events_1m_stream$data@3034433259477352165 constraint on [event_ts]]\n                 Layout: [wiki:varchar, user_name:varchar]\n                 Estimates: {rows: 83149 (1.89MB), cpu: 1.89M, memory: 0B, network: 0B}\n                 CPU: 87.00ms (37.66%), Scheduled: 184.00ms (34.98%), Blocked: 0.00ns (0.00%), Output: 83149 rows (2.94MB)\n                 Input avg.: 454.37 rows, Input std.dev.: 21.16%\n                 user_name := 10:user_name:varchar\n                 wiki := 5:wiki:varchar\n                 2:event_ts:timestamp(6) with time zone\n                     :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 06:00:00.000000 UTC)]\n                 Input: 83149 rows (2.94MB), Physical input: 6.30MB, Physical input time: 1.32ms, Splits: 183, Splits generation wait time: 26.73ms\n\n",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "scan": {
+    "input_bytes": 2940000.0,
+    "physical_input_bytes": 6300000.0,
+    "rows": 83149,
+    "splits": 183
+   },
+   "seconds": [
+    0.3520064189997356,
+    0.3857215879997966,
+    0.27989296700070554,
+    0.25166157899911923,
+    0.2320153790005861,
+    0.24477685999954701,
+    0.20382955800050695,
+    0.3126400820001436,
+    0.24947626100038178,
+    0.25420517599923187
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_1m_stream\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'",
+   "stats": [
+    {
+     "cpuTimeMillis": 234,
+     "elapsedTimeMillis": 344,
+     "peakMemoryBytes": 2860360,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495740,
+     "processedRows": 83149,
+     "queryId": "20261111_020254_00295_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 644
+    },
+    {
+     "cpuTimeMillis": 252,
+     "elapsedTimeMillis": 381,
+     "peakMemoryBytes": 1331248,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495864,
+     "processedRows": 83149,
+     "queryId": "20261111_020255_00296_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 192,
+     "wallTimeMillis": 738
+    },
+    {
+     "cpuTimeMillis": 232,
+     "elapsedTimeMillis": 270,
+     "peakMemoryBytes": 2172800,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495740,
+     "processedRows": 83149,
+     "queryId": "20261111_020255_00297_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 192,
+     "wallTimeMillis": 344
+    },
+    {
+     "cpuTimeMillis": 222,
+     "elapsedTimeMillis": 244,
+     "peakMemoryBytes": 4232296,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495848,
+     "processedRows": 83149,
+     "queryId": "20261111_020255_00298_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 192,
+     "wallTimeMillis": 360
+    },
+    {
+     "cpuTimeMillis": 224,
+     "elapsedTimeMillis": 225,
+     "peakMemoryBytes": 4330816,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495864,
+     "processedRows": 83149,
+     "queryId": "20261111_020256_00299_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 447
+    },
+    {
+     "cpuTimeMillis": 219,
+     "elapsedTimeMillis": 237,
+     "peakMemoryBytes": 2313120,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495756,
+     "processedRows": 83149,
+     "queryId": "20261111_020256_00300_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 360
+    },
+    {
+     "cpuTimeMillis": 220,
+     "elapsedTimeMillis": 195,
+     "peakMemoryBytes": 1331192,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495740,
+     "processedRows": 83149,
+     "queryId": "20261111_020256_00301_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 339
+    },
+    {
+     "cpuTimeMillis": 219,
+     "elapsedTimeMillis": 304,
+     "peakMemoryBytes": 1331192,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495756,
+     "processedRows": 83149,
+     "queryId": "20261111_020256_00302_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 651
+    },
+    {
+     "cpuTimeMillis": 225,
+     "elapsedTimeMillis": 243,
+     "peakMemoryBytes": 1331112,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495616,
+     "processedRows": 83149,
+     "queryId": "20261111_020257_00303_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 192,
+     "wallTimeMillis": 374
+    },
+    {
+     "cpuTimeMillis": 216,
+     "elapsedTimeMillis": 247,
+     "peakMemoryBytes": 1331248,
+     "physicalInputBytes": 6611037,
+     "processedBytes": 7495832,
+     "processedRows": 83149,
+     "queryId": "20261111_020257_00304_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 192,
+     "wallTimeMillis": 336
+    }
+   ],
+   "summary": {
+    "max": 0.3857215879997966,
+    "median": 0.25293337749917555,
+    "min": 0.20382955800050695,
+    "p95": 0.3857215879997966
+   },
+   "warmup_seconds": 0.4133333070003573,
+   "window_files": {
+    "bytes": 6611037,
+    "files": 183
+   }
+  },
+  "q06_hour_editors/unpartitioned": {
+   "engine": "trino-iceberg",
+   "layout": "unpartitioned",
+   "plan": "Trino version: 484\nQueued: 277.04us, Analysis: 17.44ms, Planning: 35.18ms, Execution: 292.87ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 577.87us, Scheduled: 607.22us, Blocked 693.12ms (Input: 275.08ms, Output: 0.00ns), Input: 2 rows (54B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (27B)\n    Peak Memory: 224B, Tasks count: 1; per task: max: 224B\n    Output layout: [count_0, count_1, count]\n    Output partitioning: SINGLE []\n    Project[]\n    \u2502   Layout: [count_0:bigint, count_1:bigint, count:bigint]\n    \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n    \u2502   Input avg.: 0.50 rows, Input std.dev.: 100.00%\n    \u2502   count := COALESCE(coalesce_expr, bigint '0')\n    \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n       \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n       \u2502   Estimates: {rows: 1 (27B), cpu: 27, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 277.00ms (25.46%), Output: 1 row (27B)\n       \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 Aggregate[type = FINAL]\n          \u2502   Layout: [count_0:bigint, count_1:bigint, coalesce_expr:bigint]\n          \u2502   Estimates: {rows: 1 (27B), cpu: ?, memory: 27B, network: 0B}\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 1 row (27B)\n          \u2502   Input avg.: 2.00 rows, Input std.dev.: 0.00%\n          \u2502   count_0 := count(count_3)\n          \u2502   count_1 := count(count_4)\n          \u2502   coalesce_expr := any_value(any_value)\n          \u2514\u2500 LocalExchange[partitioning = SINGLE]\n             \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 140.00ms (12.87%), Output: 2 rows (54B)\n             \u2502   Input avg.: 1.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n                    Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n                    CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 275.00ms (25.28%), Output: 2 rows (54B)\n                    Input avg.: 1.00 rows, Input std.dev.: 0.00%\n\nFragment 2 [HASH]\n    CPU: 2.58ms, Scheduled: 2.70ms, Blocked 521.18ms (Input: 133.67ms, Output: 0.00ns), Input: 2367 rows (90.75kB); per task: avg.: 2367.00 std.dev.: 0.00, Output: 2 rows (54B)\n    Peak Memory: 448B, Tasks count: 1; per task: max: 448B\n    Output layout: [count_3, count_4, any_value]\n    Output partitioning: SINGLE []\n    Aggregate[type = PARTIAL]\n    \u2502   Layout: [count_3:bigint, count_4:bigint, any_value:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 2 rows (54B)\n    \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n    \u2502   count_3 := count(user_name) (mask = gid_filter)\n    \u2502   count_4 := count(wiki) (mask = gid_filter_2)\n    \u2502   any_value := any_value(inner) (mask = non_distinct_gid_filter)\n    \u2514\u2500 Project[]\n       \u2502   Layout: [non_distinct_gid_filter:boolean, gid_filter:boolean, gid_filter_2:boolean, user_name:varchar, wiki:varchar, inner:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 2367 rows (83.82kB)\n       \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n       \u2502   non_distinct_gid_filter := (group = bigint '0')\n       \u2502   gid_filter := (group = bigint '1')\n       \u2502   gid_filter_2 := (group = bigint '2')\n       \u2514\u2500 Aggregate[type = FINAL, keys = [user_name, wiki, group]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, inner:bigint]\n          \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n          \u2502   CPU: 1.00ms (1.64%), Scheduled: 1.00ms (0.84%), Blocked: 0.00ns (0.00%), Output: 2367 rows (90.75kB)\n          \u2502   Input avg.: 1183.50 rows, Input std.dev.: 3.00%\n          \u2502   inner := count(count_5)\n          \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [user_name::varchar, wiki::varchar, group::bigint]]\n             \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 262.00ms (24.08%), Output: 2367 rows (90.75kB)\n             \u2502   Input avg.: 1183.50 rows, Input std.dev.: 100.00%\n             \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                    Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n                    CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 134.00ms (12.32%), Output: 2367 rows (90.75kB)\n                    Input avg.: 1183.50 rows, Input std.dev.: 100.00%\n\nFragment 3 [SOURCE]\n    CPU: 59.92ms, Scheduled: 118.42ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 1000000 rows (20.08MB); per task: avg.: 1000000.00 std.dev.: 0.00, Output: 2367 rows (90.75kB)\n    Peak Memory: 108.96kB, Tasks count: 1; per task: max: 108.96kB\n    Output layout: [user_name, wiki, group, count_5]\n    Output partitioning: HASH [user_name, wiki, group]\n    Aggregate[type = PARTIAL, keys = [user_name, wiki, group]]\n    \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint, count_5:bigint]\n    \u2502   CPU: 18.00ms (29.51%), Scheduled: 22.00ms (18.49%), Blocked: 0.00ns (0.00%), Output: 2367 rows (90.75kB)\n    \u2502   Input avg.: 249447.00 rows, Input std.dev.: 0.00%\n    \u2502   count_5 := count(*)\n    \u2514\u2500 Filter[filterPredicate = ((bigint '0' <= group) AND (group <= bigint '2'))]\n       \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n       \u2502   CPU: 1.00ms (1.64%), Scheduled: 1.00ms (0.84%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.73MB)\n       \u2502   Input avg.: 249447.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 GroupId[symbols = [[], [user_name], [wiki]]]\n          \u2502   Layout: [user_name:varchar, wiki:varchar, group:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 249447 rows (6.73MB)\n          \u2502   Input avg.: 83149.00 rows, Input std.dev.: 0.00%\n          \u2502   user_name := user_name\n          \u2502   wiki := wiki\n          \u2514\u2500 ScanFilterProject[table = iceberg:bench.events_1m_flat$data@7026966909655206721, filterPredicate = ((timestamp(6) with time zone '2026-10-17 05:00:00.000000 UTC' <= event_ts) AND (event_ts < timestamp(6) with time zone '2026-10-17 06:00:00.000000 UTC'))]\n                 Layout: [wiki:varchar, user_name:varchar]\n                 Estimates: {rows: 1000000 (12.42MB), cpu: 24.82M, memory: 0B, network: 0B}/{rows: 82609 (1.03MB), cpu: 24.82M, memory: 0B, network: 0B}/{rows: 82609 (1.03MB), cpu: 1.03M, memory: 0B, network: 0B}\n                 CPU: 41.00ms (67.21%), Scheduled: 95.00ms (79.83%), Blocked: 0.00ns (0.00%), Output: 83149 rows (3.00MB)\n                 Input avg.: 1000000.00 rows, Input std.dev.: 0.00%\n                 event_ts := 2:event_ts:timestamp(6) with time zone\n                 user_name := 10:user_name:varchar\n                 wiki := 5:wiki:varchar\n                 Input: 1000000 rows (20.08MB), Filtered: 91.69%, Physical input: 2.08MB, Physical input time: 34.95ms, Splits: 1, Splits generation wait time: 9.86ms\n\n",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "scan": {
+    "input_bytes": 20080000.0,
+    "physical_input_bytes": 2080000.0,
+    "rows": 1000000,
+    "splits": 1
+   },
+   "seconds": [
+    0.22935009200045897,
+    0.13400543999887304,
+    0.13746762400114676,
+    0.14932632799900603,
+    0.16215625400036515,
+    0.18964305900044565,
+    0.17781593799918483,
+    0.18132510100076615,
+    0.23344825799904356,
+    0.19707664199995634
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_1m_flat\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'",
+   "stats": [
+    {
+     "cpuTimeMillis": 68,
+     "elapsedTimeMillis": 222,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00282_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 96
+    },
+    {
+     "cpuTimeMillis": 46,
+     "elapsedTimeMillis": 127,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00283_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 57
+    },
+    {
+     "cpuTimeMillis": 46,
+     "elapsedTimeMillis": 130,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00284_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 57
+    },
+    {
+     "cpuTimeMillis": 61,
+     "elapsedTimeMillis": 139,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00285_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 76
+    },
+    {
+     "cpuTimeMillis": 45,
+     "elapsedTimeMillis": 154,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00286_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 59
+    },
+    {
+     "cpuTimeMillis": 61,
+     "elapsedTimeMillis": 180,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020252_00287_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 90
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 170,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020253_00288_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 10,
+     "wallTimeMillis": 72
+    },
+    {
+     "cpuTimeMillis": 64,
+     "elapsedTimeMillis": 173,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020253_00289_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 105
+    },
+    {
+     "cpuTimeMillis": 66,
+     "elapsedTimeMillis": 225,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020253_00290_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 125
+    },
+    {
+     "cpuTimeMillis": 66,
+     "elapsedTimeMillis": 192,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 2178436,
+     "processedBytes": 2253322,
+     "processedRows": 1000000,
+     "queryId": "20261111_020253_00291_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 106
+    }
+   ],
+   "summary": {
+    "max": 0.23344825799904356,
+    "median": 0.1795705194999755,
+    "min": 0.13400543999887304,
+    "p95": 0.23344825799904356
+   },
+   "warmup_seconds": 0.17431088000012096,
+   "window_files": {
+    "bytes": 38840920,
+    "files": 1
+   }
+  },
+  "q07_six_hours_growth/partitioned": {
+   "engine": "trino-iceberg",
+   "layout": "partitioned",
+   "plan": "Trino version: 484\nQueued: 204.16us, Analysis: 11.58ms, Planning: 14.79ms, Execution: 155.39ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 321.71us, Scheduled: 417.23us, Blocked 83.13ms (Input: 28.05ms, Output: 0.00ns), Input: 10 rows (301B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   Estimates: {rows: 10 (730B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 27.00ms (11.84%), Output: 10 rows (301B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, count:bigint, sum:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 28.00ms (12.28%), Output: 10 rows (301B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 2.09ms, Scheduled: 3.15ms, Blocked 173.12ms (Input: 46.45ms, Output: 0.00ns), Input: 876 rows (26.65kB); per task: avg.: 876.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 20.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 27.00ms (11.84%), Output: 20 rows (609B)\n       \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (609B)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 51.00ms (22.37%), Output: 20 rows (609B)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (609B)\n                \u2502   Input avg.: 73.00 rows, Input std.dev.: 0.00%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki]]\n                   \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                   \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n                   \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 146 rows (4.44kB)\n                   \u2502   Input avg.: 438.00 rows, Input std.dev.: 0.00%\n                   \u2502   count := count(count_1)\n                   \u2502   sum := sum(sum_2)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar]]\n                      \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                      \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n                      \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 49.00ms (21.49%), Output: 876 rows (26.65kB)\n                      \u2502   Input avg.: 438.00 rows, Input std.dev.: 66.67%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                             CPU: 0.00ns (0.00%), Scheduled: 1.00ms (1.61%), Blocked: 46.00ms (20.18%), Output: 876 rows (26.65kB)\n                             Input avg.: 438.00 rows, Input std.dev.: 66.67%\n\nFragment 3 [SOURCE]\n    CPU: 33.92ms, Scheduled: 61.17ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 495094 rows (19.52MB); per task: avg.: 495094.00 std.dev.: 0.00, Output: 876 rows (26.65kB)\n    Peak Memory: 2.15MB, Tasks count: 1; per task: max: 2.15MB\n    Output layout: [wiki, count_1, sum_2]\n    Output partitioning: HASH [wiki]\n    Aggregate[type = PARTIAL, keys = [wiki]]\n    \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n    \u2502   CPU: 7.00ms (20.59%), Scheduled: 14.00ms (22.58%), Blocked: 0.00ns (0.00%), Output: 876 rows (26.65kB)\n    \u2502   Input avg.: 39929.67 rows, Input std.dev.: 1.20%\n    \u2502   count_1 := count(*)\n    \u2502   sum_2 := sum(expr_0)\n    \u2514\u2500 ScanFilterProject[table = iceberg:bench.events_1m$data@2025414347263909325 constraint on [event_ts], filterPredicate = (event_type = varchar 'edit')]\n           Layout: [expr_0:bigint, wiki:varchar]\n           Estimates: {rows: 495094 (7.16MB), cpu: 10.18M, memory: 0B, network: 0B}/{rows: ? (?), cpu: 10.18M, memory: 0B, network: 0B}/{rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n           CPU: 27.00ms (79.41%), Scheduled: 47.00ms (75.81%), Blocked: 0.00ns (0.00%), Output: 239578 rows (6.01MB)\n           Input avg.: 82515.67 rows, Input std.dev.: 1.49%\n           expr_0 := CAST($operator$subtract(length_new, length_old) AS bigint)\n           event_type := 7:event_type:varchar\n           length_new := 15:length_new:integer\n           wiki := 5:wiki:varchar\n           length_old := 14:length_old:integer\n           2:event_ts:timestamp(6) with time zone\n               :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 11:00:00.000000 UTC)]\n           Input: 495094 rows (19.52MB), Filtered: 51.61%, Physical input: 5.44MB, Physical input time: 1.19ms, Splits: 6, Splits generation wait time: 4.12ms\n\n",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 19520000.0,
+    "physical_input_bytes": 5440000.0,
+    "rows": 495094,
+    "splits": 6
+   },
+   "seconds": [
+    0.08548714099924837,
+    0.1168675870012521,
+    0.0971538120011246,
+    0.0840485090011498,
+    0.09065863300020283,
+    0.0849297149998165,
+    0.09503158400002576,
+    0.08025378999991517,
+    0.06625381000048947,
+    0.09236850200068147
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 11:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 37,
+     "elapsedTimeMillis": 79,
+     "peakMemoryBytes": 27600,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020258_00308_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 105
+    },
+    {
+     "cpuTimeMillis": 37,
+     "elapsedTimeMillis": 108,
+     "peakMemoryBytes": 2100608,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020258_00309_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 16,
+     "wallTimeMillis": 218
+    },
+    {
+     "cpuTimeMillis": 38,
+     "elapsedTimeMillis": 89,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020258_00310_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 91
+    },
+    {
+     "cpuTimeMillis": 36,
+     "elapsedTimeMillis": 76,
+     "peakMemoryBytes": 7795408,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020258_00311_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 80
+    },
+    {
+     "cpuTimeMillis": 35,
+     "elapsedTimeMillis": 83,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00312_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 113
+    },
+    {
+     "cpuTimeMillis": 37,
+     "elapsedTimeMillis": 79,
+     "peakMemoryBytes": 11040,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00313_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 97
+    },
+    {
+     "cpuTimeMillis": 35,
+     "elapsedTimeMillis": 86,
+     "peakMemoryBytes": 3476568,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00314_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 16,
+     "wallTimeMillis": 90
+    },
+    {
+     "cpuTimeMillis": 36,
+     "elapsedTimeMillis": 74,
+     "peakMemoryBytes": 6724176,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00315_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 60
+    },
+    {
+     "cpuTimeMillis": 36,
+     "elapsedTimeMillis": 61,
+     "peakMemoryBytes": 1051456,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00316_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 64
+    },
+    {
+     "cpuTimeMillis": 35,
+     "elapsedTimeMillis": 87,
+     "peakMemoryBytes": 27600,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020259_00317_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 128
+    }
+   ],
+   "summary": {
+    "max": 0.1168675870012521,
+    "median": 0.0880728869997256,
+    "min": 0.06625381000048947,
+    "p95": 0.1168675870012521
+   },
+   "warmup_seconds": 0.0860597279988724,
+   "window_files": {
+    "bytes": 23480121,
+    "files": 6
+   }
+  },
+  "q07_six_hours_growth/postgres": {
+   "buffers": {
+    "blocks": 14106,
+    "scans": [
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan using events_1m_event_ts_brin"
+    ],
+    "shared_hit_blocks": 14106,
+    "shared_read_blocks": 0
+   },
+   "execution_ms": 94.718,
+   "plan": {
+    "Execution Time": 94.718,
+    "Plan": {
+     "Actual Loops": 1,
+     "Actual Rows": 10,
+     "Actual Startup Time": 86.294,
+     "Actual Total Time": 94.673,
+     "Async Capable": false,
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Node Type": "Limit",
+     "Parallel Aware": false,
+     "Plan Rows": 10,
+     "Plan Width": 26,
+     "Plans": [
+      {
+       "Actual Loops": 1,
+       "Actual Rows": 10,
+       "Actual Startup Time": 86.292,
+       "Actual Total Time": 94.67,
+       "Async Capable": false,
+       "Local Dirtied Blocks": 0,
+       "Local Hit Blocks": 0,
+       "Local Read Blocks": 0,
+       "Local Written Blocks": 0,
+       "Node Type": "Sort",
+       "Parallel Aware": false,
+       "Parent Relationship": "Outer",
+       "Plan Rows": 131,
+       "Plan Width": 26,
+       "Plans": [
+        {
+         "Actual Loops": 1,
+         "Actual Rows": 146,
+         "Actual Startup Time": 85.888,
+         "Actual Total Time": 94.605,
+         "Async Capable": false,
+         "Group Key": [
+          "wiki"
+         ],
+         "Local Dirtied Blocks": 0,
+         "Local Hit Blocks": 0,
+         "Local Read Blocks": 0,
+         "Local Written Blocks": 0,
+         "Node Type": "Aggregate",
+         "Parallel Aware": false,
+         "Parent Relationship": "Outer",
+         "Partial Mode": "Finalize",
+         "Plan Rows": 131,
+         "Plan Width": 26,
+         "Plans": [
+          {
+           "Actual Loops": 1,
+           "Actual Rows": 569,
+           "Actual Startup Time": 85.88,
+           "Actual Total Time": 94.439,
+           "Async Capable": false,
+           "Local Dirtied Blocks": 0,
+           "Local Hit Blocks": 0,
+           "Local Read Blocks": 0,
+           "Local Written Blocks": 0,
+           "Node Type": "Gather Merge",
+           "Parallel Aware": false,
+           "Parent Relationship": "Outer",
+           "Plan Rows": 393,
+           "Plan Width": 26,
+           "Plans": [
+            {
+             "Actual Loops": 4,
+             "Actual Rows": 142,
+             "Actual Startup Time": 68.502,
+             "Actual Total Time": 68.512,
+             "Async Capable": false,
+             "Local Dirtied Blocks": 0,
+             "Local Hit Blocks": 0,
+             "Local Read Blocks": 0,
+             "Local Written Blocks": 0,
+             "Node Type": "Sort",
+             "Parallel Aware": false,
+             "Parent Relationship": "Outer",
+             "Plan Rows": 131,
+             "Plan Width": 26,
+             "Plans": [
+              {
+               "Actual Loops": 4,
+               "Actual Rows": 142,
+               "Actual Startup Time": 68.296,
+               "Actual Total Time": 68.32,
+               "Async Capable": false,
+               "Disk Usage": 0,
+               "Group Key": [
+                "wiki"
+               ],
+               "HashAgg Batches": 1,
+               "Local Dirtied Blocks": 0,
+               "Local Hit Blocks": 0,
+               "Local Read Blocks": 0,
+               "Local Written Blocks": 0,
+               "Node Type": "Aggregate",
+               "Parallel Aware": false,
+               "Parent Relationship": "Outer",
+               "Partial Mode": "Partial",
+               "Peak Memory Usage": 48,
+               "Plan Rows": 131,
+               "Plan Width": 26,
+               "Planned Partitions": 0,
+               "Plans": [
+                {
+                 "Actual Loops": 4,
+                 "Actual Rows": 59894,
+                 "Actual Startup Time": 0.384,
+                 "Actual Total Time": 46.899,
+                 "Alias": "events_1m",
+                 "Async Capable": false,
+                 "Exact Heap Blocks": 0,
+                 "Filter": "(event_type = 'edit'::text)",
+                 "Local Dirtied Blocks": 0,
+                 "Local Hit Blocks": 0,
+                 "Local Read Blocks": 0,
+                 "Local Written Blocks": 0,
+                 "Lossy Heap Blocks": 5014,
+                 "Node Type": "Bitmap Heap Scan",
+                 "Parallel Aware": true,
+                 "Parent Relationship": "Outer",
+                 "Plan Rows": 77081,
+                 "Plan Width": 18,
+                 "Plans": [
+                  {
+                   "Actual Loops": 1,
+                   "Actual Rows": 140800,
+                   "Actual Startup Time": 0.927,
+                   "Actual Total Time": 0.927,
+                   "Async Capable": false,
+                   "Index Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 11:00:00+00'::timestamp with time zone))",
+                   "Index Name": "events_1m_event_ts_brin",
+                   "Local Dirtied Blocks": 0,
+                   "Local Hit Blocks": 0,
+                   "Local Read Blocks": 0,
+                   "Local Written Blocks": 0,
+                   "Node Type": "Bitmap Index Scan",
+                   "Parallel Aware": false,
+                   "Parent Relationship": "Outer",
+                   "Plan Rows": 497610,
+                   "Plan Width": 0,
+                   "Shared Dirtied Blocks": 0,
+                   "Shared Hit Blocks": 2,
+                   "Shared Read Blocks": 0,
+                   "Shared Written Blocks": 0,
+                   "Startup Cost": 0.0,
+                   "Temp Read Blocks": 0,
+                   "Temp Written Blocks": 0,
+                   "Total Cost": 15.33,
+                   "Workers": []
+                  }
+                 ],
+                 "Recheck Cond": "((event_ts >= '2026-10-17 05:00:00+00'::timestamp with time zone) AND (event_ts < '2026-10-17 11:00:00+00'::timestamp with time zone))",
+                 "Relation Name": "events_1m",
+                 "Rows Removed by Filter": 63879,
+                 "Rows Removed by Index Recheck": 7986,
+                 "Shared Dirtied Blocks": 0,
+                 "Shared Hit Blocks": 14082,
+                 "Shared Read Blocks": 0,
+                 "Shared Written Blocks": 0,
+                 "Startup Cost": 75.07,
+                 "Temp Read Blocks": 0,
+                 "Temp Written Blocks": 0,
+                 "Total Cost": 29604.15,
+                 "Workers": []
+                }
+               ],
+               "Shared Dirtied Blocks": 0,
+               "Shared Hit Blocks": 14082,
+               "Shared Read Blocks": 0,
+               "Shared Written Blocks": 0,
+               "Startup Cost": 30374.96,
+               "Strategy": "Hashed",
+               "Temp Read Blocks": 0,
+               "Temp Written Blocks": 0,
+               "Total Cost": 30376.27,
+               "Workers": [
+                {
+                 "Disk Usage": 0,
+                 "HashAgg Batches": 1,
+                 "Peak Memory Usage": 48,
+                 "Worker Number": 0
+                },
+                {
+                 "Disk Usage": 0,
+                 "HashAgg Batches": 1,
+                 "Peak Memory Usage": 48,
+                 "Worker Number": 1
+                },
+                {
+                 "Disk Usage": 0,
+                 "HashAgg Batches": 1,
+                 "Peak Memory Usage": 48,
+                 "Worker Number": 2
+                }
+               ]
+              }
+             ],
+             "Shared Dirtied Blocks": 0,
+             "Shared Hit Blocks": 14106,
+             "Shared Read Blocks": 0,
+             "Shared Written Blocks": 0,
+             "Sort Key": [
+              "wiki"
+             ],
+             "Sort Method": "quicksort",
+             "Sort Space Type": "Memory",
+             "Sort Space Used": 31,
+             "Startup Cost": 30380.88,
+             "Temp Read Blocks": 0,
+             "Temp Written Blocks": 0,
+             "Total Cost": 30381.21,
+             "Workers": [
+              {
+               "Sort Method": "quicksort",
+               "Sort Space Type": "Memory",
+               "Sort Space Used": 30,
+               "Worker Number": 0
+              },
+              {
+               "Sort Method": "quicksort",
+               "Sort Space Type": "Memory",
+               "Sort Space Used": 30,
+               "Worker Number": 1
+              },
+              {
+               "Sort Method": "quicksort",
+               "Sort Space Type": "Memory",
+               "Sort Space Used": 30,
+               "Worker Number": 2
+              }
+             ]
+            }
+           ],
+           "Shared Dirtied Blocks": 0,
+           "Shared Hit Blocks": 14106,
+           "Shared Read Blocks": 0,
+           "Shared Written Blocks": 0,
+           "Startup Cost": 31380.92,
+           "Temp Read Blocks": 0,
+           "Temp Written Blocks": 0,
+           "Total Cost": 31427.43,
+           "Workers Launched": 3,
+           "Workers Planned": 3
+          }
+         ],
+         "Shared Dirtied Blocks": 0,
+         "Shared Hit Blocks": 14106,
+         "Shared Read Blocks": 0,
+         "Shared Written Blocks": 0,
+         "Startup Cost": 31380.92,
+         "Strategy": "Sorted",
+         "Temp Read Blocks": 0,
+         "Temp Written Blocks": 0,
+         "Total Cost": 31431.68
+        }
+       ],
+       "Shared Dirtied Blocks": 0,
+       "Shared Hit Blocks": 14106,
+       "Shared Read Blocks": 0,
+       "Shared Written Blocks": 0,
+       "Sort Key": [
+        "(sum((length_new - length_old))) DESC NULLS LAST",
+        "wiki"
+       ],
+       "Sort Method": "top-N heapsort",
+       "Sort Space Type": "Memory",
+       "Sort Space Used": 26,
+       "Startup Cost": 31434.51,
+       "Temp Read Blocks": 0,
+       "Temp Written Blocks": 0,
+       "Total Cost": 31434.84
+      }
+     ],
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 14106,
+     "Shared Read Blocks": 0,
+     "Shared Written Blocks": 0,
+     "Startup Cost": 31434.51,
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0,
+     "Total Cost": 31434.54
+    },
+    "Planning": {
+     "Local Dirtied Blocks": 0,
+     "Local Hit Blocks": 0,
+     "Local Read Blocks": 0,
+     "Local Written Blocks": 0,
+     "Shared Dirtied Blocks": 0,
+     "Shared Hit Blocks": 1,
+     "Shared Read Blocks": 0,
+     "Shared Written Blocks": 0,
+     "Temp Read Blocks": 0,
+     "Temp Written Blocks": 0
+    },
+    "Planning Time": 0.15,
+    "Triggers": []
+   },
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 11:00:00+00' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10"
+  },
+  "q07_six_hours_growth/uncompacted": {
+   "engine": "trino-iceberg",
+   "layout": "uncompacted",
+   "plan": "Trino version: 484\nQueued: 392.54us, Analysis: 21.40ms, Planning: 115.92ms, Execution: 648.67ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 325.03us, Scheduled: 357.72us, Blocked 1.23s (Input: 819.36ms, Output: 0.00ns), Input: 10 rows (301B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   Estimates: {rows: 10 (730B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 410.00ms (11.21%), Output: 10 rows (301B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, count:bigint, sum:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 819.00ms (22.38%), Output: 10 rows (301B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 6.98ms, Scheduled: 9.55ms, Blocked 2.84s (Input: 807.28ms, Output: 0.00ns), Input: 29820 rows (905.58kB); per task: avg.: 29820.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: ? (?), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 408.00ms (11.15%), Output: 10 rows (301B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 100.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n             \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 407.00ms (11.12%), Output: 20 rows (609B)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (609B)\n                \u2502   Input avg.: 73.00 rows, Input std.dev.: 0.00%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki]]\n                   \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                   \u2502   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: 0B}\n                   \u2502   CPU: 3.00ms (0.37%), Scheduled: 3.00ms (0.16%), Blocked: 0.00ns (0.00%), Output: 146 rows (4.44kB)\n                   \u2502   Input avg.: 14910.00 rows, Input std.dev.: 13.87%\n                   \u2502   count := count(count_1)\n                   \u2502   sum := sum(sum_2)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar]]\n                      \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                      \u2502   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n                      \u2502   CPU: 2.00ms (0.25%), Scheduled: 3.00ms (0.16%), Blocked: 808.00ms (22.08%), Output: 29820 rows (905.58kB)\n                      \u2502   Input avg.: 14910.00 rows, Input std.dev.: 1.43%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                             CPU: 1.00ms (0.12%), Scheduled: 2.00ms (0.11%), Blocked: 807.00ms (22.06%), Output: 29820 rows (905.58kB)\n                             Input avg.: 14910.00 rows, Input std.dev.: 1.43%\n\nFragment 3 [SOURCE]\n    CPU: 813.38ms, Scheduled: 1.85s, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 495094 rows (19.37MB); per task: avg.: 495094.00 std.dev.: 0.00, Output: 29820 rows (905.58kB)\n    Peak Memory: 946.34kB, Tasks count: 1; per task: max: 4.07MB\n    Output layout: [wiki, count_1, sum_2]\n    Output partitioning: HASH [wiki]\n    Aggregate[type = PARTIAL, keys = [wiki]]\n    \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n    \u2502   CPU: 114.00ms (14.02%), Scheduled: 198.00ms (10.67%), Blocked: 0.00ns (0.00%), Output: 29820 rows (905.58kB)\n    \u2502   Input avg.: 218.00 rows, Input std.dev.: 24.80%\n    \u2502   count_1 := count(*)\n    \u2502   sum_2 := sum(expr_0)\n    \u2514\u2500 ScanFilterProject[table = iceberg:bench.events_1m_stream$data@3034433259477352165 constraint on [event_ts], filterPredicate = (event_type = varchar 'edit')]\n           Layout: [expr_0:bigint, wiki:varchar]\n           Estimates: {rows: 495094 (8.17MB), cpu: 11.62M, memory: 0B, network: 0B}/{rows: ? (?), cpu: 11.62M, memory: 0B, network: 0B}/{rows: ? (?), cpu: ?, memory: 0B, network: 0B}\n           CPU: 693.00ms (85.24%), Scheduled: 1.65s (88.90%), Blocked: 0.00ns (0.00%), Output: 239578 rows (5.42MB)\n           Input avg.: 450.49 rows, Input std.dev.: 22.00%\n           expr_0 := CAST($operator$subtract(length_new, length_old) AS bigint)\n           event_type := 7:event_type:varchar\n           length_new := 15:length_new:integer\n           wiki := 5:wiki:varchar\n           length_old := 14:length_old:integer\n           2:event_ts:timestamp(6) with time zone\n               :: [[2026-10-17 05:00:00.000000 UTC, 2026-10-17 11:00:00.000000 UTC)]\n           Input: 495094 rows (19.37MB), Filtered: 51.61%, Physical input: 37.76MB, Physical input time: 6.72ms, Splits: 1099, Splits generation wait time: 45.25ms\n\n",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 19370000.0,
+    "physical_input_bytes": 37760000.0,
+    "rows": 495094,
+    "splits": 1099
+   },
+   "seconds": [
+    1.0267562799999723,
+    0.9148375559998385,
+    0.9262524610003311,
+    0.9650487150011031,
+    0.8096385589997226,
+    1.0309763650002424,
+    1.28711943000053,
+    0.9044788619994506,
+    0.5745553209999343,
+    0.6154858879999665
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM iceberg.bench.events_1m_stream\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 11:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 1030,
+     "elapsedTimeMillis": 1019,
+     "peakMemoryBytes": 5263888,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020304_00334_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 4538
+    },
+    {
+     "cpuTimeMillis": 940,
+     "elapsedTimeMillis": 907,
+     "peakMemoryBytes": 6330232,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020305_00335_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3132
+    },
+    {
+     "cpuTimeMillis": 926,
+     "elapsedTimeMillis": 919,
+     "peakMemoryBytes": 5265128,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020306_00336_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3407
+    },
+    {
+     "cpuTimeMillis": 880,
+     "elapsedTimeMillis": 955,
+     "peakMemoryBytes": 6349776,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020307_00337_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3210
+    },
+    {
+     "cpuTimeMillis": 892,
+     "elapsedTimeMillis": 799,
+     "peakMemoryBytes": 7353800,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020308_00338_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3133
+    },
+    {
+     "cpuTimeMillis": 877,
+     "elapsedTimeMillis": 978,
+     "peakMemoryBytes": 7344640,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020308_00339_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3807
+    },
+    {
+     "cpuTimeMillis": 858,
+     "elapsedTimeMillis": 1267,
+     "peakMemoryBytes": 3169744,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020309_00340_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 4741
+    },
+    {
+     "cpuTimeMillis": 867,
+     "elapsedTimeMillis": 896,
+     "peakMemoryBytes": 4210328,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020311_00341_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 1109,
+     "wallTimeMillis": 3492
+    },
+    {
+     "cpuTimeMillis": 810,
+     "elapsedTimeMillis": 568,
+     "peakMemoryBytes": 6323016,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020312_00342_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1109,
+     "wallTimeMillis": 1991
+    },
+    {
+     "cpuTimeMillis": 980,
+     "elapsedTimeMillis": 608,
+     "peakMemoryBytes": 4264720,
+     "physicalInputBytes": 39593124,
+     "processedBytes": 40431982,
+     "processedRows": 495094,
+     "queryId": "20261111_020312_00343_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1109,
+     "wallTimeMillis": 2391
+    }
+   ],
+   "summary": {
+    "max": 1.28711943000053,
+    "median": 0.9205450085000848,
+    "min": 0.5745553209999343,
+    "p95": 1.28711943000053
+   },
+   "warmup_seconds": 2.5699633290005295,
+   "window_files": {
+    "bytes": 39593124,
+    "files": 1099
+   }
+  },
+  "q07_six_hours_growth/unpartitioned": {
+   "engine": "trino-iceberg",
+   "layout": "unpartitioned",
+   "plan": "Trino version: 484\nQueued: 589.61us, Analysis: 26.03ms, Planning: 34.65ms, Execution: 274.45ms, Finishing: 0.00ns\nFragment 1 [SINGLE]\n    CPU: 315.62us, Scheduled: 330.12us, Blocked 312.70ms (Input: 209.32ms, Output: 0.00ns), Input: 10 rows (301B); per task: avg.: 10.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopN[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   Estimates: {rows: 10 (238B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: 10 (238B), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 103.00ms (12.23%), Output: 10 rows (301B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 RemoteSource[sourceFragmentIds = [2]]\n              Layout: [wiki:varchar, count:bigint, sum:bigint]\n              CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 209.00ms (24.82%), Output: 10 rows (301B)\n              Input avg.: 5.00 rows, Input std.dev.: 100.00%\n\nFragment 2 [HASH]\n    CPU: 1.20ms, Scheduled: 1.42ms, Blocked 738.70ms (Input: 210.21ms, Output: 0.00ns), Input: 146 rows (4.44kB); per task: avg.: 146.00 std.dev.: 0.00, Output: 10 rows (301B)\n    Peak Memory: 424B, Tasks count: 1; per task: max: 424B\n    Output layout: [wiki, count, sum]\n    Output partitioning: SINGLE []\n    TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n    \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n    \u2502   Estimates: {rows: 10 (238B), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n    \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n    \u2514\u2500 LocalExchange[partitioning = SINGLE]\n       \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n       \u2502   Estimates: {rows: 10 (238B), cpu: 0, memory: 0B, network: 0B}\n       \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n       \u2502   Input avg.: 5.00 rows, Input std.dev.: 100.00%\n       \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n          \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n          \u2502   Estimates: {rows: 10 (238B), cpu: ?, memory: ?, network: ?}\n          \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 10 rows (301B)\n          \u2502   Input avg.: 10.00 rows, Input std.dev.: 100.00%\n          \u2514\u2500 LocalExchange[partitioning = ROUND_ROBIN]\n             \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n             \u2502   Estimates: {rows: 10 (238B), cpu: 238, memory: 0B, network: 0B}\n             \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 107.00ms (12.71%), Output: 20 rows (609B)\n             \u2502   Input avg.: 10.00 rows, Input std.dev.: 0.00%\n             \u2514\u2500 TopNPartial[count = 10, orderBy = [sum DESC NULLS LAST, wiki ASC NULLS LAST]]\n                \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                \u2502   Estimates: {rows: 10 (238B), cpu: ?, memory: ?, network: ?}\n                \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 20 rows (609B)\n                \u2502   Input avg.: 73.00 rows, Input std.dev.: 0.00%\n                \u2514\u2500 Aggregate[type = FINAL, keys = [wiki]]\n                   \u2502   Layout: [wiki:varchar, count:bigint, sum:bigint]\n                   \u2502   Estimates: {rows: 160 (3.72kB), cpu: 3.36M, memory: 3.72kB, network: 0B}\n                   \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 0.00ns (0.00%), Output: 146 rows (4.44kB)\n                   \u2502   Input avg.: 73.00 rows, Input std.dev.: 0.00%\n                   \u2502   count := count(count_1)\n                   \u2502   sum := sum(sum_2)\n                   \u2514\u2500 LocalExchange[partitioning = HASH, arguments = [wiki::varchar]]\n                      \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                      \u2502   Estimates: {rows: 147680 (3.36MB), cpu: 3.36M, memory: 0B, network: 0B}\n                      \u2502   CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 213.00ms (25.30%), Output: 146 rows (4.44kB)\n                      \u2502   Input avg.: 73.00 rows, Input std.dev.: 100.00%\n                      \u2514\u2500 RemoteSource[sourceFragmentIds = [3]]\n                             Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n                             CPU: 0.00ns (0.00%), Scheduled: 0.00ns (0.00%), Blocked: 210.00ms (24.94%), Output: 146 rows (4.44kB)\n                             Input avg.: 73.00 rows, Input std.dev.: 100.00%\n\nFragment 3 [SOURCE]\n    CPU: 58.62ms, Scheduled: 87.88ms, Blocked 0.00ns (Input: 0.00ns, Output: 0.00ns), Input: 1000000 rows (46.49MB); per task: avg.: 1000000.00 std.dev.: 0.00, Output: 146 rows (4.44kB)\n    Peak Memory: 5.39kB, Tasks count: 1; per task: max: 5.39kB\n    Output layout: [wiki, count_1, sum_2]\n    Output partitioning: HASH [wiki]\n    Aggregate[type = PARTIAL, keys = [wiki]]\n    \u2502   Layout: [wiki:varchar, count_1:bigint, sum_2:bigint]\n    \u2502   Estimates: {rows: 147680 (3.36MB), cpu: ?, memory: ?, network: ?}\n    \u2502   CPU: 6.00ms (10.34%), Scheduled: 6.00ms (6.90%), Blocked: 0.00ns (0.00%), Output: 146 rows (4.44kB)\n    \u2502   Input avg.: 239578.00 rows, Input std.dev.: 0.00%\n    \u2502   count_1 := count(*)\n    \u2502   sum_2 := sum(expr_0)\n    \u2514\u2500 ScanFilterProject[table = iceberg:bench.events_1m_flat$data@7026966909655206721, filterPredicate = ((timestamp(6) with time zone '2026-10-17 05:00:00.000000 UTC' <= event_ts) AND (event_ts < timestamp(6) with time zone '2026-10-17 11:00:00.000000 UTC') AND (event_type = varchar 'edit'))]\n           Layout: [expr_0:bigint, wiki:varchar]\n           Estimates: {rows: 1000000 (14.14MB), cpu: 32.55M, memory: 0B, network: 0B}/{rows: 147680 (2.09MB), cpu: 32.55M, memory: 0B, network: 0B}/{rows: 147680 (2.09MB), cpu: 2.09M, memory: 0B, network: 0B}\n           CPU: 52.00ms (89.66%), Scheduled: 81.00ms (93.10%), Blocked: 0.00ns (0.00%), Output: 239578 rows (6.02MB)\n           Input avg.: 1000000.00 rows, Input std.dev.: 0.00%\n           expr_0 := CAST($operator$subtract(length_new, length_old) AS bigint)\n           event_type := 7:event_type:varchar\n           event_ts := 2:event_ts:timestamp(6) with time zone\n           length_new := 15:length_new:integer\n           wiki := 5:wiki:varchar\n           length_old := 14:length_old:integer\n           Input: 1000000 rows (46.49MB), Filtered: 76.04%, Physical input: 3.54MB, Physical input time: 40.14ms, Splits: 1, Splits generation wait time: 9.67ms\n\n",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "scan": {
+    "input_bytes": 46490000.0,
+    "physical_input_bytes": 3540000.0,
+    "rows": 1000000,
+    "splits": 1
+   },
+   "seconds": [
+    0.17375952699876507,
+    0.18173772299996926,
+    0.15128930500031856,
+    0.1447321310006373,
+    0.10297478099892032,
+    0.09931121800036635,
+    0.09689429700119945,
+    0.11605169200083765,
+    0.15238949400009005,
+    0.14470306600014737
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM iceberg.bench.events_1m_flat\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 11:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 68,
+     "elapsedTimeMillis": 165,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020259_00321_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 96
+    },
+    {
+     "cpuTimeMillis": 49,
+     "elapsedTimeMillis": 172,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00322_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 59
+    },
+    {
+     "cpuTimeMillis": 51,
+     "elapsedTimeMillis": 146,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00323_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 92
+    },
+    {
+     "cpuTimeMillis": 48,
+     "elapsedTimeMillis": 137,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00324_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 57
+    },
+    {
+     "cpuTimeMillis": 45,
+     "elapsedTimeMillis": 97,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00325_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 52
+    },
+    {
+     "cpuTimeMillis": 46,
+     "elapsedTimeMillis": 94,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00326_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 54
+    },
+    {
+     "cpuTimeMillis": 45,
+     "elapsedTimeMillis": 93,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00327_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 53
+    },
+    {
+     "cpuTimeMillis": 47,
+     "elapsedTimeMillis": 110,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00328_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 59
+    },
+    {
+     "cpuTimeMillis": 55,
+     "elapsedTimeMillis": 147,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020300_00329_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 89
+    },
+    {
+     "cpuTimeMillis": 56,
+     "elapsedTimeMillis": 137,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 3716968,
+     "processedBytes": 3721511,
+     "processedRows": 1000000,
+     "queryId": "20261111_020301_00330_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 72
+    }
+   ],
+   "summary": {
+    "max": 0.18173772299996926,
+    "median": 0.14471759850039234,
+    "min": 0.09689429700119945,
+    "p95": 0.18173772299996926
+   },
+   "warmup_seconds": 0.14525250400038203,
+   "window_files": {
+    "bytes": 38840920,
+    "files": 1
+   }
+  }
+ },
+ "name": "events_1m",
+ "runs": 10,
+ "window": {
+  "event_id": "771bb459-ac69-585c-a0d5-5fde8d246762",
+  "hour_end": "2026-10-17T06:00:00+00:00",
+  "hour_start": "2026-10-17T05:00:00+00:00",
+  "six_hours_end": "2026-10-17T11:00:00+00:00"
+ }
+}

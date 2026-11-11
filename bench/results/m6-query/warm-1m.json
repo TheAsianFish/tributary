@@ -1,0 +1,4522 @@
+{
+ "cells": {
+  "q01_count/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     1000000
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.07690975799960142,
+    0.0836794490005559,
+    0.08176170899969293,
+    0.1007426989999658,
+    0.1058814269999857,
+    0.09618623099959223,
+    0.07427436500074691,
+    0.06682943999840063,
+    0.07284482000068238,
+    0.10387457999968319
+   ],
+   "sql": "SELECT count(*) AS events\nFROM bench.events_1m",
+   "summary": {
+    "max": 0.1058814269999857,
+    "median": 0.08272057900012442,
+    "min": 0.06682943999840063,
+    "p95": 0.1058814269999857
+   },
+   "warmup_seconds": 0.12238536899894825
+  },
+  "q01_count/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     1000000
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.1355170580009144,
+    0.12729565799963893,
+    0.1246159140009695,
+    0.13166484600151307,
+    0.13717844799975865,
+    0.1304849500011187,
+    0.1314087569990079,
+    0.12625019400002202,
+    0.17637105799985875,
+    0.13668974299980619
+   ],
+   "sql": "SELECT count(*) AS events\nFROM iceberg.bench.events_1m",
+   "stats": [
+    {
+     "cpuTimeMillis": 21,
+     "elapsedTimeMillis": 108,
+     "peakMemoryBytes": 1248,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020026_00021_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 47
+    },
+    {
+     "cpuTimeMillis": 17,
+     "elapsedTimeMillis": 113,
+     "peakMemoryBytes": 784,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020026_00022_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 53
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 111,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00023_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 49
+    },
+    {
+     "cpuTimeMillis": 17,
+     "elapsedTimeMillis": 118,
+     "peakMemoryBytes": 480,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00024_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 16,
+     "wallTimeMillis": 29
+    },
+    {
+     "cpuTimeMillis": 15,
+     "elapsedTimeMillis": 127,
+     "peakMemoryBytes": 672,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00025_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 19
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 121,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00026_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 16,
+     "wallTimeMillis": 41
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 114,
+     "peakMemoryBytes": 192,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00027_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 40
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 112,
+     "peakMemoryBytes": 1040,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00028_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 58
+    },
+    {
+     "cpuTimeMillis": 16,
+     "elapsedTimeMillis": 163,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00029_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 46
+    },
+    {
+     "cpuTimeMillis": 15,
+     "elapsedTimeMillis": 121,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 559,
+     "processedRows": 1000000,
+     "queryId": "20261111_020027_00030_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 39
+    }
+   ],
+   "summary": {
+    "max": 0.17637105799985875,
+    "median": 0.13153680150026048,
+    "min": 0.1246159140009695,
+    "p95": 0.17637105799985875
+   },
+   "warmup_seconds": 0.1950367860008555
+  },
+  "q01_count/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     1000000
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.1922438580004382,
+    0.17047524300141959,
+    0.15519914899959986,
+    0.16022521600098116,
+    0.1744127230012964,
+    0.18999314499887987,
+    0.20665120600096998,
+    0.1805221970007551,
+    0.18261259899918514,
+    0.14843629200004216
+   ],
+   "sql": "SELECT count(*) AS events\nFROM postgresql.bench.events_1m",
+   "stats": [
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 176,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020024_00010_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 156,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020024_00011_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 142,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020025_00012_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 147,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020025_00013_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 161,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020025_00014_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 2,
+     "elapsedTimeMillis": 175,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020025_00015_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 5
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 187,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020025_00016_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 2
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 164,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020026_00017_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 2
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 168,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020026_00018_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 135,
+     "peakMemoryBytes": 96,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020026_00019_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    }
+   ],
+   "summary": {
+    "max": 0.20665120600096998,
+    "median": 0.17746746000102576,
+    "min": 0.14843629200004216,
+    "p95": 0.20665120600096998
+   },
+   "warmup_seconds": 0.6565530099996977
+  },
+  "q02_top_wikis/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "wikidatawiki",
+     191980
+    ],
+    [
+     "enwiki",
+     84800
+    ],
+    [
+     "commonswiki",
+     78460
+    ],
+    [
+     "kuwiktionary",
+     14440
+    ],
+    [
+     "zhwiki",
+     12420
+    ],
+    [
+     "frwiki",
+     9260
+    ],
+    [
+     "eswiki",
+     7640
+    ],
+    [
+     "jawiki",
+     7440
+    ],
+    [
+     "arwiki",
+     7180
+    ],
+    [
+     "ptwiki",
+     5440
+    ],
+    [
+     "trwiktionary",
+     4700
+    ],
+    [
+     "shnwiki",
+     4340
+    ],
+    [
+     "enwiktionary",
+     4320
+    ],
+    [
+     "ruwiki",
+     4300
+    ],
+    [
+     "jvwiktionary",
+     4220
+    ],
+    [
+     "kowiktionary",
+     4140
+    ],
+    [
+     "dewiki",
+     3780
+    ],
+    [
+     "nlwiktionary",
+     2540
+    ],
+    [
+     "cywiki",
+     2380
+    ],
+    [
+     "itwiki",
+     1740
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    0.10351817199989455,
+    0.0838497990007454,
+    0.0819524470007309,
+    0.08318688799954543,
+    0.08323504799955117,
+    0.08277579800051171,
+    0.08109094400060712,
+    0.09226377899904037,
+    0.09098501399967063,
+    0.0836956100010866
+   ],
+   "sql": "SELECT wiki, count(*) AS edits\nFROM bench.events_1m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20",
+   "summary": {
+    "max": 0.10351817199989455,
+    "median": 0.08346532900031889,
+    "min": 0.08109094400060712,
+    "p95": 0.10351817199989455
+   },
+   "warmup_seconds": 0.10708980900017195
+  },
+  "q02_top_wikis/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "wikidatawiki",
+     191980
+    ],
+    [
+     "enwiki",
+     84800
+    ],
+    [
+     "commonswiki",
+     78460
+    ],
+    [
+     "kuwiktionary",
+     14440
+    ],
+    [
+     "zhwiki",
+     12420
+    ],
+    [
+     "frwiki",
+     9260
+    ],
+    [
+     "eswiki",
+     7640
+    ],
+    [
+     "jawiki",
+     7440
+    ],
+    [
+     "arwiki",
+     7180
+    ],
+    [
+     "ptwiki",
+     5440
+    ],
+    [
+     "trwiktionary",
+     4700
+    ],
+    [
+     "shnwiki",
+     4340
+    ],
+    [
+     "enwiktionary",
+     4320
+    ],
+    [
+     "ruwiki",
+     4300
+    ],
+    [
+     "jvwiktionary",
+     4220
+    ],
+    [
+     "kowiktionary",
+     4140
+    ],
+    [
+     "dewiki",
+     3780
+    ],
+    [
+     "nlwiktionary",
+     2540
+    ],
+    [
+     "cywiki",
+     2380
+    ],
+    [
+     "itwiki",
+     1740
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    0.2504585299993778,
+    0.2138809130010486,
+    0.1889202309994289,
+    0.18740019699907862,
+    0.2821877559999848,
+    0.19263305899949046,
+    0.16448625599878142,
+    0.1845387520006625,
+    0.1865041220007697,
+    0.15887647899944568
+   ],
+   "sql": "SELECT wiki, count(*) AS edits\nFROM iceberg.bench.events_1m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20",
+   "stats": [
+    {
+     "cpuTimeMillis": 203,
+     "elapsedTimeMillis": 237,
+     "peakMemoryBytes": 7824,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020035_00043_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 607
+    },
+    {
+     "cpuTimeMillis": 119,
+     "elapsedTimeMillis": 204,
+     "peakMemoryBytes": 1187816,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020035_00044_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 23,
+     "wallTimeMillis": 429
+    },
+    {
+     "cpuTimeMillis": 108,
+     "elapsedTimeMillis": 178,
+     "peakMemoryBytes": 7824,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020035_00045_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 426
+    },
+    {
+     "cpuTimeMillis": 88,
+     "elapsedTimeMillis": 177,
+     "peakMemoryBytes": 1051904,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020036_00046_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 329
+    },
+    {
+     "cpuTimeMillis": 90,
+     "elapsedTimeMillis": 270,
+     "peakMemoryBytes": 15648,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020036_00047_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 811
+    },
+    {
+     "cpuTimeMillis": 83,
+     "elapsedTimeMillis": 181,
+     "peakMemoryBytes": 30288,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020036_00048_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 435
+    },
+    {
+     "cpuTimeMillis": 85,
+     "elapsedTimeMillis": 155,
+     "peakMemoryBytes": 18520,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020036_00049_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 238
+    },
+    {
+     "cpuTimeMillis": 84,
+     "elapsedTimeMillis": 171,
+     "peakMemoryBytes": 1056272,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020036_00050_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 318
+    },
+    {
+     "cpuTimeMillis": 84,
+     "elapsedTimeMillis": 173,
+     "peakMemoryBytes": 15648,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020037_00051_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 23,
+     "wallTimeMillis": 339
+    },
+    {
+     "cpuTimeMillis": 75,
+     "elapsedTimeMillis": 149,
+     "peakMemoryBytes": 4617744,
+     "physicalInputBytes": 2615618,
+     "processedBytes": 2654066,
+     "processedRows": 1000000,
+     "queryId": "20261111_020037_00052_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 256
+    }
+   ],
+   "summary": {
+    "max": 0.2821877559999848,
+    "median": 0.18816021399925376,
+    "min": 0.15887647899944568,
+    "p95": 0.2821877559999848
+   },
+   "warmup_seconds": 0.4000714869998774
+  },
+  "q02_top_wikis/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "wikidatawiki",
+     191980
+    ],
+    [
+     "enwiki",
+     84800
+    ],
+    [
+     "commonswiki",
+     78460
+    ],
+    [
+     "kuwiktionary",
+     14440
+    ],
+    [
+     "zhwiki",
+     12420
+    ],
+    [
+     "frwiki",
+     9260
+    ],
+    [
+     "eswiki",
+     7640
+    ],
+    [
+     "jawiki",
+     7440
+    ],
+    [
+     "arwiki",
+     7180
+    ],
+    [
+     "ptwiki",
+     5440
+    ],
+    [
+     "trwiktionary",
+     4700
+    ],
+    [
+     "shnwiki",
+     4340
+    ],
+    [
+     "enwiktionary",
+     4320
+    ],
+    [
+     "ruwiki",
+     4300
+    ],
+    [
+     "jvwiktionary",
+     4220
+    ],
+    [
+     "kowiktionary",
+     4140
+    ],
+    [
+     "dewiki",
+     3780
+    ],
+    [
+     "nlwiktionary",
+     2540
+    ],
+    [
+     "cywiki",
+     2380
+    ],
+    [
+     "itwiki",
+     1740
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    0.4908445879991632,
+    0.7456625300001178,
+    0.7852415929992276,
+    0.6076914459990803,
+    0.539241103000677,
+    0.44802072099992074,
+    0.4133702879989869,
+    0.39872743299929425,
+    0.4549551749987586,
+    0.380206879999605
+   ],
+   "sql": "SELECT wiki, count(*) AS edits\nFROM postgresql.bench.events_1m\nWHERE event_type = 'edit'\nGROUP BY wiki\nORDER BY edits DESC, wiki\nLIMIT 20",
+   "stats": [
+    {
+     "cpuTimeMillis": 140,
+     "elapsedTimeMillis": 479,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020029_00032_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 309
+    },
+    {
+     "cpuTimeMillis": 155,
+     "elapsedTimeMillis": 723,
+     "peakMemoryBytes": 1137776,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020030_00033_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 468
+    },
+    {
+     "cpuTimeMillis": 133,
+     "elapsedTimeMillis": 752,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020031_00034_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 11,
+     "wallTimeMillis": 393
+    },
+    {
+     "cpuTimeMillis": 131,
+     "elapsedTimeMillis": 581,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020031_00035_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 377
+    },
+    {
+     "cpuTimeMillis": 110,
+     "elapsedTimeMillis": 515,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020032_00036_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 281
+    },
+    {
+     "cpuTimeMillis": 102,
+     "elapsedTimeMillis": 437,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020032_00037_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 254
+    },
+    {
+     "cpuTimeMillis": 103,
+     "elapsedTimeMillis": 401,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020033_00038_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 249
+    },
+    {
+     "cpuTimeMillis": 100,
+     "elapsedTimeMillis": 384,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020033_00039_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 228
+    },
+    {
+     "cpuTimeMillis": 97,
+     "elapsedTimeMillis": 440,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020034_00040_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 228
+    },
+    {
+     "cpuTimeMillis": 101,
+     "elapsedTimeMillis": 367,
+     "peakMemoryBytes": 3944,
+     "physicalInputBytes": 0,
+     "processedBytes": 3474,
+     "processedRows": 483760,
+     "queryId": "20261111_020034_00041_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 229
+    }
+   ],
+   "summary": {
+    "max": 0.7852415929992276,
+    "median": 0.4728998814989609,
+    "min": 0.380206879999605,
+    "p95": 0.7852415929992276
+   },
+   "warmup_seconds": 0.6966344459997345
+  },
+  "q03_hourly/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "2026-10-16T23:00:00+00:00",
+     19271,
+     115
+    ],
+    [
+     "2026-10-17T00:00:00+00:00",
+     82833,
+     160
+    ],
+    [
+     "2026-10-17T01:00:00+00:00",
+     82525,
+     160
+    ],
+    [
+     "2026-10-17T02:00:00+00:00",
+     82563,
+     160
+    ],
+    [
+     "2026-10-17T03:00:00+00:00",
+     83019,
+     160
+    ],
+    [
+     "2026-10-17T04:00:00+00:00",
+     81834,
+     160
+    ],
+    [
+     "2026-10-17T05:00:00+00:00",
+     83149,
+     160
+    ],
+    [
+     "2026-10-17T06:00:00+00:00",
+     82919,
+     160
+    ],
+    [
+     "2026-10-17T07:00:00+00:00",
+     80881,
+     160
+    ],
+    [
+     "2026-10-17T08:00:00+00:00",
+     83909,
+     160
+    ],
+    [
+     "2026-10-17T09:00:00+00:00",
+     83449,
+     160
+    ],
+    [
+     "2026-10-17T10:00:00+00:00",
+     80787,
+     160
+    ],
+    [
+     "2026-10-17T11:00:00+00:00",
+     72861,
+     160
+    ]
+   ],
+   "result_rows": 13,
+   "seconds": [
+    0.757313731000977,
+    0.7892768820001947,
+    0.5951036030000978,
+    0.5646628569993482,
+    0.5454453769998509,
+    0.5578768409995973,
+    0.5265396399991005,
+    0.5494572360003076,
+    0.525697905000925,
+    0.5287968030006596
+   ],
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM bench.events_1m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour",
+   "summary": {
+    "max": 0.7892768820001947,
+    "median": 0.5536670384999525,
+    "min": 0.525697905000925,
+    "p95": 0.7892768820001947
+   },
+   "warmup_seconds": 0.7585078240008443
+  },
+  "q03_hourly/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "2026-10-16T23:00:00+00:00",
+     19271,
+     115
+    ],
+    [
+     "2026-10-17T00:00:00+00:00",
+     82833,
+     160
+    ],
+    [
+     "2026-10-17T01:00:00+00:00",
+     82525,
+     160
+    ],
+    [
+     "2026-10-17T02:00:00+00:00",
+     82563,
+     160
+    ],
+    [
+     "2026-10-17T03:00:00+00:00",
+     83019,
+     160
+    ],
+    [
+     "2026-10-17T04:00:00+00:00",
+     81834,
+     160
+    ],
+    [
+     "2026-10-17T05:00:00+00:00",
+     83149,
+     160
+    ],
+    [
+     "2026-10-17T06:00:00+00:00",
+     82919,
+     160
+    ],
+    [
+     "2026-10-17T07:00:00+00:00",
+     80881,
+     160
+    ],
+    [
+     "2026-10-17T08:00:00+00:00",
+     83909,
+     160
+    ],
+    [
+     "2026-10-17T09:00:00+00:00",
+     83449,
+     160
+    ],
+    [
+     "2026-10-17T10:00:00+00:00",
+     80787,
+     160
+    ],
+    [
+     "2026-10-17T11:00:00+00:00",
+     72861,
+     160
+    ]
+   ],
+   "result_rows": 13,
+   "seconds": [
+    0.25345643899891,
+    0.26770256999952835,
+    0.2969132250000257,
+    0.33283398499952455,
+    0.37810882499979925,
+    0.2555120449997048,
+    0.26166797000041697,
+    0.26104357199983497,
+    0.25228472699927806,
+    0.23508433800088824
+   ],
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_1m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour",
+   "stats": [
+    {
+     "cpuTimeMillis": 307,
+     "elapsedTimeMillis": 244,
+     "peakMemoryBytes": 9767632,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788404,
+     "processedRows": 1000000,
+     "queryId": "20261111_020102_00065_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 25,
+     "wallTimeMillis": 732
+    },
+    {
+     "cpuTimeMillis": 294,
+     "elapsedTimeMillis": 255,
+     "peakMemoryBytes": 9307328,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020103_00066_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 25,
+     "wallTimeMillis": 831
+    },
+    {
+     "cpuTimeMillis": 300,
+     "elapsedTimeMillis": 290,
+     "peakMemoryBytes": 18320,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020103_00067_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 25,
+     "wallTimeMillis": 896
+    },
+    {
+     "cpuTimeMillis": 306,
+     "elapsedTimeMillis": 322,
+     "peakMemoryBytes": 18272,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788404,
+     "processedRows": 1000000,
+     "queryId": "20261111_020103_00068_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 25,
+     "wallTimeMillis": 1017
+    },
+    {
+     "cpuTimeMillis": 301,
+     "elapsedTimeMillis": 369,
+     "peakMemoryBytes": 7030576,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020103_00069_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 25,
+     "wallTimeMillis": 1143
+    },
+    {
+     "cpuTimeMillis": 293,
+     "elapsedTimeMillis": 244,
+     "peakMemoryBytes": 2099712,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788404,
+     "processedRows": 1000000,
+     "queryId": "20261111_020104_00070_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 25,
+     "wallTimeMillis": 785
+    },
+    {
+     "cpuTimeMillis": 293,
+     "elapsedTimeMillis": 247,
+     "peakMemoryBytes": 8056424,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020104_00071_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 25,
+     "wallTimeMillis": 816
+    },
+    {
+     "cpuTimeMillis": 288,
+     "elapsedTimeMillis": 251,
+     "peakMemoryBytes": 17776,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020104_00072_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 25,
+     "wallTimeMillis": 753
+    },
+    {
+     "cpuTimeMillis": 292,
+     "elapsedTimeMillis": 244,
+     "peakMemoryBytes": 3462640,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020105_00073_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 25,
+     "wallTimeMillis": 721
+    },
+    {
+     "cpuTimeMillis": 289,
+     "elapsedTimeMillis": 224,
+     "peakMemoryBytes": 9835640,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 7788412,
+     "processedRows": 1000000,
+     "queryId": "20261111_020105_00074_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 25,
+     "wallTimeMillis": 708
+    }
+   ],
+   "summary": {
+    "max": 0.37810882499979925,
+    "median": 0.26135577100012597,
+    "min": 0.23508433800088824,
+    "p95": 0.37810882499979925
+   },
+   "warmup_seconds": 0.5835903209990647
+  },
+  "q03_hourly/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "2026-10-16T23:00:00+00:00",
+     19271,
+     115
+    ],
+    [
+     "2026-10-17T00:00:00+00:00",
+     82833,
+     160
+    ],
+    [
+     "2026-10-17T01:00:00+00:00",
+     82525,
+     160
+    ],
+    [
+     "2026-10-17T02:00:00+00:00",
+     82563,
+     160
+    ],
+    [
+     "2026-10-17T03:00:00+00:00",
+     83019,
+     160
+    ],
+    [
+     "2026-10-17T04:00:00+00:00",
+     81834,
+     160
+    ],
+    [
+     "2026-10-17T05:00:00+00:00",
+     83149,
+     160
+    ],
+    [
+     "2026-10-17T06:00:00+00:00",
+     82919,
+     160
+    ],
+    [
+     "2026-10-17T07:00:00+00:00",
+     80881,
+     160
+    ],
+    [
+     "2026-10-17T08:00:00+00:00",
+     83909,
+     160
+    ],
+    [
+     "2026-10-17T09:00:00+00:00",
+     83449,
+     160
+    ],
+    [
+     "2026-10-17T10:00:00+00:00",
+     80787,
+     160
+    ],
+    [
+     "2026-10-17T11:00:00+00:00",
+     72861,
+     160
+    ]
+   ],
+   "result_rows": 13,
+   "seconds": [
+    1.66879251499995,
+    1.3524601290009741,
+    1.380028093000874,
+    1.5740220860006957,
+    1.9266011519994208,
+    1.3356899680002243,
+    1.3864280500001769,
+    1.3447502069993789,
+    1.356231267000112,
+    1.8432764930003032
+   ],
+   "sql": "SELECT date_trunc('hour', event_ts) AS hour, count(*) AS events, count(DISTINCT wiki) AS wikis\nFROM postgresql.bench.events_1m\nGROUP BY date_trunc('hour', event_ts)\nORDER BY hour",
+   "stats": [
+    {
+     "cpuTimeMillis": 954,
+     "elapsedTimeMillis": 1600,
+     "peakMemoryBytes": 861320,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020047_00054_ha3tz",
+     "queuedTimeMillis": 7,
+     "totalSplits": 13,
+     "wallTimeMillis": 1321
+    },
+    {
+     "cpuTimeMillis": 858,
+     "elapsedTimeMillis": 1343,
+     "peakMemoryBytes": 926000,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020048_00055_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 13,
+     "wallTimeMillis": 1190
+    },
+    {
+     "cpuTimeMillis": 872,
+     "elapsedTimeMillis": 1370,
+     "peakMemoryBytes": 1530920,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020050_00056_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 1219
+    },
+    {
+     "cpuTimeMillis": 984,
+     "elapsedTimeMillis": 1565,
+     "peakMemoryBytes": 925952,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020051_00057_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 1393
+    },
+    {
+     "cpuTimeMillis": 1118,
+     "elapsedTimeMillis": 1911,
+     "peakMemoryBytes": 920312,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020052_00058_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 1720
+    },
+    {
+     "cpuTimeMillis": 841,
+     "elapsedTimeMillis": 1327,
+     "peakMemoryBytes": 926136,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020054_00059_ha3tz",
+     "queuedTimeMillis": 6,
+     "totalSplits": 13,
+     "wallTimeMillis": 1166
+    },
+    {
+     "cpuTimeMillis": 859,
+     "elapsedTimeMillis": 1378,
+     "peakMemoryBytes": 918312,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020056_00060_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 1232
+    },
+    {
+     "cpuTimeMillis": 842,
+     "elapsedTimeMillis": 1334,
+     "peakMemoryBytes": 926184,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020057_00061_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 13,
+     "wallTimeMillis": 1204
+    },
+    {
+     "cpuTimeMillis": 849,
+     "elapsedTimeMillis": 1347,
+     "peakMemoryBytes": 926432,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020058_00062_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 1190
+    },
+    {
+     "cpuTimeMillis": 1118,
+     "elapsedTimeMillis": 1835,
+     "peakMemoryBytes": 1471080,
+     "physicalInputBytes": 0,
+     "processedBytes": 84529,
+     "processedRows": 1000000,
+     "queryId": "20261111_020100_00063_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 1693
+    }
+   ],
+   "summary": {
+    "max": 1.9266011519994208,
+    "median": 1.3832280715005254,
+    "min": 1.3356899680002243,
+    "p95": 1.9266011519994208
+   },
+   "warmup_seconds": 2.8406036180003866
+  },
+  "q04_bot_share/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "categorize",
+     432280,
+     0.40543166466179326
+    ],
+    [
+     "edit",
+     483760,
+     0.38440549032578136
+    ],
+    [
+     "log",
+     49700,
+     0.3505030181086519
+    ],
+    [
+     "new",
+     34260,
+     0.46760070052539404
+    ]
+   ],
+   "result_rows": 4,
+   "seconds": [
+    0.14611703099944862,
+    0.13950163800109294,
+    0.1304239429991867,
+    0.131323756000711,
+    0.14424384500125598,
+    0.13160339100068086,
+    0.13072373399882053,
+    0.1347092900014104,
+    0.1410511519989086,
+    0.13666060000105062
+   ],
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM bench.events_1m\nGROUP BY event_type\nORDER BY event_type",
+   "summary": {
+    "max": 0.14611703099944862,
+    "median": 0.13568494500123052,
+    "min": 0.1304239429991867,
+    "p95": 0.14611703099944862
+   },
+   "warmup_seconds": 0.16996188899975095
+  },
+  "q04_bot_share/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "categorize",
+     432280,
+     0.40543166466179326
+    ],
+    [
+     "edit",
+     483760,
+     0.38440549032578136
+    ],
+    [
+     "log",
+     49700,
+     0.3505030181086519
+    ],
+    [
+     "new",
+     34260,
+     0.46760070052539404
+    ]
+   ],
+   "result_rows": 4,
+   "seconds": [
+    0.15582096000071033,
+    0.16185398899870052,
+    0.14586944799884805,
+    0.1520688680011517,
+    0.2174776669999119,
+    0.17957337500047288,
+    0.28769827500036627,
+    0.24786495800071862,
+    0.2546090470004856,
+    0.21152549699945666
+   ],
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM iceberg.bench.events_1m\nGROUP BY event_type\nORDER BY event_type",
+   "stats": [
+    {
+     "cpuTimeMillis": 60,
+     "elapsedTimeMillis": 144,
+     "peakMemoryBytes": 4448,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020114_00087_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 21,
+     "wallTimeMillis": 182
+    },
+    {
+     "cpuTimeMillis": 56,
+     "elapsedTimeMillis": 148,
+     "peakMemoryBytes": 3832,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00088_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 21,
+     "wallTimeMillis": 210
+    },
+    {
+     "cpuTimeMillis": 57,
+     "elapsedTimeMillis": 138,
+     "peakMemoryBytes": 9400464,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00089_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 21,
+     "wallTimeMillis": 197
+    },
+    {
+     "cpuTimeMillis": 57,
+     "elapsedTimeMillis": 142,
+     "peakMemoryBytes": 5582320,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00090_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 21,
+     "wallTimeMillis": 187
+    },
+    {
+     "cpuTimeMillis": 57,
+     "elapsedTimeMillis": 205,
+     "peakMemoryBytes": 4702704,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00091_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 21,
+     "wallTimeMillis": 294
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 165,
+     "peakMemoryBytes": 7316336,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00092_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 21,
+     "wallTimeMillis": 251
+    },
+    {
+     "cpuTimeMillis": 57,
+     "elapsedTimeMillis": 278,
+     "peakMemoryBytes": 8575968,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020115_00093_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 21,
+     "wallTimeMillis": 263
+    },
+    {
+     "cpuTimeMillis": 60,
+     "elapsedTimeMillis": 235,
+     "peakMemoryBytes": 7335056,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020116_00094_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 21,
+     "wallTimeMillis": 441
+    },
+    {
+     "cpuTimeMillis": 61,
+     "elapsedTimeMillis": 232,
+     "peakMemoryBytes": 4954104,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020116_00095_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 21,
+     "wallTimeMillis": 441
+    },
+    {
+     "cpuTimeMillis": 55,
+     "elapsedTimeMillis": 190,
+     "peakMemoryBytes": 9626096,
+     "physicalInputBytes": 8737729,
+     "processedBytes": 8740735,
+     "processedRows": 1000000,
+     "queryId": "20261111_020116_00096_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 21,
+     "wallTimeMillis": 172
+    }
+   ],
+   "summary": {
+    "max": 0.28769827500036627,
+    "median": 0.19554943599996477,
+    "min": 0.14586944799884805,
+    "p95": 0.28769827500036627
+   },
+   "warmup_seconds": 0.11711441799889144
+  },
+  "q04_bot_share/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "categorize",
+     432280,
+     0.40543166466179326
+    ],
+    [
+     "edit",
+     483760,
+     0.38440549032578136
+    ],
+    [
+     "log",
+     49700,
+     0.3505030181086519
+    ],
+    [
+     "new",
+     34260,
+     0.46760070052539404
+    ]
+   ],
+   "result_rows": 4,
+   "seconds": [
+    0.9418156389983778,
+    0.886082657998486,
+    0.6043888559997868,
+    0.5597934540001006,
+    0.6690528039998753,
+    0.7082276599994657,
+    0.5736242719995062,
+    0.5739748529995268,
+    0.5878678929984744,
+    0.6164532090006105
+   ],
+   "sql": "SELECT event_type, count(*) AS events, avg(CASE WHEN is_bot THEN 1 ELSE 0 END) AS bot_share\nFROM postgresql.bench.events_1m\nGROUP BY event_type\nORDER BY event_type",
+   "stats": [
+    {
+     "cpuTimeMillis": 383,
+     "elapsedTimeMillis": 924,
+     "peakMemoryBytes": 1162520,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020108_00076_ha3tz",
+     "queuedTimeMillis": 7,
+     "totalSplits": 9,
+     "wallTimeMillis": 779
+    },
+    {
+     "cpuTimeMillis": 375,
+     "elapsedTimeMillis": 873,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020108_00077_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 9,
+     "wallTimeMillis": 764
+    },
+    {
+     "cpuTimeMillis": 295,
+     "elapsedTimeMillis": 598,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020109_00078_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 514
+    },
+    {
+     "cpuTimeMillis": 271,
+     "elapsedTimeMillis": 552,
+     "peakMemoryBytes": 1104,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020110_00079_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 481
+    },
+    {
+     "cpuTimeMillis": 296,
+     "elapsedTimeMillis": 662,
+     "peakMemoryBytes": 2191920,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020111_00080_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 567
+    },
+    {
+     "cpuTimeMillis": 306,
+     "elapsedTimeMillis": 698,
+     "peakMemoryBytes": 488,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020111_00081_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 9,
+     "wallTimeMillis": 563
+    },
+    {
+     "cpuTimeMillis": 271,
+     "elapsedTimeMillis": 568,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020112_00082_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 482
+    },
+    {
+     "cpuTimeMillis": 266,
+     "elapsedTimeMillis": 567,
+     "peakMemoryBytes": 1104,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020112_00083_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 492
+    },
+    {
+     "cpuTimeMillis": 275,
+     "elapsedTimeMillis": 582,
+     "peakMemoryBytes": 1152,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020113_00084_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 482
+    },
+    {
+     "cpuTimeMillis": 283,
+     "elapsedTimeMillis": 608,
+     "peakMemoryBytes": 488,
+     "physicalInputBytes": 0,
+     "processedBytes": 610,
+     "processedRows": 1000000,
+     "queryId": "20261111_020114_00085_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 9,
+     "wallTimeMillis": 519
+    }
+   ],
+   "summary": {
+    "max": 0.9418156389983778,
+    "median": 0.6104210325001986,
+    "min": 0.5597934540001006,
+    "p95": 0.9418156389983778
+   },
+   "warmup_seconds": 0.9478512000005139
+  },
+  "q05_hour_pages/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.08886337500007357,
+    0.08049126900004921,
+    0.07337120600095659,
+    0.06294896399958816,
+    0.057500848999552545,
+    0.04284963400095876,
+    0.04239582299851463,
+    0.043164790000446374,
+    0.04224286899989238,
+    0.07203237900102977
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 06:00:00+00'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "summary": {
+    "max": 0.08886337500007357,
+    "median": 0.06022490649957035,
+    "min": 0.04224286899989238,
+    "p95": 0.08886337500007357
+   },
+   "warmup_seconds": 0.13676984999983688
+  },
+  "q05_hour_pages/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.15888421699855826,
+    0.15429342500101484,
+    0.16509961699921405,
+    0.13852599500023643,
+    0.11363379599970358,
+    0.11388355099916225,
+    0.10452544300096633,
+    0.10799464499905298,
+    0.10516285599987896,
+    0.1033568370003195
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 52,
+     "elapsedTimeMillis": 151,
+     "peakMemoryBytes": 3160144,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00109_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 82
+    },
+    {
+     "cpuTimeMillis": 51,
+     "elapsedTimeMillis": 146,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00110_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 97
+    },
+    {
+     "cpuTimeMillis": 54,
+     "elapsedTimeMillis": 156,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00111_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 90
+    },
+    {
+     "cpuTimeMillis": 54,
+     "elapsedTimeMillis": 130,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00112_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 59
+    },
+    {
+     "cpuTimeMillis": 47,
+     "elapsedTimeMillis": 105,
+     "peakMemoryBytes": 3211808,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00113_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 53
+    },
+    {
+     "cpuTimeMillis": 51,
+     "elapsedTimeMillis": 108,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020120_00114_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 54
+    },
+    {
+     "cpuTimeMillis": 42,
+     "elapsedTimeMillis": 98,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020121_00115_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 46
+    },
+    {
+     "cpuTimeMillis": 37,
+     "elapsedTimeMillis": 103,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020121_00116_ha3tz",
+     "queuedTimeMillis": 5,
+     "totalSplits": 11,
+     "wallTimeMillis": 38
+    },
+    {
+     "cpuTimeMillis": 36,
+     "elapsedTimeMillis": 99,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020121_00117_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 39
+    },
+    {
+     "cpuTimeMillis": 32,
+     "elapsedTimeMillis": 98,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 607650,
+     "processedBytes": 2087241,
+     "processedRows": 83149,
+     "queryId": "20261111_020121_00118_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 42
+    }
+   ],
+   "summary": {
+    "max": 0.16509961699921405,
+    "median": 0.11375867349943292,
+    "min": 0.1033568370003195,
+    "p95": 0.16509961699921405
+   },
+   "warmup_seconds": 0.26870401300038793
+  },
+  "q05_hour_pages/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "commonswiki",
+     "Category:Files with coordinates missing SDC location of creation",
+     642
+    ],
+    [
+     "enwiki",
+     "Category:WikiProject Visual arts articles",
+     597
+    ],
+    [
+     "enwiki",
+     "Category:Category-Class Visual arts pages",
+     594
+    ],
+    [
+     "commonswiki",
+     "Category:DPLA archives MCA cards military",
+     570
+    ],
+    [
+     "commonswiki",
+     "Category:Taken with Nikon Z 9",
+     469
+    ],
+    [
+     "commonswiki",
+     "Category:PD-USGov missing SDC copyright status",
+     463
+    ],
+    [
+     "commonswiki",
+     "Category:ISS Expedition 74 Crew Earth Observations (dump)",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:ISS photographs taken on 2026-03-31",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:Images from the Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center",
+     461
+    ],
+    [
+     "commonswiki",
+     "Category:NASA GAPE files uploaded by OptimusPrimeBot",
+     461
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.24000324699954945,
+    0.22648137900068832,
+    0.19075550900015514,
+    0.1721296750001784,
+    0.18639885899938236,
+    0.1727240170002915,
+    0.16546116499921482,
+    0.16805744699922798,
+    0.1775633259985625,
+    0.17561510899940913
+   ],
+   "sql": "SELECT wiki, title, count(*) AS events\nFROM postgresql.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'\nGROUP BY wiki, title\nORDER BY events DESC, wiki, title\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 97,
+     "elapsedTimeMillis": 232,
+     "peakMemoryBytes": 608096,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020118_00098_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 11,
+     "wallTimeMillis": 139
+    },
+    {
+     "cpuTimeMillis": 86,
+     "elapsedTimeMillis": 220,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020118_00099_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 126
+    },
+    {
+     "cpuTimeMillis": 62,
+     "elapsedTimeMillis": 182,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020118_00100_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 75
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 164,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020118_00101_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 72
+    },
+    {
+     "cpuTimeMillis": 60,
+     "elapsedTimeMillis": 180,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020118_00102_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 88
+    },
+    {
+     "cpuTimeMillis": 60,
+     "elapsedTimeMillis": 167,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020119_00103_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 79
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 157,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020119_00104_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 72
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 160,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020119_00105_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 73
+    },
+    {
+     "cpuTimeMillis": 61,
+     "elapsedTimeMillis": 166,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020119_00106_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 76
+    },
+    {
+     "cpuTimeMillis": 60,
+     "elapsedTimeMillis": 166,
+     "peakMemoryBytes": 1866472,
+     "physicalInputBytes": 0,
+     "processedBytes": 1479591,
+     "processedRows": 83149,
+     "queryId": "20261111_020119_00107_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 79
+    }
+   ],
+   "summary": {
+    "max": 0.24000324699954945,
+    "median": 0.17658921749898582,
+    "min": 0.16546116499921482,
+    "p95": 0.24000324699954945
+   },
+   "warmup_seconds": 0.4246469950012397
+  },
+  "q06_hour_editors/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.07359451199954492,
+    0.07197197700043034,
+    0.07114660299885145,
+    0.0715197409990651,
+    0.07127228699937405,
+    0.07135057599953143,
+    0.07298947000163025,
+    0.07104766799966455,
+    0.09600844800115738,
+    0.07341354500022135
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 06:00:00+00'",
+   "summary": {
+    "max": 0.09600844800115738,
+    "median": 0.07174585899974772,
+    "min": 0.07104766799966455,
+    "p95": 0.09600844800115738
+   },
+   "warmup_seconds": 0.07633977799923741
+  },
+  "q06_hour_editors/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.16413084199848527,
+    0.16930740699899616,
+    0.1281491490008193,
+    0.150029619999259,
+    0.11839057600082015,
+    0.12338193399955344,
+    0.12361458099985612,
+    0.11001114700047765,
+    0.13521167100043385,
+    0.09522806400127592
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'",
+   "stats": [
+    {
+     "cpuTimeMillis": 27,
+     "elapsedTimeMillis": 154,
+     "peakMemoryBytes": 1190368,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00131_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 43
+    },
+    {
+     "cpuTimeMillis": 32,
+     "elapsedTimeMillis": 162,
+     "peakMemoryBytes": 1050832,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00132_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 47
+    },
+    {
+     "cpuTimeMillis": 22,
+     "elapsedTimeMillis": 115,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00133_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 10,
+     "wallTimeMillis": 26
+    },
+    {
+     "cpuTimeMillis": 28,
+     "elapsedTimeMillis": 144,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00134_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 29
+    },
+    {
+     "cpuTimeMillis": 29,
+     "elapsedTimeMillis": 109,
+     "peakMemoryBytes": 1050832,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00135_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 33
+    },
+    {
+     "cpuTimeMillis": 31,
+     "elapsedTimeMillis": 112,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020125_00136_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 36
+    },
+    {
+     "cpuTimeMillis": 31,
+     "elapsedTimeMillis": 114,
+     "peakMemoryBytes": 1049344,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020126_00137_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 37
+    },
+    {
+     "cpuTimeMillis": 18,
+     "elapsedTimeMillis": 101,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020126_00138_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 20
+    },
+    {
+     "cpuTimeMillis": 24,
+     "elapsedTimeMillis": 127,
+     "peakMemoryBytes": 1049344,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020126_00139_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 10,
+     "wallTimeMillis": 26
+    },
+    {
+     "cpuTimeMillis": 19,
+     "elapsedTimeMillis": 87,
+     "peakMemoryBytes": 1049344,
+     "physicalInputBytes": 709760,
+     "processedBytes": 784646,
+     "processedRows": 83149,
+     "queryId": "20261111_020126_00140_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 10,
+     "wallTimeMillis": 22
+    }
+   ],
+   "summary": {
+    "max": 0.16930740699899616,
+    "median": 0.1258818650003377,
+    "min": 0.09522806400127592,
+    "p95": 0.16930740699899616
+   },
+   "warmup_seconds": 0.20344321500124352
+  },
+  "q06_hour_editors/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     83149,
+     2206,
+     160
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.19380078399990452,
+    0.18438141900151095,
+    0.16830717700031528,
+    0.2281530260006548,
+    0.3472861620011827,
+    0.2531987729998946,
+    0.23643944899959024,
+    0.3022527009998157,
+    0.24099296199892706,
+    0.2500264899990725
+   ],
+   "sql": "SELECT count(*) AS events, count(DISTINCT user_name) AS editors, count(DISTINCT wiki) AS wikis\nFROM postgresql.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 06:00:00 UTC'",
+   "stats": [
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 186,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020122_00120_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 88
+    },
+    {
+     "cpuTimeMillis": 45,
+     "elapsedTimeMillis": 175,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020122_00121_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 10,
+     "wallTimeMillis": 57
+    },
+    {
+     "cpuTimeMillis": 48,
+     "elapsedTimeMillis": 162,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020122_00122_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 60
+    },
+    {
+     "cpuTimeMillis": 56,
+     "elapsedTimeMillis": 220,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020123_00123_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 10,
+     "wallTimeMillis": 100
+    },
+    {
+     "cpuTimeMillis": 65,
+     "elapsedTimeMillis": 336,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020123_00124_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 10,
+     "wallTimeMillis": 145
+    },
+    {
+     "cpuTimeMillis": 58,
+     "elapsedTimeMillis": 238,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020123_00125_ha3tz",
+     "queuedTimeMillis": 6,
+     "totalSplits": 10,
+     "wallTimeMillis": 88
+    },
+    {
+     "cpuTimeMillis": 55,
+     "elapsedTimeMillis": 226,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020123_00126_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 10,
+     "wallTimeMillis": 76
+    },
+    {
+     "cpuTimeMillis": 57,
+     "elapsedTimeMillis": 287,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020124_00127_ha3tz",
+     "queuedTimeMillis": 5,
+     "totalSplits": 10,
+     "wallTimeMillis": 82
+    },
+    {
+     "cpuTimeMillis": 55,
+     "elapsedTimeMillis": 231,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020124_00128_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 10,
+     "wallTimeMillis": 80
+    },
+    {
+     "cpuTimeMillis": 59,
+     "elapsedTimeMillis": 240,
+     "peakMemoryBytes": 111576,
+     "physicalInputBytes": 0,
+     "processedBytes": 74886,
+     "processedRows": 83149,
+     "queryId": "20261111_020124_00129_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 10,
+     "wallTimeMillis": 92
+    }
+   ],
+   "summary": {
+    "max": 0.3472861620011827,
+    "median": 0.23871620549925865,
+    "min": 0.16830717700031528,
+    "p95": 0.3472861620011827
+   },
+   "warmup_seconds": 0.26103188799970667
+  },
+  "q07_six_hours_growth/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.11466593899967847,
+    0.10848142500071845,
+    0.09961112900055014,
+    0.11127438900075504,
+    0.09268712199991569,
+    0.0956862450002518,
+    0.11104408899882401,
+    0.09095634299956146,
+    0.09377342399966437,
+    0.09144575899881602
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM bench.events_1m\nWHERE event_ts >= TIMESTAMPTZ '2026-10-17 05:00:00+00' AND event_ts < TIMESTAMPTZ '2026-10-17 11:00:00+00' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "summary": {
+    "max": 0.11466593899967847,
+    "median": 0.09764868700040097,
+    "min": 0.09095634299956146,
+    "p95": 0.11466593899967847
+   },
+   "warmup_seconds": 0.1313525400000799
+  },
+  "q07_six_hours_growth/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.19444493500122917,
+    0.2097084349989018,
+    0.195458394000525,
+    0.15660321799987287,
+    0.3116263859992614,
+    0.2239767569990363,
+    0.1405057849988225,
+    0.13235580700165883,
+    0.10035186599998269,
+    0.10770980799861718
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM iceberg.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 11:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 48,
+     "elapsedTimeMillis": 177,
+     "peakMemoryBytes": 16560,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020132_00153_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 16,
+     "wallTimeMillis": 261
+    },
+    {
+     "cpuTimeMillis": 51,
+     "elapsedTimeMillis": 192,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020132_00154_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 260
+    },
+    {
+     "cpuTimeMillis": 48,
+     "elapsedTimeMillis": 176,
+     "peakMemoryBytes": 8711736,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020132_00155_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 231
+    },
+    {
+     "cpuTimeMillis": 46,
+     "elapsedTimeMillis": 145,
+     "peakMemoryBytes": 11040,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020132_00156_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 129
+    },
+    {
+     "cpuTimeMillis": 56,
+     "elapsedTimeMillis": 296,
+     "peakMemoryBytes": 16560,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020132_00157_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 218
+    },
+    {
+     "cpuTimeMillis": 47,
+     "elapsedTimeMillis": 206,
+     "peakMemoryBytes": 11040,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020133_00158_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 16,
+     "wallTimeMillis": 214
+    },
+    {
+     "cpuTimeMillis": 51,
+     "elapsedTimeMillis": 134,
+     "peakMemoryBytes": 27600,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020133_00159_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 141
+    },
+    {
+     "cpuTimeMillis": 44,
+     "elapsedTimeMillis": 125,
+     "peakMemoryBytes": 3299200,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020133_00160_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 148
+    },
+    {
+     "cpuTimeMillis": 41,
+     "elapsedTimeMillis": 93,
+     "peakMemoryBytes": 11040,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020133_00161_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 122
+    },
+    {
+     "cpuTimeMillis": 43,
+     "elapsedTimeMillis": 100,
+     "peakMemoryBytes": 22080,
+     "physicalInputBytes": 5705576,
+     "processedBytes": 5731074,
+     "processedRows": 495094,
+     "queryId": "20261111_020133_00162_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 16,
+     "wallTimeMillis": 119
+    }
+   ],
+   "summary": {
+    "max": 0.3116263859992614,
+    "median": 0.17552407650055102,
+    "min": 0.10035186599998269,
+    "p95": 0.3116263859992614
+   },
+   "warmup_seconds": 0.28890894099822617
+  },
+  "q07_six_hours_growth/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "wikidatawiki",
+     95192,
+     51114329
+    ],
+    [
+     "commonswiki",
+     38826,
+     48512906
+    ],
+    [
+     "frwiki",
+     4575,
+     1331312
+    ],
+    [
+     "ltwiki",
+     69,
+     1180418
+    ],
+    [
+     "eswiki",
+     3788,
+     1132517
+    ],
+    [
+     "zhwiki",
+     6145,
+     1097999
+    ],
+    [
+     "jawiki",
+     3672,
+     464059
+    ],
+    [
+     "idwiki",
+     376,
+     200766
+    ],
+    [
+     "arwiki",
+     3560,
+     185993
+    ],
+    [
+     "bnwiki",
+     239,
+     185069
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.3530114940003841,
+    0.3364247419995081,
+    0.3506833829997049,
+    0.3421484979990055,
+    0.3267854259993328,
+    0.3558419640012289,
+    0.3476434749991313,
+    0.32959460699930787,
+    0.4671461200014164,
+    0.5594729089989414
+   ],
+   "sql": "SELECT wiki, count(*) AS edits, sum(length_new - length_old) AS bytes_added\nFROM postgresql.bench.events_1m\nWHERE event_ts >= TIMESTAMP '2026-10-17 05:00:00 UTC' AND event_ts < TIMESTAMP '2026-10-17 11:00:00 UTC' AND event_type = 'edit'\nGROUP BY wiki\nORDER BY bytes_added DESC NULLS LAST, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 112,
+     "elapsedTimeMillis": 347,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020128_00142_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 246
+    },
+    {
+     "cpuTimeMillis": 106,
+     "elapsedTimeMillis": 331,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020128_00143_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 238
+    },
+    {
+     "cpuTimeMillis": 110,
+     "elapsedTimeMillis": 344,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020128_00144_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 251
+    },
+    {
+     "cpuTimeMillis": 104,
+     "elapsedTimeMillis": 336,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020129_00145_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 235
+    },
+    {
+     "cpuTimeMillis": 103,
+     "elapsedTimeMillis": 321,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020129_00146_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 236
+    },
+    {
+     "cpuTimeMillis": 105,
+     "elapsedTimeMillis": 349,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020129_00147_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 254
+    },
+    {
+     "cpuTimeMillis": 108,
+     "elapsedTimeMillis": 341,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020130_00148_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 248
+    },
+    {
+     "cpuTimeMillis": 105,
+     "elapsedTimeMillis": 324,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020130_00149_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 234
+    },
+    {
+     "cpuTimeMillis": 129,
+     "elapsedTimeMillis": 451,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020130_00150_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 341
+    },
+    {
+     "cpuTimeMillis": 142,
+     "elapsedTimeMillis": 547,
+     "peakMemoryBytes": 5520,
+     "physicalInputBytes": 0,
+     "processedBytes": 4543,
+     "processedRows": 239578,
+     "queryId": "20261111_020131_00151_ha3tz",
+     "queuedTimeMillis": 3,
+     "totalSplits": 11,
+     "wallTimeMillis": 399
+    }
+   ],
+   "summary": {
+    "max": 0.5594729089989414,
+    "median": 0.3491634289994181,
+    "min": 0.3267854259993328,
+    "p95": 0.5594729089989414
+   },
+   "warmup_seconds": 0.48963490999994974
+  },
+  "q08_lookup/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "771bb459-ac69-585c-a0d5-5fde8d246762",
+     "2026-10-17T05:48:45+00:00",
+     "nlwiki",
+     "Splinter (Teenage Mutant Ninja Turtles)",
+     "~2026-41217-33"
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.00040990699926624075,
+    0.00031827500060899183,
+    0.0003379139998287428,
+    0.00033971400080190506,
+    0.0005616910002572695,
+    0.00027351399876351934,
+    0.00026219000028504524,
+    0.00027579599918681197,
+    0.00023495899949921295,
+    0.00022931899911782239
+   ],
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM bench.events_1m\nWHERE event_id = '771bb459-ac69-585c-a0d5-5fde8d246762'",
+   "summary": {
+    "max": 0.0005616910002572695,
+    "median": 0.0002970354998979019,
+    "min": 0.00022931899911782239,
+    "p95": 0.0005616910002572695
+   },
+   "warmup_seconds": 0.0008889729997463292
+  },
+  "q08_lookup/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "771bb459-ac69-585c-a0d5-5fde8d246762",
+     "2026-10-17T05:48:45+00:00",
+     "nlwiki",
+     "Splinter (Teenage Mutant Ninja Turtles)",
+     "~2026-41217-33"
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.12493631100005587,
+    0.12527728599889087,
+    0.11547783199966943,
+    0.1276698519995989,
+    0.0999698340001487,
+    0.1668863169998076,
+    0.11820420099866169,
+    0.12089001999993343,
+    0.10445740300019679,
+    0.15823767099936958
+   ],
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM iceberg.bench.events_1m\nWHERE event_id = '771bb459-ac69-585c-a0d5-5fde8d246762'",
+   "stats": [
+    {
+     "cpuTimeMillis": 184,
+     "elapsedTimeMillis": 119,
+     "peakMemoryBytes": 9437184,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020134_00175_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 489
+    },
+    {
+     "cpuTimeMillis": 137,
+     "elapsedTimeMillis": 118,
+     "peakMemoryBytes": 10485760,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020134_00176_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 487
+    },
+    {
+     "cpuTimeMillis": 139,
+     "elapsedTimeMillis": 110,
+     "peakMemoryBytes": 28311552,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020134_00177_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 395
+    },
+    {
+     "cpuTimeMillis": 138,
+     "elapsedTimeMillis": 120,
+     "peakMemoryBytes": 384,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00178_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 502
+    },
+    {
+     "cpuTimeMillis": 137,
+     "elapsedTimeMillis": 95,
+     "peakMemoryBytes": 0,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00179_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 377
+    },
+    {
+     "cpuTimeMillis": 136,
+     "elapsedTimeMillis": 160,
+     "peakMemoryBytes": 3145728,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00180_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 677
+    },
+    {
+     "cpuTimeMillis": 137,
+     "elapsedTimeMillis": 113,
+     "peakMemoryBytes": 10485760,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00181_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 516
+    },
+    {
+     "cpuTimeMillis": 139,
+     "elapsedTimeMillis": 115,
+     "peakMemoryBytes": 384,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00182_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 444
+    },
+    {
+     "cpuTimeMillis": 138,
+     "elapsedTimeMillis": 98,
+     "peakMemoryBytes": 384,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00183_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 13,
+     "wallTimeMillis": 381
+    },
+    {
+     "cpuTimeMillis": 142,
+     "elapsedTimeMillis": 150,
+     "peakMemoryBytes": 384,
+     "physicalInputBytes": 35329301,
+     "processedBytes": 35329301,
+     "processedRows": 1000000,
+     "queryId": "20261111_020135_00184_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 13,
+     "wallTimeMillis": 678
+    }
+   ],
+   "summary": {
+    "max": 0.1668863169998076,
+    "median": 0.12291316549999465,
+    "min": 0.0999698340001487,
+    "p95": 0.1668863169998076
+   },
+   "warmup_seconds": 0.20563230100015062
+  },
+  "q08_lookup/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "771bb459-ac69-585c-a0d5-5fde8d246762",
+     "2026-10-17T05:48:45+00:00",
+     "nlwiki",
+     "Splinter (Teenage Mutant Ninja Turtles)",
+     "~2026-41217-33"
+    ]
+   ],
+   "result_rows": 1,
+   "seconds": [
+    0.05094511500101362,
+    0.05007608000050823,
+    0.0450762250002299,
+    0.040777129999696626,
+    0.05528822099950048,
+    0.05209302299954288,
+    0.048278808000759454,
+    0.05737144799968519,
+    0.058701527001176146,
+    0.041367448000528384
+   ],
+   "sql": "SELECT event_id, event_ts, wiki, title, user_name\nFROM postgresql.bench.events_1m\nWHERE event_id = UUID '771bb459-ac69-585c-a0d5-5fde8d246762'",
+   "stats": [
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 46,
+     "peakMemoryBytes": 328,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00164_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 45,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00165_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 39,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00166_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 36,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00167_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 48,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00168_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 7
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 46,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00169_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 2
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 42,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00170_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 50,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00171_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 2
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 51,
+     "peakMemoryBytes": 0,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00172_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 1,
+     "wallTimeMillis": 2
+    },
+    {
+     "cpuTimeMillis": 1,
+     "elapsedTimeMillis": 36,
+     "peakMemoryBytes": 576,
+     "physicalInputBytes": 0,
+     "processedBytes": 0,
+     "processedRows": 1,
+     "queryId": "20261111_020134_00173_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 1,
+     "wallTimeMillis": 1
+    }
+   ],
+   "summary": {
+    "max": 0.058701527001176146,
+    "median": 0.05051059750076092,
+    "min": 0.040777129999696626,
+    "p95": 0.058701527001176146
+   },
+   "warmup_seconds": 0.06735227600074722
+  },
+  "q09_emit_delay/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "commonswiki",
+     314940,
+     2607
+    ],
+    [
+     "wikidatawiki",
+     196640,
+     1297
+    ],
+    [
+     "enwiki",
+     172200,
+     6412
+    ],
+    [
+     "afwiki",
+     30180,
+     4723
+    ],
+    [
+     "zhwiki",
+     28780,
+     7052
+    ],
+    [
+     "enwiktionary",
+     22980,
+     4898
+    ],
+    [
+     "jvwiktionary",
+     17140,
+     1918
+    ],
+    [
+     "frwiki",
+     14600,
+     7295
+    ],
+    [
+     "kuwiktionary",
+     14460,
+     4612
+    ],
+    [
+     "jawiki",
+     14280,
+     7114
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.9772186369991687,
+    0.9302903529987816,
+    1.3448186130008253,
+    0.969852752999941,
+    0.9371576450012071,
+    0.9098251129998971,
+    0.8959724100004678,
+    0.8912512189999688,
+    0.9050358309996227,
+    1.227339975999712
+   ],
+   "sql": "SELECT wiki, count(*) AS events,\n       percentile_disc(0.95) WITHIN GROUP (ORDER BY delay_ms) AS p95_delay_ms\nFROM (\n    SELECT wiki, (extract(epoch FROM emitted_at - event_ts) * 1000)::bigint AS delay_ms\n    FROM bench.events_1m\n    WHERE emitted_at IS NOT NULL\n) AS d\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10",
+   "summary": {
+    "max": 1.3448186130008253,
+    "median": 0.9337239989999944,
+    "min": 0.8912512189999688,
+    "p95": 1.3448186130008253
+   },
+   "warmup_seconds": 1.0069948330001353
+  },
+  "q09_emit_delay/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "commonswiki",
+     314940,
+     2607
+    ],
+    [
+     "wikidatawiki",
+     196640,
+     1297
+    ],
+    [
+     "enwiki",
+     172200,
+     6412
+    ],
+    [
+     "afwiki",
+     30180,
+     4723
+    ],
+    [
+     "zhwiki",
+     28780,
+     7052
+    ],
+    [
+     "enwiktionary",
+     22980,
+     4898
+    ],
+    [
+     "jvwiktionary",
+     17140,
+     1918
+    ],
+    [
+     "frwiki",
+     14600,
+     7295
+    ],
+    [
+     "kuwiktionary",
+     14460,
+     4612
+    ],
+    [
+     "jawiki",
+     14280,
+     7114
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    0.8245126219990198,
+    0.6247099909996905,
+    0.6936938899998495,
+    0.5342524349998712,
+    0.6074638110003434,
+    0.6146166790003917,
+    0.6453058480001346,
+    0.5524961259998236,
+    0.5827299270004005,
+    0.5315295580003294
+   ],
+   "sql": "WITH d AS (\n    SELECT wiki, date_diff('millisecond', event_ts, emitted_at) AS delay_ms\n    FROM iceberg.bench.events_1m\n    WHERE emitted_at IS NOT NULL\n),\nranked AS (\n    SELECT wiki, delay_ms,\n           row_number() OVER (PARTITION BY wiki ORDER BY delay_ms) AS rn,\n           count(*) OVER (PARTITION BY wiki) AS n\n    FROM d\n)\nSELECT wiki, max(n) AS events, min(delay_ms) FILTER (WHERE rn >= ceil(0.95 * n)) AS p95_delay_ms\nFROM ranked\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 967,
+     "elapsedTimeMillis": 812,
+     "peakMemoryBytes": 15263072,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020216_00197_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 23,
+     "wallTimeMillis": 1668
+    },
+    {
+     "cpuTimeMillis": 780,
+     "elapsedTimeMillis": 612,
+     "peakMemoryBytes": 9119648,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020217_00198_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 1375
+    },
+    {
+     "cpuTimeMillis": 806,
+     "elapsedTimeMillis": 683,
+     "peakMemoryBytes": 15260104,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020217_00199_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 23,
+     "wallTimeMillis": 1508
+    },
+    {
+     "cpuTimeMillis": 713,
+     "elapsedTimeMillis": 527,
+     "peakMemoryBytes": 13115704,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020218_00200_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 1060
+    },
+    {
+     "cpuTimeMillis": 735,
+     "elapsedTimeMillis": 601,
+     "peakMemoryBytes": 17425768,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020219_00201_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 1301
+    },
+    {
+     "cpuTimeMillis": 787,
+     "elapsedTimeMillis": 604,
+     "peakMemoryBytes": 15278016,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020219_00202_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 1045
+    },
+    {
+     "cpuTimeMillis": 804,
+     "elapsedTimeMillis": 634,
+     "peakMemoryBytes": 13485392,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020220_00203_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 1209
+    },
+    {
+     "cpuTimeMillis": 758,
+     "elapsedTimeMillis": 545,
+     "peakMemoryBytes": 16932184,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020220_00204_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 954
+    },
+    {
+     "cpuTimeMillis": 784,
+     "elapsedTimeMillis": 578,
+     "peakMemoryBytes": 12626696,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020221_00205_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 997
+    },
+    {
+     "cpuTimeMillis": 706,
+     "elapsedTimeMillis": 523,
+     "peakMemoryBytes": 14195792,
+     "physicalInputBytes": 7703156,
+     "processedBytes": 24678056,
+     "processedRows": 1000000,
+     "queryId": "20261111_020222_00206_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 23,
+     "wallTimeMillis": 948
+    }
+   ],
+   "summary": {
+    "max": 0.8245126219990198,
+    "median": 0.6110402450003676,
+    "min": 0.5315295580003294,
+    "p95": 0.8245126219990198
+   },
+   "warmup_seconds": 1.2837164170014148
+  },
+  "q09_emit_delay/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "commonswiki",
+     314940,
+     2607
+    ],
+    [
+     "wikidatawiki",
+     196640,
+     1297
+    ],
+    [
+     "enwiki",
+     172200,
+     6412
+    ],
+    [
+     "afwiki",
+     30180,
+     4723
+    ],
+    [
+     "zhwiki",
+     28780,
+     7052
+    ],
+    [
+     "enwiktionary",
+     22980,
+     4898
+    ],
+    [
+     "jvwiktionary",
+     17140,
+     1918
+    ],
+    [
+     "frwiki",
+     14600,
+     7295
+    ],
+    [
+     "kuwiktionary",
+     14460,
+     4612
+    ],
+    [
+     "jawiki",
+     14280,
+     7114
+    ]
+   ],
+   "result_rows": 10,
+   "seconds": [
+    2.513108334000208,
+    2.89401316600015,
+    2.38127414399969,
+    2.2955165179992036,
+    2.9329219830015063,
+    2.3493575370011968,
+    2.1896226320004644,
+    2.8354889649999677,
+    2.3265289339997253,
+    2.333767115000228
+   ],
+   "sql": "WITH d AS (\n    SELECT wiki, date_diff('millisecond', event_ts, emitted_at) AS delay_ms\n    FROM postgresql.bench.events_1m\n    WHERE emitted_at IS NOT NULL\n),\nranked AS (\n    SELECT wiki, delay_ms,\n           row_number() OVER (PARTITION BY wiki ORDER BY delay_ms) AS rn,\n           count(*) OVER (PARTITION BY wiki) AS n\n    FROM d\n)\nSELECT wiki, max(n) AS events, min(delay_ms) FILTER (WHERE rn >= ceil(0.95 * n)) AS p95_delay_ms\nFROM ranked\nGROUP BY wiki\nORDER BY events DESC, wiki\nLIMIT 10",
+   "stats": [
+    {
+     "cpuTimeMillis": 2098,
+     "elapsedTimeMillis": 2506,
+     "peakMemoryBytes": 41546408,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020150_00186_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2739
+    },
+    {
+     "cpuTimeMillis": 2242,
+     "elapsedTimeMillis": 2887,
+     "peakMemoryBytes": 31442064,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020152_00187_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 3144
+    },
+    {
+     "cpuTimeMillis": 1948,
+     "elapsedTimeMillis": 2375,
+     "peakMemoryBytes": 28188008,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020155_00188_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2552
+    },
+    {
+     "cpuTimeMillis": 1921,
+     "elapsedTimeMillis": 2287,
+     "peakMemoryBytes": 32178248,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020157_00189_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2462
+    },
+    {
+     "cpuTimeMillis": 2253,
+     "elapsedTimeMillis": 2925,
+     "peakMemoryBytes": 42357528,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020200_00190_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 3111
+    },
+    {
+     "cpuTimeMillis": 1903,
+     "elapsedTimeMillis": 2340,
+     "peakMemoryBytes": 27638536,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020203_00191_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 2498
+    },
+    {
+     "cpuTimeMillis": 1843,
+     "elapsedTimeMillis": 2183,
+     "peakMemoryBytes": 27649040,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020205_00192_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2345
+    },
+    {
+     "cpuTimeMillis": 2159,
+     "elapsedTimeMillis": 2828,
+     "peakMemoryBytes": 28438688,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020207_00193_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 3031
+    },
+    {
+     "cpuTimeMillis": 1975,
+     "elapsedTimeMillis": 2318,
+     "peakMemoryBytes": 27653032,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020210_00194_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2517
+    },
+    {
+     "cpuTimeMillis": 1915,
+     "elapsedTimeMillis": 2324,
+     "peakMemoryBytes": 27636536,
+     "physicalInputBytes": 0,
+     "processedBytes": 21414468,
+     "processedRows": 1000000,
+     "queryId": "20261111_020212_00195_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 2534
+    }
+   ],
+   "summary": {
+    "max": 2.9329219830015063,
+    "median": 2.3653158405004433,
+    "min": 2.1896226320004644,
+    "p95": 2.9329219830015063
+   },
+   "warmup_seconds": 3.0935291349996987
+  },
+  "q10_human_editors/postgres": {
+   "engine": "postgres",
+   "result": [
+    [
+     "DERDAKI ILIAS",
+     40280,
+     2014
+    ],
+    [
+     "Fotis A.",
+     35860,
+     1793
+    ],
+    [
+     "MattArtzAnthro",
+     28180,
+     187
+    ],
+    [
+     "Tom.Reding",
+     7200,
+     359
+    ],
+    [
+     "~2026-54857-14",
+     4800,
+     240
+    ],
+    [
+     "Jevansen",
+     4140,
+     207
+    ],
+    [
+     "KabouterBot",
+     3780,
+     189
+    ],
+    [
+     "Sabel\u00f6ga",
+     3620,
+     11
+    ],
+    [
+     "Malcolmxl5",
+     3180,
+     40
+    ],
+    [
+     "Gone Postal",
+     3120,
+     155
+    ],
+    [
+     "Pudox",
+     2700,
+     15
+    ],
+    [
+     "Moebeus",
+     2560,
+     20
+    ],
+    [
+     "Kvdrgeus",
+     2540,
+     127
+    ],
+    [
+     "NaBUru38",
+     2300,
+     80
+    ],
+    [
+     "\u306a\u3089\u3061\u3083\u3093",
+     2300,
+     27
+    ],
+    [
+     "Taketa",
+     2200,
+     41
+    ],
+    [
+     "Onghai1929",
+     1920,
+     86
+    ],
+    [
+     "Ovruni",
+     1840,
+     35
+    ],
+    [
+     "Renato de Carvalho Ferreira",
+     1820,
+     83
+    ],
+    [
+     "Tvpuppy",
+     1800,
+     90
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    1.0281088249994355,
+    0.809470018999491,
+    0.8659930439989694,
+    0.87574847399992,
+    0.8989529959999345,
+    0.8987757230006537,
+    0.8702586620001966,
+    1.2496345859999565,
+    0.9831235290002951,
+    0.8219819360001566
+   ],
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM bench.events_1m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20",
+   "summary": {
+    "max": 1.2496345859999565,
+    "median": 0.8872620985002868,
+    "min": 0.809470018999491,
+    "p95": 1.2496345859999565
+   },
+   "warmup_seconds": 1.0936720529989543
+  },
+  "q10_human_editors/trino-iceberg": {
+   "engine": "trino-iceberg",
+   "result": [
+    [
+     "DERDAKI ILIAS",
+     40280,
+     2014
+    ],
+    [
+     "Fotis A.",
+     35860,
+     1793
+    ],
+    [
+     "MattArtzAnthro",
+     28180,
+     187
+    ],
+    [
+     "Tom.Reding",
+     7200,
+     359
+    ],
+    [
+     "~2026-54857-14",
+     4800,
+     240
+    ],
+    [
+     "Jevansen",
+     4140,
+     207
+    ],
+    [
+     "KabouterBot",
+     3780,
+     189
+    ],
+    [
+     "Sabel\u00f6ga",
+     3620,
+     11
+    ],
+    [
+     "Malcolmxl5",
+     3180,
+     40
+    ],
+    [
+     "Gone Postal",
+     3120,
+     155
+    ],
+    [
+     "Pudox",
+     2700,
+     15
+    ],
+    [
+     "Moebeus",
+     2560,
+     20
+    ],
+    [
+     "Kvdrgeus",
+     2540,
+     127
+    ],
+    [
+     "NaBUru38",
+     2300,
+     80
+    ],
+    [
+     "\u306a\u3089\u3061\u3083\u3093",
+     2300,
+     27
+    ],
+    [
+     "Taketa",
+     2200,
+     41
+    ],
+    [
+     "Onghai1929",
+     1920,
+     86
+    ],
+    [
+     "Ovruni",
+     1840,
+     35
+    ],
+    [
+     "Renato de Carvalho Ferreira",
+     1820,
+     83
+    ],
+    [
+     "Tvpuppy",
+     1800,
+     90
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    0.3184303160014679,
+    0.2141326389992173,
+    0.30348466699979326,
+    0.2902414649997809,
+    0.3185612310007855,
+    0.24671270200087747,
+    0.22245700900020893,
+    0.1841606559992215,
+    0.2555208379999385,
+    0.3387806909995561
+   ],
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM iceberg.bench.events_1m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20",
+   "stats": [
+    {
+     "cpuTimeMillis": 350,
+     "elapsedTimeMillis": 311,
+     "peakMemoryBytes": 5243480,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020239_00219_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 27,
+     "wallTimeMillis": 1008
+    },
+    {
+     "cpuTimeMillis": 337,
+     "elapsedTimeMillis": 208,
+     "peakMemoryBytes": 3850128,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020240_00220_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 27,
+     "wallTimeMillis": 774
+    },
+    {
+     "cpuTimeMillis": 333,
+     "elapsedTimeMillis": 298,
+     "peakMemoryBytes": 8661528,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083767,
+     "processedRows": 1000000,
+     "queryId": "20261111_020240_00221_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 27,
+     "wallTimeMillis": 1237
+    },
+    {
+     "cpuTimeMillis": 344,
+     "elapsedTimeMillis": 277,
+     "peakMemoryBytes": 6735888,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083883,
+     "processedRows": 1000000,
+     "queryId": "20261111_020240_00222_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 27,
+     "wallTimeMillis": 1055
+    },
+    {
+     "cpuTimeMillis": 335,
+     "elapsedTimeMillis": 311,
+     "peakMemoryBytes": 1925640,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020241_00223_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 27,
+     "wallTimeMillis": 913
+    },
+    {
+     "cpuTimeMillis": 325,
+     "elapsedTimeMillis": 239,
+     "peakMemoryBytes": 4812408,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083767,
+     "processedRows": 1000000,
+     "queryId": "20261111_020241_00224_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 27,
+     "wallTimeMillis": 961
+    },
+    {
+     "cpuTimeMillis": 316,
+     "elapsedTimeMillis": 217,
+     "peakMemoryBytes": 7699104,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020241_00225_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 27,
+     "wallTimeMillis": 839
+    },
+    {
+     "cpuTimeMillis": 319,
+     "elapsedTimeMillis": 179,
+     "peakMemoryBytes": 7167968,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020241_00226_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 27,
+     "wallTimeMillis": 626
+    },
+    {
+     "cpuTimeMillis": 337,
+     "elapsedTimeMillis": 246,
+     "peakMemoryBytes": 21204072,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020242_00227_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 27,
+     "wallTimeMillis": 973
+    },
+    {
+     "cpuTimeMillis": 328,
+     "elapsedTimeMillis": 304,
+     "peakMemoryBytes": 9092528,
+     "physicalInputBytes": 8749853,
+     "processedBytes": 18083651,
+     "processedRows": 1000000,
+     "queryId": "20261111_020242_00228_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 27,
+     "wallTimeMillis": 867
+    }
+   ],
+   "summary": {
+    "max": 0.3387806909995561,
+    "median": 0.2728811514998597,
+    "min": 0.1841606559992215,
+    "p95": 0.3387806909995561
+   },
+   "warmup_seconds": 0.3141877169982763
+  },
+  "q10_human_editors/trino-postgres": {
+   "engine": "trino-postgres",
+   "result": [
+    [
+     "DERDAKI ILIAS",
+     40280,
+     2014
+    ],
+    [
+     "Fotis A.",
+     35860,
+     1793
+    ],
+    [
+     "MattArtzAnthro",
+     28180,
+     187
+    ],
+    [
+     "Tom.Reding",
+     7200,
+     359
+    ],
+    [
+     "~2026-54857-14",
+     4800,
+     240
+    ],
+    [
+     "Jevansen",
+     4140,
+     207
+    ],
+    [
+     "KabouterBot",
+     3780,
+     189
+    ],
+    [
+     "Sabel\u00f6ga",
+     3620,
+     11
+    ],
+    [
+     "Malcolmxl5",
+     3180,
+     40
+    ],
+    [
+     "Gone Postal",
+     3120,
+     155
+    ],
+    [
+     "Pudox",
+     2700,
+     15
+    ],
+    [
+     "Moebeus",
+     2560,
+     20
+    ],
+    [
+     "Kvdrgeus",
+     2540,
+     127
+    ],
+    [
+     "NaBUru38",
+     2300,
+     80
+    ],
+    [
+     "\u306a\u3089\u3061\u3083\u3093",
+     2300,
+     27
+    ],
+    [
+     "Taketa",
+     2200,
+     41
+    ],
+    [
+     "Onghai1929",
+     1920,
+     86
+    ],
+    [
+     "Ovruni",
+     1840,
+     35
+    ],
+    [
+     "Renato de Carvalho Ferreira",
+     1820,
+     83
+    ],
+    [
+     "Tvpuppy",
+     1800,
+     90
+    ]
+   ],
+   "result_rows": 20,
+   "seconds": [
+    0.4791633080003521,
+    0.6526462050005648,
+    0.6506712829996104,
+    0.5377918889989814,
+    0.5257606159993884,
+    0.4478198440010601,
+    0.5487617359995056,
+    0.8115827270012232,
+    0.8135109869999724,
+    0.6399288780012284
+   ],
+   "sql": "SELECT user_name, count(*) AS edits, count(DISTINCT title) AS pages\nFROM postgresql.bench.events_1m\nWHERE is_bot = false AND event_type IN ('edit', 'new')\nGROUP BY user_name\nORDER BY edits DESC, user_name\nLIMIT 20",
+   "stats": [
+    {
+     "cpuTimeMillis": 261,
+     "elapsedTimeMillis": 473,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020233_00208_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 486
+    },
+    {
+     "cpuTimeMillis": 274,
+     "elapsedTimeMillis": 647,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020234_00209_ha3tz",
+     "queuedTimeMillis": 1,
+     "totalSplits": 11,
+     "wallTimeMillis": 639
+    },
+    {
+     "cpuTimeMillis": 290,
+     "elapsedTimeMillis": 645,
+     "peakMemoryBytes": 5300048,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020234_00210_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 775
+    },
+    {
+     "cpuTimeMillis": 264,
+     "elapsedTimeMillis": 524,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020235_00211_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 563
+    },
+    {
+     "cpuTimeMillis": 261,
+     "elapsedTimeMillis": 518,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020235_00212_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 585
+    },
+    {
+     "cpuTimeMillis": 254,
+     "elapsedTimeMillis": 442,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020236_00213_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 467
+    },
+    {
+     "cpuTimeMillis": 270,
+     "elapsedTimeMillis": 542,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020236_00214_ha3tz",
+     "queuedTimeMillis": 0,
+     "totalSplits": 11,
+     "wallTimeMillis": 580
+    },
+    {
+     "cpuTimeMillis": 294,
+     "elapsedTimeMillis": 800,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020237_00215_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 11,
+     "wallTimeMillis": 854
+    },
+    {
+     "cpuTimeMillis": 291,
+     "elapsedTimeMillis": 801,
+     "peakMemoryBytes": 1728,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020238_00216_ha3tz",
+     "queuedTimeMillis": 4,
+     "totalSplits": 11,
+     "wallTimeMillis": 953
+    },
+    {
+     "cpuTimeMillis": 276,
+     "elapsedTimeMillis": 627,
+     "peakMemoryBytes": 397888,
+     "physicalInputBytes": 0,
+     "processedBytes": 13333128,
+     "processedRows": 316040,
+     "queryId": "20261111_020239_00217_ha3tz",
+     "queuedTimeMillis": 2,
+     "totalSplits": 11,
+     "wallTimeMillis": 655
+    }
+   ],
+   "summary": {
+    "max": 0.8135109869999724,
+    "median": 0.594345307000367,
+    "min": 0.4478198440010601,
+    "p95": 0.8135109869999724
+   },
+   "warmup_seconds": 0.5437145280011464
+  }
+ },
+ "name": "events_1m",
+ "runs": 10,
+ "window": {
+  "event_id": "771bb459-ac69-585c-a0d5-5fde8d246762",
+  "hour_end": "2026-10-17T06:00:00+00:00",
+  "hour_start": "2026-10-17T05:00:00+00:00",
+  "six_hours_end": "2026-10-17T11:00:00+00:00"
+ }
+}

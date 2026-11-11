@@ -1,0 +1,52 @@
+{
+ "page_cache_droppable": true,
+ "postgres_settings": {
+  "effective_cache_size": "4GB",
+  "jit": "on",
+  "max_parallel_workers": "8",
+  "max_parallel_workers_per_gather": "4",
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "shared_buffers": "128MB",
+  "work_mem": "64MB"
+ },
+ "recorded_at": "2026-11-10T23:55:25.846790+00:00",
+ "resources": {
+  "compose": "5.1.3",
+  "containers": {
+   "kafka": {
+    "cpu_shares": null,
+    "cpuset": null,
+    "image": "apache/kafka:4.2.2",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null
+   },
+   "minio": {
+    "cpu_shares": null,
+    "cpuset": null,
+    "image": "tributary-minio:dev",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null
+   },
+   "postgres": {
+    "cpu_shares": null,
+    "cpuset": null,
+    "image": "postgres:17",
+    "mem_limit_bytes": 4294967296,
+    "nano_cpus": null
+   },
+   "trino": {
+    "cpu_shares": null,
+    "cpuset": null,
+    "image": "trinodb/trino:484",
+    "mem_limit_bytes": 3221225472,
+    "nano_cpus": null
+   }
+  },
+  "cpu_model": "AMD EPYC 7763 64-Core Processor",
+  "docker": "29.4.2",
+  "kernel": "7.0.0-1019-azure",
+  "mem_total_kb": 16366636,
+  "nproc": 4
+ },
+ "trino_version": "484"
+}

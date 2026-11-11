@@ -1,0 +1,59 @@
+{
+ "flat_ctas_seconds": 30.17930400000114,
+ "generate_seconds": 108.51630896499955,
+ "generator": {
+  "copies": 20,
+  "first_event_ts": "2026-10-16T23:45:26+00:00",
+  "last_event_ts": "2026-10-17T11:51:45+00:00",
+  "name": "events_1m",
+  "postgres_rows": 1000000,
+  "rows": 1000000,
+  "sample_rows": 50000,
+  "seconds": {
+   "iceberg": 19.9,
+   "postgres": 34.7,
+   "stream": 38.9
+  },
+  "span_seconds": 2179,
+  "stream_groups": 2181
+ },
+ "iceberg": {
+  "partitioned": {
+   "bytes": 47311564,
+   "files": 13,
+   "max_file_bytes": 4053770,
+   "median_file_bytes": 3982993,
+   "min_file_bytes": 1025002,
+   "rows": 1000000,
+   "snapshots": 1
+  },
+  "uncompacted": {
+   "bytes": 79950137,
+   "files": 2219,
+   "max_file_bytes": 48633,
+   "median_file_bytes": 36167,
+   "min_file_bytes": 6773,
+   "rows": 1000000,
+   "snapshots": 1
+  },
+  "unpartitioned": {
+   "bytes": 38840920,
+   "files": 1,
+   "max_file_bytes": 38840920,
+   "median_file_bytes": 38840920,
+   "min_file_bytes": 38840920,
+   "rows": 1000000,
+   "snapshots": 1
+  }
+ },
+ "name": "events_1m",
+ "optimize_seconds": 0.3443142770011036,
+ "postgres": {
+  "brin_bytes": 24576,
+  "heap_bytes": 218890240,
+  "pkey_bytes": 31563776,
+  "reltuples": 1000000,
+  "table_bytes": 218980352
+ },
+ "rows": 1000000
+}
