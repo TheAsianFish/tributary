@@ -143,3 +143,16 @@ def test_wrong_answers_lists_both_tracks() -> None:
         ("corrected", 1),
         ("corrected", 2),
     ]
+
+
+def test_each_other_variant_gets_a_column_of_the_failures_it_answers() -> None:
+    table = failures_table(_labels(), _report())
+    header, _, refusal, value, join, total = table.splitlines()
+    assert "Right with `full+a`" in header
+    # full+a gets official 1 and 2 right, corrected 1 right.
+    assert refusal.startswith("| Refused |")
+    assert refusal.endswith("| 1 | 1 |")
+    assert value.startswith("| Wrong literal |")
+    assert value.endswith("| 1 | 2 |")
+    assert join.endswith("| 1 | 1 (c) |")
+    assert total == "| **Total** | | **3** | 100% | **3** | |"

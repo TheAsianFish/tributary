@@ -133,28 +133,51 @@ def check_labels(labels: dict[str, Any], report: dict[str, Any]) -> list[str]:
     return problems
 
 
+def fixed_by(labels: dict[str, Any], report: dict[str, Any]) -> dict[str, set[tuple[str, int]]]:
+    """For every other variant in the report, the labelled failures it answers correctly."""
+    out: dict[str, set[tuple[str, int]]] = {}
+    for name, tracks in report["variants"].items():
+        if name == labels["variant"]:
+            continue
+        right = {
+            (track, v["id"])
+            for track, entry in tracks.items()
+            for v in entry["verdicts"]
+            if v["correct"]
+        }
+        out[name] = {(i["track"], i["id"]) for i in labels["labels"]} & right
+    return out
+
+
 def failures_table(labels: dict[str, Any], report: dict[str, Any]) -> str:
     problems = check_labels(labels, report)
     if problems:
         raise ValueError("failure labels do not match the run: " + "; ".join(problems[:5]))
     items = labels["labels"]
+    fixes = fixed_by(labels, report)
+    others = sorted(fixes, key=lambda n: (len(n), n))
     lines = [
-        "| Category | What it covers | Wrong answers | Share | Questions |",
-        "|---|---|---:|---:|---|",
+        "| Category | What it covers | Wrong answers | Share | "
+        + "".join(f"Right with `{n}` | " for n in others)
+        + "Questions |",
+        "|---|---|---:|---:|" + "---:|" * len(others) + "---|",
     ]
     total = len(items)
     for key, label, covers in CATEGORIES:
         hits = [i for i in items if i["category"] == key]
         if not hits:
             continue
+        keys = {(i["track"], i["id"]) for i in hits}
         ids = ", ".join(
             f"{i['id']}" + ("" if i["track"] == "official" else " (c)")
             for i in sorted(hits, key=lambda i: (i["track"] != "official", i["id"]))
         )
+        fixed = "".join(f"{len(keys & fixes[n])} | " for n in others)
         lines.append(
-            f"| {label} | {covers} | {len(hits)} | {100 * len(hits) / total:.0f}% | {ids} |"
+            f"| {label} | {covers} | {len(hits)} | {100 * len(hits) / total:.0f}% | {fixed}{ids} |"
         )
-    lines.append(f"| **Total** | | **{total}** | 100% | |")
+    totals = "".join(f"**{len(fixes[n])}** | " for n in others)
+    lines.append(f"| **Total** | | **{total}** | 100% | {totals}|")
     return "\n".join(lines)
 
 
