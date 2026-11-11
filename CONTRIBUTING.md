@@ -53,9 +53,13 @@ alone too: `docker compose up -d postgres && make bird`.
 | `make bench-query` | Generates the sample scaled to `SCALE` rows (default `1m,20m`) in PostgreSQL and Iceberg (`tributary bench load`), then times ten queries on PostgreSQL, Trino over PostgreSQL and Trino over Iceberg (warm and cold), the three Iceberg layouts on the window queries, and one federated query. Writes `bench/results/m6-query/`. About 2 h for both scales. It recreates PostgreSQL, MinIO and Trino under `bench/compose.query.yaml`'s memory limits, stops the stream job and restarts the engines (dropping the host page cache through `sudo -n` where allowed), so use a disposable stack. A rerun skips finished units. |
 | `make bench-results` | Re-render RESULTS.md's ingest tables from `bench/results/` (a unit test fails if they are stale). |
 | `make serve` / `make up-api` | The API on localhost:8000 from the host / in Compose (profile `api`); both need `TRIBUTARY_API_KEYS`. |
+| `make dist` | Build the sdist and wheel into `dist/`, `twine check --strict` them, and install the wheel (with `api`) in a clean venv outside the checkout and run it. The release workflow runs exactly this. |
+| `make test-live` | The Anthropic provider against the real API, one call (skipped without `ANTHROPIC_API_KEY`; under $0.01 on Haiku). The `Live` workflow runs it by hand. |
 
-Planned targets (`make test-live`) are specified in PLAN.md and land with their milestones. On a database created before M3, run
-`uv run tributary warehouse grant-agent` once to create the agent's role.
+On a database created before M3, run `uv run tributary warehouse
+grant-agent` once to create the agent's role. Releases follow RELEASE.md:
+a `v*` tag publishes `tributary-platform` to PyPI and the images to GHCR;
+both workflows run by hand on a branch as dry runs.
 
 ## Conventions
 
