@@ -690,16 +690,16 @@ questions is noise; the p-value says how much.
 - **The refusal exit cost 4 questions, and removing it fixed 4 of its 11 refusals.** `full+a` refuses nothing (11 → 0), and EX moves from 21 to 25 / 50 on the official track and from 18 to 22 / 45 on the corrected one. Of the 11 questions the baseline refused, `full+a` answers 4 correctly. The other 7 still end wrong: 5 with a query that returns the wrong rows, and 2 that fail every attempt. So the exit was mostly hiding questions the model could not answer anyway. Paired against `full`, the official track is +7 -3 (p = 0.34) and the corrected +5 -1 (p = 0.22). That is in the right direction on both tracks, but not significant at n = 50.
 - **Value hints and examples move many answers both ways.** On top of `+a`, `+v+f` gains 8 and loses 7 official questions (25 → 26), and gains 11 and loses 7 on the corrected track (22 → 26). Against `full`, `full+v+f+a` is +8 -3 (p = 0.23) and +13 -5 (p = 0.10).
   - The gain is in the hard questions: challenging goes from 2 to 4 of 10 on the official track and from 1 to 7 of 9 on the corrected one.
-  - The losses are in the simple ones: 8 → 7 of 15 official, 7 → 6 of 13 corrected. Examples pull a 7B model toward the shape of a similar question, which helps a multi-step question and sometimes over-complicates a lookup.
+  - The losses are in the simple ones: 9 → 7 of 15 official and 8 → 6 of 13 corrected, against `full+a`. Examples pull a 7B model toward the shape of a similar question, which helps a multi-step question and sometimes over-complicates a lookup.
   - In the taxonomy below, `+v+f` is the only cell that fixes a wrong literal: on 477 it now looks `'Coldsnap'` up in `sets.name` instead of comparing it with the set code. It also fixes two of the three "evidence not followed" answers. Question 405 (`'Portuguese (Brasil)'` in the evidence, `'Portuguese (Brazil)'` stored) is still wrong, because the matcher is exact up to case. A fuzzy match is the next step for value retrieval.
-- **Cost.** `full+v+f+a` sends 13% more input tokens than `full+a` (233,842 against 206,276 over both tracks, with repairs): about 320 tokens of examples and hints per call. On Claude at list price that is $0.03 vs $0.03 on Haiku 5.5 and $1.31 vs $1.21 on Opus 5.5 for the whole cell. Calls are about equal (85 against 88).
+- **Cost.** `full+v+f+a` sends 13% more input tokens than `full+a` (233,842 against 206,276 over both tracks, with repairs): about 400 more input tokens per call (2,751 against 2,344), mostly examples and hints. On Claude at list price that is $0.03 vs $0.03 on Haiku 5.5 and $1.31 vs $1.21 on Opus 5.5 for the whole cell. Calls are about equal (85 against 88).
 - **Model time.** The two M7 cells took 78–80 s per question at the median. They ran side by side, sharing the CPU, so this is not comparable with M4's serial 42 s. Their token counts are.
 
 **The default.** `make eval`'s live default is now `full,full+v+f+a`: the baseline and the variant that is best on both tracks, for 13% more input tokens than the next best. It is the only cell that improved the challenging questions, and neither pairing against `full` is significant at this size, which is what a larger subset (`SUBSET=all`, under To measure) would settle.
 
 The product's agent keeps value hints and worked examples **off** by default (`TRIBUTARY_AGENT_VALUES=false`, `TRIBUTARY_AGENT_EXAMPLES=0`), for three reasons:
 
-- The BIRD gain over `full+a` is 1 and 4 questions, against 7 losses on each track.
+- Over `full+a`, their net gain on BIRD is 1 and 4 questions: 8 and 11 gained, against 7 lost on each track.
 - The warehouse prompt already lists every indexed value in its DDL.
 - The 40 warehouse questions have not been re-recorded with them.
 
