@@ -1,7 +1,7 @@
 # MinIO built from its last tagged release. The upstream repository was archived
 # in April 2026 and minio/minio is no longer published on Docker Hub, so the
 # image is built here from source, pinned to the release tag and its commit.
-FROM golang:1.24.8-bookworm AS build
+FROM golang:1.24.8-bookworm@sha256:4ed690d6649d63c312b99a6120025ec79ce3b542968a37da53d6236c7c61a848 AS build
 
 ARG MINIO_TAG=RELEASE.2025-10-15T17-29-55Z
 ARG MINIO_COMMIT=9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a
@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
         -ldflags "$(MINIO_RELEASE=RELEASE go run buildscripts/gen-ldflags.go "${MINIO_TAG#RELEASE.}")" \
         -o /out/minio .
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 # curl serves the health check and the one-shot bucket creation (curl --aws-sigv4).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \

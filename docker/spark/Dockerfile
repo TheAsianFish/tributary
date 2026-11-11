@@ -2,9 +2,9 @@
 # runtime, the Kafka connector and the Iceberg runtime (with its S3 client and
 # the PostgreSQL driver for the JDBC catalog) baked into /opt/spark/jars, and
 # the tributary package in a Python 3.12 venv (the base image ships Python 3.10).
-FROM ghcr.io/astral-sh/uv:0.13.1 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336 AS uv
 
-FROM apache/spark:4.1.3-python3
+FROM apache/spark:4.1.3-python3@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
 
 USER root
 ARG MAVEN=https://repo1.maven.org/maven2
