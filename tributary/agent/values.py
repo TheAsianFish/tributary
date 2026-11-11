@@ -13,7 +13,9 @@ of the question's tokens that equals its token sequence. A quoted string in the
 question ('...' or "...") is also compared whole, punctuation included. Values
 that would match noise are not indexed: shorter than three characters, made of
 digits only (models copy numbers fine), made only of stopwords, or longer than
-100 characters. When matched spans overlap, the longest wins.
+100 characters. When matched spans overlap, the longest wins. One span may
+match a value in several columns; up to three are reported, exact case
+first, then columns whose name the question uses.
 """
 
 from __future__ import annotations
@@ -162,11 +164,25 @@ class ValueIndex:
                 chosen.append(cand)
         # (rank within its span, inexact, -span length, start, match)
         ranked: list[tuple[int, bool, int, int, ValueMatch]] = []
+        # A column the question names ("Alameda County" -> the County column) goes ahead of
+        # same-valued columns it does not name, so the per-span cap keeps it.
+        named_words = {_norm(t) for t, _, _ in _tokens(text)}
+
+        def unnamed(entry: _Entry) -> bool:
+            words = [_norm(t) for t, _, _ in _tokens(entry.column)]
+            return not (words and all(w in named_words for w in words))
+
         for cand in chosen:
             span = text[cand.start : cand.end]
             entries = sorted(
                 set(cand.entries),
-                key=lambda e: (e.exact != cand.exact, e.relation, e.column, e.value),
+                key=lambda e: (
+                    e.exact != cand.exact,
+                    unnamed(e),
+                    e.relation,
+                    e.column,
+                    e.value,
+                ),
             )
             for rank, entry in enumerate(entries[:PER_SPAN]):
                 found = ValueMatch(entry.relation, entry.column, entry.value, span)
@@ -181,7 +197,7 @@ class ValueIndex:
             if key not in named and len(kept) < limit:
                 named.add(key)
                 kept.append(item)
-        kept.sort(key=lambda r: (r[3], r[1], r[4].relation, r[4].column, r[4].value))
+        kept.sort(key=lambda r: (r[3], r[0]))  # text order; within a span, best first
         return tuple(r[4] for r in kept)
 
     def _candidates(self, text: str) -> list[_Candidate]:

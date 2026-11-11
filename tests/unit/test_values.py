@@ -228,3 +228,18 @@ def test_committed_bird_index_matches_a_known_question() -> None:
         ValueMatch("european_football_2.player", "player_name", "Aaron Lennon", "Aaron Lennon")
         in matches
     )
+
+
+def test_a_column_the_question_names_survives_the_per_span_cap() -> None:
+    index = ValueIndex(
+        {
+            ("geo.a", "city"): ("Alameda",),
+            ("geo.b", "cname"): ("Alameda",),
+            ("geo.c", "district"): ("Alameda",),
+            ("geo.z", "County"): ("Alameda",),
+        }
+    )
+    columns = [(m.relation, m.column) for m in index.match("Schools in Alameda County?")]
+    assert ("geo.z", "County") in columns
+    assert columns[0] == ("geo.z", "County")
+    assert len(columns) == 3
