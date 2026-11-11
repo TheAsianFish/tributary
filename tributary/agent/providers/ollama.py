@@ -103,6 +103,10 @@ class OllamaProvider:
             detail = str(reply.json().get("error", reply.text))
         except (ValueError, AttributeError):
             detail = reply.text
+        if "prediction aborted" in detail:
+            # The model degenerated (e.g. "token repeat limit reached"): the reply is
+            # unusable, like a truncated one, which is not a problem with the server.
+            return InvalidOutput(f"Ollama aborted the reply ({self.model}): {detail[:200]}")
         if reply.status_code == 404 and "not found" in detail:
             return ProviderError(
                 f"Ollama has no model {self.model}: run `ollama pull {self.model}` "

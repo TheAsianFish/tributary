@@ -15,7 +15,10 @@ PostgreSQL error, a timeout or a cost refusal). An unreachable warehouse or a
 privilege the agent's role lacks (``ExecutionError.repairable`` is false)
 stops the loop and propagates: no draft fixes a deployment. Provider failures
 are not repaired here either: they propagate, because a retry belongs to the
-provider's own policy and a refusal should reach the caller as a refusal.
+provider's own policy and a refusal should reach the caller as a refusal. The
+exception is a reply that is unusable (:class:`InvalidOutput`: cut off, or
+aborted as degenerate): that is the model's answer to the question, so the
+question ends as failed rather than taking the caller down.
 """
 
 from __future__ import annotations
@@ -266,9 +269,17 @@ class Planner:
         result: QueryResult | None = None
         status: Status = "failed"
         for n in range(1 + self.max_repairs):
-            response = self.provider.complete(
-                self.request(messages, system, sample=sample, temperature=temperature)
-            )
+            try:
+                response = self.provider.complete(
+                    self.request(messages, system, sample=sample, temperature=temperature)
+                )
+            except InvalidOutput as exc:
+                # The model produced no usable reply (cut off, degenerate). There is no
+                # draft to repair, and asking again with the same messages would get the
+                # same reply at temperature 0: the question fails.
+                attempts.append(Attempt(None, None, f"The model gave no usable reply: {exc}"))
+                status = "failed"
+                break
             usage = usage + response.usage
             model = response.model
             try:

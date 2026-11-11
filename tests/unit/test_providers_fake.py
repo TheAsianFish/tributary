@@ -161,3 +161,22 @@ def test_make_provider(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="real provider"):
         make_provider(Settings(provider="fake"), record=True)
+
+
+def test_an_unusable_reply_is_recorded_and_replayed_as_one(tmp_path: Path) -> None:
+    from tributary.agent.provider import InvalidOutput, ModelRequest
+    from tributary.agent.providers.fake import FakeProvider, RecordingProvider
+
+    class Degenerate:
+        name = "ollama"
+        model = "qwen"
+
+        def complete(self, request: ModelRequest) -> ModelResponse:
+            raise InvalidOutput("Ollama aborted the reply: token repeat limit reached")
+
+    path = tmp_path / "rec.jsonl"
+    request = ModelRequest("s", (), {"type": "object"}, "draft")
+    with pytest.raises(InvalidOutput):
+        RecordingProvider(Degenerate(), path).complete(request)
+    with pytest.raises(InvalidOutput, match="repeat limit"):
+        FakeProvider(path).complete(request)

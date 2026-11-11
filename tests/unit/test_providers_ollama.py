@@ -114,3 +114,19 @@ def test_connection_error_hints_at_compose() -> None:
     provider, _ = provider_for(fail)
     with pytest.raises(ProviderError, match="--profile ollama"):
         provider.complete(REQUEST)
+
+
+def test_an_aborted_degenerate_reply_is_invalid_output() -> None:
+    body = {"error": "prediction aborted, token repeat limit reached"}
+    provider, _ = provider_for(lambda _r: httpx.Response(500, json=body))
+    with pytest.raises(InvalidOutput, match="repeat limit"):
+        provider.complete(REQUEST)
+
+
+def test_a_vote_draw_sets_temperature_and_seed() -> None:
+    from dataclasses import replace
+
+    provider, seen = provider_for(lambda _r: httpx.Response(200, json=chat_reply()))
+    provider.complete(replace(REQUEST, sample=2, temperature=0.7))
+    options = json.loads(seen[0].content)["options"]
+    assert (options["temperature"], options["seed"]) == (0.7, 2)
