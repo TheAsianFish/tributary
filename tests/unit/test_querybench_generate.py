@@ -144,14 +144,12 @@ def test_scaled_rows_tile_time_without_overlap(spark: SparkSession, sample: Path
     for copy in (1, 2):
         assert min(by_copy[copy]) > max(by_copy[copy - 1])
         assert min(by_copy[copy]) - T0 == timedelta(seconds=81 * copy)
-    original = {r[1]: r for r in base.rows}
     first_copy = {r["kafka_offset"]: r for r in rows if r["kafka_offset"] < 10}
     for seq, row in first_copy.items():
         source = base.rows[seq]
         assert row["event_id"] == scaled_id(0, str(source[1]))
         assert row["wiki"] == source[5]
         assert row["title"] == source[9]
-        assert source[1] in original
     # Arrival is the emit time, shifted with the copy.
     late = next(r for r in rows if r["kafka_offset"] == 19)
     assert late["ingested_at"] == late["kafka_ts"] == late["emitted_at"]
