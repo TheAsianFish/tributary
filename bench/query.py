@@ -285,7 +285,12 @@ def wait_for_trino(engines: Engines, timeout: float = 180) -> None:
         try:
             engines.fetch("trino-iceberg", "SELECT count(*) FROM system.metadata.catalogs")
             return
-        except (trino.exceptions.TrinoQueryError, trino.exceptions.HttpError, OSError):
+        except (
+            trino.exceptions.TrinoQueryError,
+            trino.exceptions.HttpError,
+            trino.exceptions.TrinoConnectionError,
+            OSError,
+        ):
             if time.monotonic() > deadline:
                 raise
             time.sleep(2)
@@ -434,6 +439,11 @@ def load_unit(settings: Settings, rows: int, name: str, path: Path) -> dict[str,
         optimize_seconds = time.monotonic() - t0
         engines.fetch("trino-iceberg", f"DROP TABLE IF EXISTS {table}{FLAT_SUFFIX}")
         t0 = time.monotonic()
+        # A fresh JVM for the copy: after optimize at 20M rows the same CTAS filled
+        # Trino's heap (GC thrash, then exit) although it fits on a fresh one.
+        compose("restart", "trino")
+        compose("up", "-d", "--wait", "--no-recreate", "trino")
+        wait_for_trino_cold(settings)
         ctas_writer(settings, f"CREATE TABLE {table}{FLAT_SUFFIX} AS SELECT * FROM {table}")
         ctas_seconds = time.monotonic() - t0
         layouts = {
@@ -629,7 +639,12 @@ def wait_for_trino_cold(settings: Settings, timeout: float = 180) -> None:
             cur.execute("SELECT count(*) FROM system.runtime.nodes WHERE state = 'active'")
             if cur.fetchall()[0][0] >= 1:
                 return
-        except (trino.exceptions.TrinoQueryError, trino.exceptions.HttpError, OSError):
+        except (
+            trino.exceptions.TrinoQueryError,
+            trino.exceptions.HttpError,
+            trino.exceptions.TrinoConnectionError,
+            OSError,
+        ):
             pass
         finally:
             conn.close()  # type: ignore[no-untyped-call]  # the trino client is untyped
