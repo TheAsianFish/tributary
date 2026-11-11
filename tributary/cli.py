@@ -27,6 +27,10 @@ lake_app = typer.Typer(
     no_args_is_help=True, help="Maintain and check the Iceberg lake through Trino."
 )
 app.add_typer(lake_app, name="lake")
+bench_app = typer.Typer(
+    no_args_is_help=True, help="Generate the query-engine benchmark's data (make bench-query)."
+)
+app.add_typer(bench_app, name="bench")
 
 log = structlog.get_logger(__name__)
 
@@ -269,6 +273,31 @@ def lake_pruning(
         typer.echo(report.plan)
     if not report.pruned:
         raise typer.Exit(1)
+
+
+@bench_app.command("load")
+def bench_load(
+    rows: Annotated[int, typer.Option("--rows", min=1, help="Rows to generate, e.g. 1000000.")],
+    targets: Annotated[
+        str,
+        typer.Option(help="Comma-separated stores to write: postgres, iceberg, stream."),
+    ] = "postgres,iceberg,stream",
+) -> None:
+    """Scale the sample to N rows and write bench.events_<N> to PostgreSQL and Iceberg.
+
+    Runs Spark in batch mode (in the stream image: `docker compose run --rm stream
+    bench load --rows 1000000`). Prints a JSON summary of what it wrote on stdout.
+    """
+    from tributary.querybench.generate import load
+
+    bind_run_id("bench-load")
+    chosen = [t.strip() for t in targets.split(",") if t.strip()]
+    try:
+        report = load(get_settings(), rows, targets=chosen)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(2) from None
+    typer.echo(report.to_json())
 
 
 @warehouse_app.command("grant-agent")
