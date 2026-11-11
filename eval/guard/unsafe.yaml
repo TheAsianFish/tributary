@@ -505,3 +505,38 @@ unsafe:
     category: outside_allowlist
     sql: SELECT * FROM tributary.marts.fct_edits.wiki
     why: a name with too many parts is not a relation the allowlist checked; the database must not be the one to refuse it.
+  # -- column notation on a function in FROM: p.f is f(p), and the whole row of a
+  # scalar function is the scalar, so a call is written as a qualified column -------------
+  - id: function-alias-terminate-backends
+    category: dangerous_function
+    sql: |
+      SELECT count(*) FILTER (WHERE p.pg_terminate_backend) AS killed
+      FROM unnest(ARRAY(
+        SELECT pid FROM pg_stat_activity WHERE usename = current_user AND pid <> pg_backend_pid()
+      )) AS p
+    why: pg_terminate_backend(p) for each of the role's other sessions; kills them all from a read-only transaction, and looks like a column.
+  - id: function-alias-sleep
+    category: dangerous_function
+    sql: SELECT t.pg_sleep FROM generate_series(1, 10) AS t
+    why: pg_sleep(t) written as a column of the series.
+  - id: function-alias-current-setting
+    category: session
+    sql: SELECT s.current_setting FROM unnest(ARRAY['data_directory', 'listen_addresses']) AS s
+    why: reads server settings through current_setting(s), which the denylist never sees.
+  - id: function-alias-advisory-lock
+    category: locking
+    sql: SELECT n.pg_advisory_lock FROM generate_series(42, 42) AS n
+    why: takes a session-level advisory lock, which outlives the query's transaction.
+  # -- parser differentials ------------------------------------------------------------
+  - id: is-document-xml-parse
+    category: encoding
+    sql: SELECT '<!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]><r>&x;</r>' IS DOCUMENT
+    why: sqlglot reads IS DOCUMENT as a comparison with a column; PostgreSQL parses the text as xml with libxml2.
+  - id: xmltable-literal
+    category: encoding
+    sql: SELECT * FROM XMLTABLE('/r' PASSING '<r>1</r>' COLUMNS x int PATH '.')
+    why: libxml2 again, through a function sqlglot names x_m_l_table, out of the xml denylist's reach.
+  - id: operator-other-schema
+    category: encoding
+    sql: SELECT 1 OPERATOR(public.+) 1
+    why: an operator is a function call, and OPERATOR() reaches one in any schema.

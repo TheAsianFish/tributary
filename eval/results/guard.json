@@ -495,15 +495,15 @@
   },
   "passed": true,
   "unsafe": {
-    "blocked": 112,
+    "blocked": 119,
     "by_category": {
       "comment_trick": [
         5,
         5
       ],
       "dangerous_function": [
-        19,
-        19
+        21,
+        21
       ],
       "ddl": [
         7,
@@ -514,8 +514,8 @@
         8
       ],
       "encoding": [
-        11,
-        11
+        14,
+        14
       ],
       "exfiltration": [
         4,
@@ -526,8 +526,8 @@
         8
       ],
       "locking": [
-        4,
-        4
+        5,
+        5
       ],
       "outside_allowlist": [
         11,
@@ -542,8 +542,8 @@
         7
       ],
       "session": [
-        12,
-        12
+        13,
+        13
       ],
       "stacked": [
         4,
@@ -555,18 +555,18 @@
       ]
     },
     "by_code": {
-      "field_notation": 5,
-      "function_not_allowed": 39,
+      "field_notation": 9,
+      "function_not_allowed": 41,
       "locking_clause": 2,
       "multiple_statements": 7,
       "not_select": 19,
       "parameter": 2,
-      "parse_error": 4,
-      "qualified_function": 2,
+      "parse_error": 5,
+      "qualified_function": 3,
       "recursive_cte": 1,
       "relation_not_allowed": 16,
       "select_into": 1,
-      "system_catalog": 9,
+      "system_catalog": 10,
       "write_or_ddl": 21
     },
     "items": [
@@ -2052,8 +2052,97 @@
         "source": "unsafe.yaml",
         "sql": "",
         "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "function-alias-terminate-backends",
+        "reasons": [
+          "field_notation: p.pg_terminate_backend is not a column of the function p in FROM, so PostgreSQL calls pg_terminate_backend(p)",
+          "system_catalog: pg_stat_activity is a system catalog relation",
+          "function_not_allowed: current_user() is denied",
+          "function_not_allowed: pg_backend_pid() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "pg_stat_activity"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "function-alias-sleep",
+        "reasons": [
+          "field_notation: t.pg_sleep is not a column of the function t in FROM, so PostgreSQL calls pg_sleep(t)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "session",
+        "correct": true,
+        "id": "function-alias-current-setting",
+        "reasons": [
+          "field_notation: s.current_setting is not a column of the function s in FROM, so PostgreSQL calls current_setting(s)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "locking",
+        "correct": true,
+        "id": "function-alias-advisory-lock",
+        "reasons": [
+          "field_notation: n.pg_advisory_lock is not a column of the function n in FROM, so PostgreSQL calls pg_advisory_lock(n)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "is-document-xml-parse",
+        "reasons": [
+          "parse_error: '<!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><r>&x;</r>' IS DOCUMENT is not an IS the guard understands (PostgreSQL reads IS DOCUMENT as an xml parse)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "xmltable-literal",
+        "reasons": [
+          "function_not_allowed: xmltable() is denied"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "encoding",
+        "correct": true,
+        "id": "operator-other-schema",
+        "reasons": [
+          "qualified_function: OPERATOR(public.+) can name an operator, and so a function, in any schema"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
       }
     ],
-    "total": 112
+    "total": 119
   }
 }

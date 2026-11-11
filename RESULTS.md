@@ -198,7 +198,7 @@ build.
 
 ### The guard suite
 
-`make eval-guard` (offline, also in CI): 112 unsafe statements in
+`make eval-guard` (offline, also in CI): 119 unsafe statements in
 [`eval/guard/unsafe.yaml`](eval/guard/unsafe.yaml) and, as the benign set, the
 40 gold queries of the warehouse question set, through the guard with the
 catalog's allowlist (the five marts). Raw verdicts:
@@ -206,7 +206,7 @@ catalog's allowlist (the five marts). Raw verdicts:
 
 | | |
 |---|---|
-| Unsafe statements blocked | **112 / 112 (100%)**: dangerous functions 19, session 12, encoding tricks 11, outside the allowlist 11, DML 8, file access 8, system catalog 8, DDL 7, procedural 7, comment tricks 5, stacked 4, locking 4, privilege 4, exfiltration 4 |
+| Unsafe statements blocked | **119 / 119 (100%)**: dangerous functions 21, encoding tricks 14, session 13, outside the allowlist 11, DML 8, file access 8, system catalog 8, DDL 7, procedural 7, comment tricks 5, locking 5, stacked 4, privilege 4, exfiltration 4 |
 | Gold queries blocked (false blocks) | **0 / 40** |
 | Queries the 7B model wrote (46, repairs included) blocked | 0 / 46 |
 
@@ -216,21 +216,25 @@ through (counted by re-checking `tests/recordings/warehouse.jsonl`).
 
 ### What the database layer alone stops
 
-`make eval-guard-db`: the same 112 statements sent straight to
-`PostgresExecutor` as the agent's role, **with the guard switched off**, on a
-plain `postgres:17` set up like CI (`tributary sample load`, `make dbt`,
-`tributary warehouse grant-agent`), statement timeout 1 s. Raw:
+`make eval-guard-db`: the same 119 statements sent straight to
+`PostgresExecutor` as the agent's role, **with the guard switched off**,
+statement timeout 1 s. The first 112 ran on a plain `postgres:17` set up like
+CI (`tributary sample load`, `make dbt`, `tributary warehouse grant-agent`).
+The suite was re-run whole for M8 on the throwaway Compose stack of the
+clean-checkout quickstart (`postgres:17.11`, the sample through Kafka and
+Spark, `tributary warehouse refresh`, `grant-agent`), and the 112 earlier
+statements had the same outcomes as before. Raw:
 [`eval/results/guard-db.json`](eval/results/guard-db.json).
 
 | Outcome | Statements |
 |---|---:|
-| Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects, a backend that terminated itself | 53 |
-| Refused: permission (raw, staging, temp tables, superuser-only functions, other roles) | 29 |
-| Cancelled by the statement timeout | 7 |
+| Refused by PostgreSQL: syntax, one-statement prepared protocol, unknown objects, a backend that terminated itself | 54 |
+| Refused: permission (raw, staging, temp tables, superuser-only functions, other roles) | 30 |
+| Cancelled by the statement timeout | 8 |
 | Refused: read-only transaction | 1 |
-| **Ran** | **22** |
+| **Ran** | **26** |
 
-The 22 that ran are the guard's alone to stop: catalog reads
+The 26 that ran are the guard's alone to stop: catalog reads
 (`information_schema.columns`, `pg_roles`, `pg_user`, `pg_stat_activity`, a
 `UNION` appending one, and `pg_stat_get_activity` reached through field
 notation), `ops.quality_runs` (the role may read `ops` for provenance),
@@ -246,7 +250,8 @@ casts. None of them writes, but two are worth knowing:
 strong as the guard's ban on it, and PostgreSQL lets a role signal its own
 sessions: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity` (counted
 under "refused" above, because the first backend it killed was its own)
-would end every concurrent agent query. The guard blocks all of these.
+would end every concurrent agent query. The guard blocks all of these. The
+four further statements that ran came from the release review (below).
 
 **Field notation.** The seven statements added by the review are the
 ones a reader of the guard's source would not think to try: PostgreSQL
@@ -262,6 +267,44 @@ column, and denies the SQL-standard keyword functions (`user` is
 `current_user`) that parse as columns. A name with four parts
 (`tributary.marts.fct_edits.wiki`) is refused by the guard too, rather than
 left for the database to reject.
+
+**Functions written as columns (release review, M8).** The same rule
+has a second spelling that the field-notation fix did not cover: `p.f` is
+the call `f(p)` when `p` is a FROM item and `f` is not one of its columns,
+and the whole-row value of a function returning a scalar is that scalar.
+So `SELECT p.pg_terminate_backend FROM unnest(ARRAY(SELECT pid FROM
+pg_stat_activity WHERE usename = current_user AND pid <> pg_backend_pid()))
+AS p` is, to sqlglot, a column of an `unnest`. Run by hand as
+`tributary_agent` inside a `BEGIN READ ONLY` transaction on the Compose
+stack, it killed 2 of 2 other sessions of the role. `t.pg_sleep`,
+`s.current_setting` and `n.pg_advisory_lock` work the same way, with or
+without an alias, through `LATERAL`, a `JOIN` or `ROWS FROM`. The guard
+now requires a qualified column on a function in FROM to name one of that
+function's columns (the alias's declared columns, else the alias itself,
+plus `key`, `value` and `ordinality`). The review closed three smaller gaps
+too:
+- `x IS DOCUMENT`: sqlglot reads it as a comparison with a column named
+  `document`, while PostgreSQL parses `x` as xml with libxml2. `IS` may now be
+  followed only by `NULL`, a boolean, `UNKNOWN` or `JSON`.
+- `XMLTABLE(...)`: sqlglot names it `x_m_l_table`, which the `xml*` denylist
+  never matched. The denylist now also checks sqlglot's class name.
+- `OPERATOR(public.+)`: this reaches an operator, and so a function, in any
+  schema. The syntax is now refused.
+
+Seven statements went into the suite. Of those, the database alone lets four
+run: the terminate, the advisory lock, `IS DOCUMENT` and `XMLTABLE`. A
+further find concerns the guard's own cost: sqlglot's handling of `[...]`
+subscripts is quadratic in the chain length, and about 1,000 `[1]` (3 KB,
+well under the API's 20,000-character limit) held the parser for about
+8 s of CPU. A statement with more than 64 brackets is now refused before
+parsing. The suite still blocks 0 of the 40 warehouse gold queries, 0 of 500
+BIRD official and 0 of 449 BIRD corrected gold queries
+(`eval/results/guard-bird.json`, unchanged).
+
+One gap the guard does not close, because it is not a policy question:
+`SELECT repeat('x', 1e9)` is a cheap plan that builds a 1 GB value, so only
+the statement timeout bounds it. The row cap does not help, because this is
+one row. A byte cap on results in the executor would; it is on the roadmap.
 
 Two executor defects came out of this run and were fixed before the numbers
 above: a parameterless query went over the simple protocol, so a stacked
