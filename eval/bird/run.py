@@ -256,7 +256,8 @@ class Harness:
     # +v and +f: loaded on first use (a run without them needs neither file).
     value_indexes: Callable[[], Mapping[str, ValueIndex]] = load_value_indexes
     example_pools: Callable[[Collection[int]], Mapping[str, ExamplePool]] = bird_example_pools
-    # Questions never shown as examples: the evaluated subset (a held-out split).
+    # Questions never shown as examples: the evaluated subset (a held-out split). The
+    # question being asked is also held out by id, whatever the subset (see _examples).
     example_exclude: frozenset[int] = frozenset()
     _planners: dict[tuple[str, str], Planner | VotingPlanner] = field(default_factory=dict)
     _gold: dict[str, Executor] = field(default_factory=dict)
@@ -264,6 +265,7 @@ class Harness:
     _memo: dict[tuple[str, ...], Prediction] = field(default_factory=dict)
     _values: Mapping[str, ValueIndex] | None = None
     _pools: Mapping[str, ExamplePool] | None = None
+    _asked: dict[str, set[int]] = field(default_factory=dict)  # prompt -> question ids
     pairs: list[tuple[str, Any, Any]] = field(default_factory=list)
 
     def _executor(self, database: str, *, gold: bool) -> Executor:
@@ -289,10 +291,30 @@ class Harness:
             if self._pools is None:
                 self._pools = self.example_pools(self.example_exclude)
             pool = self._pools.get(db_id, ExamplePool(()))
-            blocks.append(worked_examples(pool, variant.examples))
+            blocks.append(self._examples(pool, variant.examples))
         if variant.values:
             blocks.append(value_hints(self._value_index(db_id)))
         return blocks
+
+    def _examples(self, pool: ExamplePool, k: int) -> Callable[[str], str]:
+        """``k`` examples from ``pool``, never the asked question itself, matched by id.
+
+        The pool's own check compares question text, which is not enough: a
+        corrected-track question is often worded differently from its official
+        twin, and on ``SUBSET=all`` that twin (with its gold SQL) is in the pool.
+        On a held-out subset the pool has none of the asked ids, so this changes
+        nothing there.
+        """
+        block = worked_examples(pool, k)
+
+        def held_out(question: str) -> str:
+            asked = {f"bird:{i}" for i in self._asked.get(question, ())}
+            if not any(e.source in asked for e in pool.examples):
+                return block(question)
+            rest = ExamplePool(tuple(e for e in pool.examples if e.source not in asked))
+            return worked_examples(rest, k)(question)
+
+        return held_out
 
     def _value_index(self, db_id: str) -> ValueIndex:
         if self._values is None:
@@ -343,6 +365,7 @@ class Harness:
         has already counted its cost, and the tables the variant linked.
         """
         planner = self.planner(q.db_id, variant)
+        self._asked.setdefault(q.prompt, set()).add(q.id)
         system, link = planner.system_for(q.prompt)
         user = planner.user_message(q.prompt)
         key = (q.db_id, _sha(system), _sha(user), q.prompt, str(variant.votes))
@@ -702,7 +725,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         load_catalogs(),
         replay=replay,
         # The examples come from the questions outside the evaluated subset; on the whole
-        # set (SUBSET=all) only the asked question itself is held out.
+        # set (SUBSET=all) only the asked question itself is held out, by id.
         example_exclude=frozenset(
             q.id for q in data.select(data.questions("official"), args.subset)
         )

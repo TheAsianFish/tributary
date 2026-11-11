@@ -325,6 +325,28 @@ def test_the_examples_hold_out_the_evaluated_subset() -> None:
     assert seen == [frozenset({1, 2})]
 
 
+def test_a_reworded_question_is_never_shown_its_own_gold_as_an_example() -> None:
+    from tributary.agent.examples import Example, ExamplePool
+
+    harness, provider, (_, corrected) = _harness_case()
+    # SUBSET=all: nothing is held out by subset, so the official wording of the asked
+    # question is in the pool. The corrected track words it differently.
+    harness.example_pools = lambda exclude: {
+        "tox": ExamplePool(
+            (
+                Example("Which elements are there?", "SELECT 'own gold'", "bird:1"),
+                Example("Which elements are rare?", "SELECT 'other'", "bird:2"),
+            )
+        )
+    }
+    question = replace(corrected, question="Which chemical elements are there?")
+    harness.grade(question, Variant.parse("full+f"))
+    (request,) = provider.requests
+    user = request.messages[0].content
+    assert "own gold" not in user
+    assert "SELECT 'other'" in user
+
+
 def test_a_vote_has_no_no_repair_row(monkeypatch: pytest.MonkeyPatch) -> None:
     from eval.bird import run as run_module
 
