@@ -168,6 +168,16 @@ class Settings(BaseSettings):
     api_keys: SecretStr = SecretStr("")
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    # Per-key token bucket: `burst` requests at once, refilled at `per_minute`; 0 disables.
+    # Per process: each uvicorn worker or replica keeps its own buckets.
+    api_rate_limit_per_minute: int = Field(default=60, ge=0)
+    api_rate_limit_burst: int = Field(default=10, ge=1)
+    # Request bodies over this are refused with 413 before parsing.
+    api_max_body_bytes: int = Field(default=64 * 1024, ge=1024)
+    # /metrics without the API key (still exempt from the rate limit either way).
+    api_metrics_public: bool = False
+    # Serve /docs, /redoc and /openapi.json.
+    api_docs: bool = False
 
     @property
     def agent_conninfo(self) -> str:

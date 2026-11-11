@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +24,8 @@ from tributary import __version__
 from tributary.agent.execute import ExecutionError
 from tributary.agent.provider import ProviderError, ProviderRefusal
 from tributary.agent.service import Agent, CatalogSource
-from tributary.api.app import create_app, parse_keys, request_id_for
+from tributary.api.app import KeyCheck, create_app, parse_keys, redact, request_id_for
+from tributary.api.limits import RateLimiter, retry_after
 
 KEY = "s3cret-key"
 GOOD = "SELECT count(*) AS edits FROM marts.fct_edits"
@@ -309,3 +312,278 @@ def test_concurrent_first_requests_build_one_agent() -> None:
         t.join()
     assert statuses == [200] * 8
     assert len(built) == 1
+
+
+# Security pass: rate limit, metrics, body cap, headers, docs, redaction.
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def limited_client(
+    clock: FakeClock, *, per_minute: int = 60, burst: int = 2, keys: tuple[str, ...] = (KEY,)
+) -> TestClient:
+    app = create_app(
+        make_agent(), keys, rate_limit_per_minute=per_minute, rate_limit_burst=burst, clock=clock
+    )
+    return TestClient(app)
+
+
+def test_rate_limit_answers_429_with_retry_after_then_refills() -> None:
+    clock = FakeClock()
+    c = limited_client(clock, per_minute=60, burst=2)
+    assert [c.get("/catalog", headers=auth()).status_code for _ in range(2)] == [200, 200]
+
+    refused = c.get("/catalog", headers=auth(**{"X-Request-ID": "r1"}))
+    assert refused.status_code == 429
+    assert refused.headers["Retry-After"] == "1"
+    assert refused.json() == {
+        "detail": "rate limit exceeded: 60 requests per minute, burst 2, per API key",
+        "request_id": "r1",
+    }
+    assert refused.headers["X-Request-ID"] == "r1"
+
+    clock.now += 0.5
+    assert c.get("/catalog", headers=auth()).status_code == 429
+    clock.now += 0.5
+    assert c.get("/catalog", headers=auth()).status_code == 200
+    assert c.get("/catalog", headers=auth()).status_code == 429
+
+
+def test_retry_after_is_rounded_up() -> None:
+    clock = FakeClock()
+    c = limited_client(clock, per_minute=7, burst=1)
+    assert c.post("/sql", json={"sql": GOOD}, headers=auth()).status_code == 200
+    refused = c.post("/sql", json={"sql": GOOD}, headers=auth())
+    assert refused.status_code == 429
+    assert refused.headers["Retry-After"] == "9"  # 60 / 7 = 8.57 s
+    clock.now += 8.0
+    assert c.post("/sql", json={"sql": GOOD}, headers=auth()).headers["Retry-After"] == "1"
+
+
+def test_rate_limit_is_per_key_and_skips_health_metrics_and_failed_auth() -> None:
+    clock = FakeClock()
+    c = limited_client(clock, burst=1, keys=("first", "second"))
+    for _ in range(5):
+        assert c.get("/catalog", headers=auth("wrong")).status_code == 401
+        assert c.get("/health").status_code == 200
+        assert c.get("/metrics", headers=auth("first")).status_code == 200
+    assert c.get("/catalog", headers=auth("first")).status_code == 200
+    assert c.get("/catalog", headers=auth("first")).status_code == 429
+    assert c.get("/freshness", headers=auth("second")).status_code == 200
+
+
+def test_rate_limit_zero_disables_it() -> None:
+    c = limited_client(FakeClock(), per_minute=0, burst=1)
+    assert {c.get("/catalog", headers=auth()).status_code for _ in range(30)} == {200}
+
+
+def test_rate_limiter_is_thread_safe() -> None:
+    import threading
+
+    limiter = RateLimiter(60, 10, clock=lambda: 0.0)
+    granted: list[float] = []
+    lock = threading.Lock()
+
+    def take() -> None:
+        for _ in range(20):
+            wait = limiter.acquire(b"digest")
+            with lock:
+                granted.append(wait)
+
+    threads = [threading.Thread(target=take) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sum(1 for w in granted if w == 0.0) == 10
+    assert len(granted) == 160
+
+
+def test_rate_limiter_rejects_bad_settings() -> None:
+    with pytest.raises(ValueError, match="burst"):
+        RateLimiter(60, 0)
+    with pytest.raises(ValueError, match="per minute"):
+        RateLimiter(-1, 1)
+    assert retry_after(0.01) == "1"
+    assert retry_after(2.0) == "2"
+
+
+def test_buckets_are_keyed_by_digest_not_the_key() -> None:
+    assert KeyCheck([KEY])(KEY) == hashlib.sha256(KEY.encode()).digest()
+
+
+def test_metrics_need_the_key_and_skip_it_when_public() -> None:
+    assert client().get("/metrics").status_code == 401
+    assert client().get("/metrics", headers=auth("wrong")).status_code == 401
+    public = TestClient(create_app(make_agent(), [KEY], metrics_public=True))
+    response = public.get("/metrics")
+    assert response.status_code == 200
+    assert response.headers["Content-Type"] == "text/plain; version=0.0.4; charset=utf-8"
+
+
+def test_metrics_count_requests_answers_tokens_and_refusals() -> None:
+    provider = ScriptedProvider([draft(GOOD)])
+    executor = FakeExecutor({GOOD_RAN: result(rows=[(42,)])})
+    app = create_app(make_agent(provider, executor), [KEY], rate_limit_burst=4, clock=FakeClock())
+    c = TestClient(app)
+    answer = c.post("/query", json={"question": "q"}, headers=auth()).json()
+    c.post("/sql", json={"sql": GOOD}, headers=auth())
+    c.post("/sql", json={"sql": "DELETE FROM marts.fct_edits"}, headers=auth())
+    c.get("/catalog", headers=auth())
+    c.get("/catalog", headers=auth())  # the fifth: rate limited
+    c.get("/catalog")  # no key
+    c.get("/no/such/path/42", headers=auth())
+
+    text = c.get("/metrics", headers=auth()).text
+    lines = set(text.splitlines())
+    expected = {
+        'tributary_http_requests_total{route="/query",method="POST",status="200"} 1',
+        'tributary_http_requests_total{route="/sql",method="POST",status="200"} 1',
+        'tributary_http_requests_total{route="/sql",method="POST",status="422"} 1',
+        'tributary_http_requests_total{route="/catalog",method="GET",status="200"} 1',
+        'tributary_http_requests_total{route="/catalog",method="GET",status="429"} 1',
+        'tributary_http_requests_total{route="/catalog",method="GET",status="401"} 1',
+        'tributary_http_requests_total{route="unmatched",method="GET",status="404"} 1',
+        'tributary_answers_total{route="/query",status="answered"} 1',
+        'tributary_answers_total{route="/sql",status="answered"} 1',
+        'tributary_answers_total{route="/sql",status="blocked"} 1',
+        "tributary_rate_limited_total 1",
+        'tributary_http_request_duration_seconds_count{route="/catalog"} 3',
+        'tributary_http_request_duration_seconds_bucket{route="/catalog",le="+Inf"} 3',
+        "# TYPE tributary_http_request_duration_seconds histogram",
+        "# TYPE tributary_http_requests_total counter",
+        f'tributary_model_tokens_total{{direction="input"}} {answer["usage"]["input_tokens"]}',
+        f'tributary_model_tokens_total{{direction="output"}} {answer["usage"]["output_tokens"]}',
+    }
+    assert expected <= lines, expected - lines
+    assert answer["usage"]["input_tokens"] > 0
+    cost = next(x for x in lines if x.startswith("tributary_model_cost_usd_total "))
+    assert float(cost.split()[1]) == pytest.approx(answer["usage"]["cost_usd"])
+    assert "/no/such/path" not in text
+    assert KEY not in text
+
+
+@pytest.mark.parametrize("path", ["/health", "/catalog", "/nowhere"])
+@pytest.mark.parametrize("key", [KEY, "wrong"])
+def test_security_headers_on_every_response(path: str, key: str) -> None:
+    response = client().get(path, headers=auth(key))
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Content-Security-Policy"] == (
+        "default-src 'none'; frame-ancestors 'none'"
+    )
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+
+
+def test_body_over_the_cap_is_413_before_parsing() -> None:
+    executor = FakeExecutor()
+    c = TestClient(create_app(make_agent(executor=executor), [KEY], max_body_bytes=1024))
+    big = {"sql": GOOD + " " * 2000}
+    response = c.post("/sql", json=big, headers=auth(**{"X-Request-ID": "b1"}))
+    assert response.status_code == 413
+    assert response.json() == {"detail": "request body over 1024 bytes", "request_id": "b1"}
+    assert response.headers["X-Request-ID"] == "b1"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert executor.ran == []
+    assert c.post("/sql", json={"sql": GOOD}, headers=auth()).status_code == 200
+
+
+def test_chunked_body_over_the_cap_is_413() -> None:
+    import json
+
+    executor = FakeExecutor()
+    c = TestClient(create_app(make_agent(executor=executor), [KEY], max_body_bytes=1024))
+    payload = json.dumps({"sql": GOOD + " " * 2000}).encode()
+
+    def chunks() -> Iterator[bytes]:
+        for i in range(0, len(payload), 256):
+            yield payload[i : i + 256]
+
+    headers = auth(**{"Content-Type": "application/json"})
+    response = c.post("/sql", content=chunks(), headers=headers)
+    assert "content-length" not in {k.lower() for k in response.request.headers}
+    assert response.status_code == 413
+    assert executor.ran == []
+
+    small = json.dumps({"sql": GOOD}).encode()
+    ok = c.post("/sql", content=iter([small[:10], small[10:]]), headers=headers)
+    assert ok.status_code == 200
+
+
+def test_docs_are_off_by_default_and_on_when_asked() -> None:
+    for path in ("/docs", "/redoc", "/openapi.json"):
+        assert client().get(path, headers=auth()).status_code == 404
+    with_docs = TestClient(create_app(make_agent(), [KEY], docs=True))
+    assert with_docs.get("/openapi.json").status_code == 200
+    page = with_docs.get("/docs")
+    assert page.status_code == 200
+    assert "Content-Security-Policy" not in page.headers
+    assert "/metrics" not in with_docs.get("/openapi.json").json()["paths"]
+
+
+def test_provider_errors_are_redacted(monkeypatch: pytest.MonkeyPatch, logs: LogCapture) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-SECRETSECRET")
+    error = ProviderError(
+        f"could not reach Ollama at http://admin:hunter2@ollama:11434 (key {KEY}); "
+        "sent sk-ant-api03-SECRETSECRET with password=pw123 " + "x" * 1000
+    )
+    response = client(make_agent(ScriptedProvider([error]))).post(
+        "/query", json={"question": "q"}, headers=auth()
+    )
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert detail.startswith("model provider failed: could not reach Ollama at http://***@ollama")
+    assert len(detail) < 600
+    everything = detail + repr(logs.entries)
+    for secret in ("hunter2", KEY, "SECRETSECRET", "pw123"):
+        assert secret not in everything
+
+
+def test_warehouse_errors_are_redacted() -> None:
+    error = ExecutionError("connection", "cannot connect: host=pg password=topsecret")
+    provider = ScriptedProvider([draft(GOOD)])
+    agent = make_agent(provider, executor=FakeExecutor(errors={GOOD_RAN: error}))
+    response = client(agent).post("/sql", json={"sql": GOOD}, headers=auth())
+    assert response.status_code == 503
+    assert (
+        response.json()["detail"] == "warehouse unavailable: cannot connect: host=pg password=***"
+    )
+
+
+def test_redact_leaves_plain_text_alone() -> None:
+    assert redact("Ollama at http://ollama:11434 timed out") == (
+        "Ollama at http://ollama:11434 timed out"
+    )
+
+
+def test_the_key_is_never_logged(logs: LogCapture) -> None:
+    c = client()
+    c.get("/catalog", headers=auth())
+    c.get("/catalog", headers=auth("wrong-key-attempt"))
+    c.post("/sql", json={"sql": GOOD}, headers=auth())
+    assert logs.entries
+    assert KEY not in repr(logs.entries)
+    assert "wrong-key-attempt" not in repr(logs.entries)
+
+
+def test_settings_defaults_and_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tributary.config import Settings
+
+    defaults = Settings(_env_file=None)
+    assert defaults.api_rate_limit_per_minute == 60
+    assert defaults.api_rate_limit_burst == 10
+    assert defaults.api_max_body_bytes == 65536
+    assert defaults.api_metrics_public is False
+    assert defaults.api_docs is False
+    monkeypatch.setenv("TRIBUTARY_API_RATE_LIMIT_PER_MINUTE", "0")
+    monkeypatch.setenv("TRIBUTARY_API_DOCS", "true")
+    changed = Settings(_env_file=None)
+    assert changed.api_rate_limit_per_minute == 0
+    assert changed.api_docs is True
