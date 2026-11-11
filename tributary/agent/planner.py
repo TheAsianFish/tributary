@@ -138,6 +138,14 @@ class PlanOutcome:
     calls: int = 0
     extra: dict[str, object] = field(default_factory=dict)
     link: Link | None = None
+    # A voting planner's draws, the chosen one included (empty for a single draw).
+    samples: tuple[PlanOutcome, ...] = ()
+
+    @property
+    def model_ms(self) -> float:
+        """Time spent waiting on the model, over every draw when the planner voted."""
+        draws = self.samples or (self,)
+        return sum(a.model_ms for d in draws for a in d.attempts)
 
     @property
     def draft(self) -> SQLDraft | None:
@@ -190,6 +198,7 @@ class Planner:
         max_tokens: int = 16_000,
         rules: str = RULES,
         linker: Callable[[str, Catalog], Link] | None = None,
+        context: Sequence[Callable[[str], str]] = (),
     ) -> None:
         self.provider = provider
         self.guard = guard
@@ -203,6 +212,16 @@ class Planner:
         self.linker = linker
         self.system = system_prompt(catalog, row_cap=row_cap, rules=rules)
         self.max_tokens = max_tokens
+        # Per-question context (worked examples, the values the question names): each
+        # function returns a text block, or "" for nothing. The blocks go in the user
+        # turn, ahead of the question, so the cached system prefix stays the same for
+        # every question; with no blocks the turn is the bare question, as before.
+        self.context = tuple(context)
+
+    def user_message(self, question: str) -> str:
+        blocks = [block.strip() for block in (c(question) for c in self.context)]
+        blocks = [b for b in blocks if b]
+        return "\n\n".join([*blocks, f"Question: {question.strip()}"])
 
     def system_for(self, question: str) -> tuple[str, Link | None]:
         """The system prompt for ``question``, and the link that chose its tables."""
@@ -216,26 +235,40 @@ class Planner:
             link,
         )
 
-    def request(self, messages: Sequence[Message], system: str | None = None) -> ModelRequest:
+    def request(
+        self,
+        messages: Sequence[Message],
+        system: str | None = None,
+        *,
+        sample: int = 0,
+        temperature: float | None = None,
+    ) -> ModelRequest:
         return ModelRequest(
             system=self.system if system is None else system,
             messages=tuple(messages),
             schema=SQL_DRAFT_SCHEMA,
             schema_name=SCHEMA_NAME,
             max_tokens=self.max_tokens,
+            sample=sample,
+            temperature=temperature,
         )
 
-    def run(self, question: str) -> PlanOutcome:
+    def run(
+        self, question: str, *, sample: int = 0, temperature: float | None = None
+    ) -> PlanOutcome:
+        """Draft, check, run and repair; ``sample`` > 0 is an extra self-consistency draw."""
         started = time.perf_counter()
         system, link = self.system_for(question)
-        messages = [Message("user", f"Question: {question.strip()}")]
+        messages = [Message("user", self.user_message(question))]
         attempts: list[Attempt] = []
         usage = Usage()
         model = self.provider.model
         result: QueryResult | None = None
         status: Status = "failed"
         for n in range(1 + self.max_repairs):
-            response = self.provider.complete(self.request(messages, system))
+            response = self.provider.complete(
+                self.request(messages, system, sample=sample, temperature=temperature)
+            )
             usage = usage + response.usage
             model = response.model
             try:

@@ -2,7 +2,9 @@
 
 Ollama's structured outputs take the JSON schema itself as ``format``, so the
 request mirrors the Anthropic one. Sampling is pinned (temperature 0, fixed
-seed) so a rerun asks the same question the same way, and the context window
+seed) so a rerun asks the same question the same way; a self-consistency draw
+sets its own temperature and uses its sample number as the seed, so it too is
+the same draw on a rerun. The context window
 is raised from Ollama's small default because the schema prefix alone runs to
 several thousand tokens. Local calls cost nothing; tokens are still counted.
 """
@@ -54,7 +56,11 @@ class OllamaProvider:
             "format": dict(request.schema),
             "stream": False,
             "keep_alive": "30m",
-            "options": {"temperature": 0, "seed": 0, "num_ctx": self.num_ctx},
+            "options": {
+                "temperature": 0 if request.temperature is None else request.temperature,
+                "seed": request.sample,
+                "num_ctx": self.num_ctx,
+            },
         }
         started = time.perf_counter()
         try:
