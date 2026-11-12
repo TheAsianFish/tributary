@@ -66,8 +66,9 @@ parsing: sqlglot's subscript handling is quadratic, and a few thousand
 
 from __future__ import annotations
 
+import contextlib
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 
 from sqlglot import exp
@@ -152,6 +153,53 @@ ANONYMOUS_ALLOWED: frozenset[str] = frozenset(
 )
 
 _SYSTEM_SCHEMAS = frozenset({"pg_catalog", "information_schema"})
+
+# Every name sqlglot parses into a typed expression class rather than exp.Anonymous: a
+# call by one of these names is allowed unless the denylist matches it.
+_PARSER = Dialect.get_or_raise(DIALECT).parser_class
+TYPED_FUNCTIONS: frozenset[str] = frozenset(
+    name.lower() for name in (*_PARSER.FUNCTIONS, *_PARSER.FUNCTION_PARSERS)
+)
+
+# The checks added after a bypass was found, by name. The differential oracle's
+# evaluation switches each one off in turn to show it would have found that bypass
+# (eval/guard/differential.py); nothing else may.
+HISTORICAL_FIXES: tuple[str, ...] = ("field_notation", "function_alias", "alias_intersection")
+_disabled_fixes: set[str] = set()
+
+
+@contextlib.contextmanager
+def fixes_disabled(*names: str) -> Iterator[None]:
+    """Run the guard with the named checks switched off (evaluation and tests only)."""
+    unknown = sorted(set(names) - set(HISTORICAL_FIXES))
+    if unknown:
+        raise ValueError(f"unknown guard fix: {', '.join(unknown)}")
+    previous = set(_disabled_fixes)
+    _disabled_fixes.update(names)
+    try:
+        yield
+    finally:
+        _disabled_fixes.clear()
+        _disabled_fixes.update(previous)
+
+
+def _enabled(fix: str) -> bool:
+    return fix not in _disabled_fixes
+
+
+def function_refusal(name: str, *, explicit_call: bool) -> str | None:
+    """Why the guard's function policy refuses ``name``, or None if it allows it.
+
+    The denylist applies however a function is reached; the allowlist for
+    unknown names applies to a call written by name (``f(x)``), since an
+    operator, a cast or SQL syntax such as ``EXTRACT`` names no function.
+    """
+    if _DENIED_FUNCTION.match(name):
+        return "denied"
+    if explicit_call and name not in ANONYMOUS_ALLOWED and name not in TYPED_FUNCTIONS:
+        return "not_allowed"
+    return None
+
 
 # Brackets (array literals and subscripts) one statement may hold; sqlglot types every
 # subscript chain again at each step, so the parse is quadratic in the chain's length.
@@ -420,7 +468,8 @@ class Guard:
                 self._check_table(node, reasons, tables)
             elif isinstance(node, exp.Column):
                 self._check_column(node, reasons)
-                _check_function_column(node, function_columns, reasons)
+                if _enabled("function_alias"):
+                    _check_function_column(node, function_columns, reasons)
             elif isinstance(node, exp.Is) and not isinstance(node.expression, _IS_OPERANDS):
                 reasons.append(
                     f"parse_error: {node.sql(dialect=DIALECT)} is not an IS the guard understands"
@@ -531,7 +580,7 @@ class Guard:
         shown = dot.sql(dialect=DIALECT)
         if isinstance(dot.expression, exp.Func):
             reasons.append(f"qualified_function: {shown} is schema-qualified")
-        else:
+        elif _enabled("field_notation"):
             reasons.append(
                 f"field_notation: {shown} is a function call written as a field "
                 "(PostgreSQL reads (x).f as f(x)) or a name with too many parts"
@@ -625,8 +674,10 @@ def _function_from_items(statement: exp.Expr) -> dict[str, set[str]]:
         for name in names:
             if name is None:
                 continue
-            if name in items:
+            if name in items and _enabled("alias_intersection"):
                 items[name] &= columns
+            elif name in items:
+                items[name] |= columns
             else:
                 items[name] = set(columns)
     return items

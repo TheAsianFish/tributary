@@ -1,0 +1,44 @@
+name: Guard differential
+
+# The guard's differential oracle (make eval-guard-diff): about 220,000 generated
+# statements through the guard, and every admitted one resolved by PostgreSQL in a
+# rolled-back transaction, then the same with each historical fix switched off. It needs
+# a built warehouse and takes about half an hour, so it runs only by hand.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    name: make eval-guard-diff
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
+        env:
+          POSTGRES_USER: tributary
+          POSTGRES_PASSWORD: tributary
+          POSTGRES_DB: tributary
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tributary" --health-interval 2s
+          --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.7"
+          enable-cache: true
+          python-version: "3.12"
+      - run: uv sync --locked --extra warehouse
+      - name: Load the sample and build the marts
+        run: uv run tributary sample load && make dbt
+      - run: make eval-guard-diff GUARD_DIFF_DIR=/tmp/guard-diff
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guard-diff
+          path: /tmp/guard-diff
