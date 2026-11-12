@@ -579,24 +579,24 @@ every query the run sent to PostgreSQL in
 `tests/recordings/bird-executions.jsonl.gz`. Cost $0 (local model).
 
 <!-- bird:ex -->
-| Model | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging | Model calls | Tokens in / out | Model time per question, p50 / p95 |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| qwen2.5-coder:7b (ollama) | `full-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 50 | 104,241 / 8,402 | 37.6 s / 112.7 s |
-| qwen2.5-coder:7b (ollama) | `full-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 7/13 | 8/23 | 1/9 | 13 | 35,813 / 2,773 | 33.8 s / 106.0 s |
-| qwen2.5-coder:7b (ollama) | `full-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 62 | 131,273 / 10,687 | 42.5 s / 225.1 s |
-| qwen2.5-coder:7b (ollama) | `full-r2` | corrected | **18/45** (40.0%) | 27.0%–54.5% | 7/13 | 10/23 | 1/9 | 21 | 62,073 / 4,522 | 34.6 s / 190.5 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 50 | 84,189 / 8,664 | 47.2 s / 158.1 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
+| Model | Subset | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging | Model calls | Tokens in / out | Model time per question, p50 / p95 |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 50 | 104,241 / 8,402 | 37.6 s / 112.7 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 7/13 | 8/23 | 1/9 | 13 | 35,813 / 2,773 | 33.8 s / 106.0 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 62 | 131,273 / 10,687 | 42.5 s / 225.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r2` | corrected | **18/45** (40.0%) | 27.0%–54.5% | 7/13 | 10/23 | 1/9 | 21 | 62,073 / 4,522 | 34.6 s / 190.5 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 50 | 84,189 / 8,664 | 47.2 s / 158.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
 <!-- /bird:ex -->
 
 The `-r0` rows are the same run read at its first attempt (the first model
@@ -1526,6 +1526,37 @@ replicate. dev50 does not vote: it is the sample that picked the variant.
    pairings against `full` (`full+a`, `full+v+f+a`) reaches p < 0.05 on
    the official track.
 <!-- /m10:prereg -->
+
+### holdout50: each variant on the held-out questions
+
+<!-- bird:holdout -->
+No holdout50 run recorded yet.
+<!-- /bird:holdout -->
+
+### The pairings, on each subset and pooled
+
+"+gained -lost" counts the questions the second variant gets right and the
+first gets wrong, and the reverse, on the same questions; p is the exact
+two-sided McNemar test on those discordant questions. The pooled columns add
+the two subsets' counts (n = 100 on the official track, 45 + 46 = 91 on the
+corrected one). `uv run python -m eval.bird.paired A B` prints the same
+comparison for any two recorded variants.
+
+<!-- bird:pairs -->
+No holdout50 run recorded yet.
+<!-- /bird:pairs -->
+
+Pooled execution accuracy:
+
+<!-- bird:pooled -->
+No holdout50 run recorded yet.
+<!-- /bird:pooled -->
+
+### The default, under the rule
+
+<!-- bird:decision -->
+No holdout50 run recorded yet.
+<!-- /bird:decision -->
 
 ## To measure
 
