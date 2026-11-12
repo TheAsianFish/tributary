@@ -1,0 +1,5037 @@
+{
+  "by_group": {
+    "cte": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "field": {
+      "admitted": 5248,
+      "flagged": 1874,
+      "generated": 5248,
+      "refused_by_postgres": 2642,
+      "resolved": 2606,
+      "with_io_cast": 36,
+      "with_literal_cast": 652
+    },
+    "from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_alias": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_name": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias_mart": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "scalar_from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "subquery": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "values": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "by_position": {
+    "filter": {
+      "admitted": 9184,
+      "flagged": 559,
+      "generated": 13120,
+      "refused_by_postgres": 8443,
+      "resolved": 741,
+      "with_io_cast": 9,
+      "with_literal_cast": 163
+    },
+    "order_by": {
+      "admitted": 9184,
+      "flagged": 594,
+      "generated": 13120,
+      "refused_by_postgres": 8250,
+      "resolved": 934,
+      "with_io_cast": 9,
+      "with_literal_cast": 163
+    },
+    "select": {
+      "admitted": 9184,
+      "flagged": 594,
+      "generated": 13120,
+      "refused_by_postgres": 8250,
+      "resolved": 934,
+      "with_io_cast": 9,
+      "with_literal_cast": 163
+    },
+    "where": {
+      "admitted": 9184,
+      "flagged": 559,
+      "generated": 13120,
+      "refused_by_postgres": 8443,
+      "resolved": 741,
+      "with_io_cast": 9,
+      "with_literal_cast": 163
+    }
+  },
+  "commit": "a78c6dd",
+  "disabled_fixes": [
+    "field_notation"
+  ],
+  "functions": 1312,
+  "label": "without-field_notation",
+  "reachable": {
+    "pg_catalog.acosd": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).acosd AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.amvalidate": {
+      "example": "SELECT (ABS(1)).amvalidate AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.any_out": {
+      "example": "SELECT (ABS(1)).any_out AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anyarray_out": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).anyarray_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.anyarray_send": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).anyarray_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.anycompatible_out": {
+      "example": "SELECT (ABS(1)).anycompatible_out AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatiblearray_out": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).anycompatiblearray_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.anycompatiblearray_send": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).anycompatiblearray_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.anycompatiblenonarray_out": {
+      "example": "SELECT (ABS(1)).anycompatiblenonarray_out AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anyelement_out": {
+      "example": "SELECT (ABS(1)).anyelement_out AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anynonarray_out": {
+      "example": "SELECT (ABS(1)).anynonarray_out AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.array_out": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).array_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.array_send": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).array_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.array_shuffle": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).array_shuffle AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.array_to_tsvector": {
+      "example": "SELECT (REGEXP_SPLIT_TO_ARRAY('a,b', ',')).array_to_tsvector AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.asind": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).asind AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.atand": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).atand AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.binary_upgrade_set_next_array_pg_type_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_array_pg_type_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_heap_pg_class_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_heap_pg_class_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_heap_relfilenode": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_heap_relfilenode AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_index_pg_class_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_index_pg_class_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_index_relfilenode": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_index_relfilenode AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_multirange_array_pg_type_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_multirange_array_pg_type_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_multirange_pg_type_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_multirange_pg_type_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_authid_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_pg_authid_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_enum_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_pg_enum_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_tablespace_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_pg_tablespace_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_type_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_pg_type_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_toast_pg_class_oid": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_toast_pg_class_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_toast_relfilenode": {
+      "example": "SELECT (ABS(1)).binary_upgrade_set_next_toast_relfilenode AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_record_init_privs": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).binary_upgrade_set_record_init_privs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.bittypmodout": {
+      "example": "SELECT (ABS(1)).bittypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.bool": {
+      "example": "SELECT (ABS(1)).bool AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.boolout": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).boolout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.boolsend": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).boolsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.bpchartypmodout": {
+      "example": "SELECT (ABS(1)).bpchartypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.brin_summarize_new_values": {
+      "example": "SELECT (ABS(1)).brin_summarize_new_values AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.btequalimage": {
+      "example": "SELECT (ABS(1)).btequalimage AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.btvarstrequalimage": {
+      "example": "SELECT (ABS(1)).btvarstrequalimage AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.cosd": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).cosd AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.cotd": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).cotd AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.current_schemas": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).current_schemas AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.current_setting": {
+      "example": "SELECT (LOWER('x')).current_setting AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.currval": {
+      "example": "SELECT (ABS(1)).currval AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.date_out": {
+      "example": "SELECT (MAKE_DATE(2024, 1, 1)).date_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.date_send": {
+      "example": "SELECT (MAKE_DATE(2024, 1, 1)).date_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dcbrt": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dcbrt AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dexp": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dexp AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dlog1": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dlog1 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dlog10": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dlog10 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dround": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dround AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dsqrt": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dsqrt AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dtrunc": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).dtrunc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.erf": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).erf AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.erfc": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).erfc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).float4 AS x LIMIT 1000",
+      "groups": {
+        "field": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.float4abs": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).float4abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4out": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).float4out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4send": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).float4send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4um": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).float4um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4up": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).float4up AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).float8 AS x LIMIT 1000",
+      "groups": {
+        "field": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.float8abs": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).float8abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8out": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).float8out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8send": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).float8send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8um": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).float8um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8up": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).float8up AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.fmgr_c_validator": {
+      "example": "SELECT (ABS(1)).fmgr_c_validator AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.fmgr_internal_validator": {
+      "example": "SELECT (ABS(1)).fmgr_internal_validator AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.fmgr_sql_validator": {
+      "example": "SELECT (ABS(1)).fmgr_sql_validator AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.gin_clean_pending_list": {
+      "example": "SELECT (ABS(1)).gin_clean_pending_list AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.hash_array": {
+      "example": "SELECT (ARRAY_POSITIONS(ARRAY[1], 1)).hash_array AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hash_numeric": {
+      "example": "SELECT (ABS(1.5)).hash_numeric AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hash_record": {
+      "example": "SELECT w.hash_record AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.hashfloat4": {
+      "example": "SELECT (ABS(CAST(1.5 AS REAL))).hashfloat4 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashfloat8": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).hashfloat8 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashint2": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).hashint2 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashint4": {
+      "example": "SELECT (ABS(1)).hashint4 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashint8": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).hashint8 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashoid": {
+      "example": "SELECT (ABS(1)).hashoid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashtext": {
+      "example": "SELECT (LOWER('x')).hashtext AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).int2 AS x LIMIT 1000",
+      "groups": {
+        "field": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.int2abs": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2not": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2not AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2out": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2send": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2um": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2up": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int2up AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4": {
+      "example": "SELECT (ABS(CAST(1 AS SMALLINT))).int4 AS x LIMIT 1000",
+      "groups": {
+        "field": 28
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.int4abs": {
+      "example": "SELECT (ABS(1)).int4abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4inc": {
+      "example": "SELECT (ABS(1)).int4inc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4not": {
+      "example": "SELECT (ABS(1)).int4not AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4out": {
+      "example": "SELECT (ABS(1)).int4out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4send": {
+      "example": "SELECT (ABS(1)).int4send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4um": {
+      "example": "SELECT (ABS(1)).int4um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4up": {
+      "example": "SELECT (ABS(1)).int4up AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8": {
+      "example": "SELECT (ABS(1)).int8 AS x LIMIT 1000",
+      "groups": {
+        "field": 32
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 32,
+      "volatility": "i"
+    },
+    "pg_catalog.int8abs": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8dec": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8dec AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8inc": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8inc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8not": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8not AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8out": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8send": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8um": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8up": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).int8up AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.interval_hash": {
+      "example": "SELECT (AGE(CURRENT_TIMESTAMP)).interval_hash AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.interval_out": {
+      "example": "SELECT (AGE(CURRENT_TIMESTAMP)).interval_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.interval_send": {
+      "example": "SELECT (AGE(CURRENT_TIMESTAMP)).interval_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.interval_um": {
+      "example": "SELECT (AGE(CURRENT_TIMESTAMP)).interval_um AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.intervaltypmodout": {
+      "example": "SELECT (ABS(1)).intervaltypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.is_normalized": {
+      "example": "SELECT (LOWER('x')).is_normalized AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.json_agg_strict": {
+      "example": "SELECT (ABS(1)).json_agg_strict AS x LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "field": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 14,
+      "volatility": "s"
+    },
+    "pg_catalog.json_array_elements": {
+      "example": "SELECT (TO_JSON(1)).json_array_elements AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "i"
+    },
+    "pg_catalog.json_array_elements_text": {
+      "example": "SELECT (TO_JSON(1)).json_array_elements_text AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "i"
+    },
+    "pg_catalog.json_each": {
+      "example": "SELECT (TO_JSON(1)).json_each AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "i"
+    },
+    "pg_catalog.json_each_text": {
+      "example": "SELECT (TO_JSON(1)).json_each_text AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "i"
+    },
+    "pg_catalog.json_object_keys": {
+      "example": "SELECT (TO_JSON(1)).json_object_keys AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "i"
+    },
+    "pg_catalog.json_out": {
+      "example": "SELECT (TO_JSON(1)).json_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.json_send": {
+      "example": "SELECT (TO_JSON(1)).json_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.json_to_record": {
+      "example": "SELECT (TO_JSON(1)).json_to_record AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.json_to_recordset": {
+      "example": "SELECT (TO_JSON(1)).json_to_recordset AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_agg_strict": {
+      "example": "SELECT (ABS(1)).jsonb_agg_strict AS x LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "field": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 14,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_hash": {
+      "example": "SELECT (TO_JSONB(1)).jsonb_hash AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.jsonb_object": {
+      "example": "SELECT (REGEXP_SPLIT_TO_ARRAY('a,b', ',')).jsonb_object AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.jsonb_out": {
+      "example": "SELECT (TO_JSONB(1)).jsonb_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.jsonb_send": {
+      "example": "SELECT (TO_JSONB(1)).jsonb_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.jsonb_to_record": {
+      "example": "SELECT (TO_JSONB(1)).jsonb_to_record AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_to_recordset": {
+      "example": "SELECT (TO_JSONB(1)).jsonb_to_recordset AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.lo_close": {
+      "example": "SELECT (ABS(1)).lo_close AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_creat": {
+      "example": "SELECT (ABS(1)).lo_creat AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_create": {
+      "example": "SELECT (ABS(1)).lo_create AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_get": {
+      "example": "SELECT (ABS(1)).lo_get AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_import": {
+      "example": "SELECT (LOWER('x')).lo_import AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_tell": {
+      "example": "SELECT (ABS(1)).lo_tell AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_tell64": {
+      "example": "SELECT (ABS(1)).lo_tell64 AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_unlink": {
+      "example": "SELECT (ABS(1)).lo_unlink AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.min_scale": {
+      "example": "SELECT (ABS(1.5)).min_scale AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.money": {
+      "example": "SELECT (ABS(1)).money AS x LIMIT 1000",
+      "groups": {
+        "field": 12
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 12,
+      "volatility": "s"
+    },
+    "pg_catalog.name": {
+      "example": "SELECT (LOWER('x')).name AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.nextval": {
+      "example": "SELECT (ABS(1)).nextval AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.numeric": {
+      "example": "SELECT (ABS(1)).\"numeric\" AS x LIMIT 1000",
+      "groups": {
+        "field": 28
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_abs": {
+      "example": "SELECT (ABS(1.5)).numeric_abs AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_exp": {
+      "example": "SELECT (ABS(1.5)).numeric_exp AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_inc": {
+      "example": "SELECT (ABS(1.5)).numeric_inc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_ln": {
+      "example": "SELECT (ABS(1.5)).numeric_ln AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_out": {
+      "example": "SELECT (ABS(1.5)).numeric_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_send": {
+      "example": "SELECT (ABS(1.5)).numeric_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_sqrt": {
+      "example": "SELECT (ABS(1.5)).numeric_sqrt AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_uminus": {
+      "example": "SELECT (ABS(1.5)).numeric_uminus AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_uplus": {
+      "example": "SELECT (ABS(1.5)).numeric_uplus AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numerictypmodout": {
+      "example": "SELECT (ABS(1)).numerictypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.obj_description": {
+      "example": "SELECT (ABS(1)).obj_description AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.oid": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.oidout": {
+      "example": "SELECT (ABS(1)).oidout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.oidsend": {
+      "example": "SELECT (ABS(1)).oidsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.parse_ident": {
+      "example": "SELECT (LOWER('x')).parse_ident AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_advisory_lock": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_lock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_lock_shared": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_lock_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_unlock": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_unlock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_unlock_shared": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_unlock_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_xact_lock": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_xact_lock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_xact_lock_shared": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_advisory_xact_lock_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_backup_start": {
+      "example": "SELECT (LOWER('x')).pg_backup_start AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_backup_stop": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).pg_backup_stop AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_basetype": {
+      "example": "SELECT (ABS(1)).pg_basetype AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_blocking_pids": {
+      "example": "SELECT (ABS(1)).pg_blocking_pids AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_cancel_backend": {
+      "example": "SELECT (ABS(1)).pg_cancel_backend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_collation_actual_version": {
+      "example": "SELECT (ABS(1)).pg_collation_actual_version AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_collation_for": {
+      "example": "SELECT (ABS(1)).pg_collation_for AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_collation_is_visible": {
+      "example": "SELECT (ABS(1)).pg_collation_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_compression": {
+      "example": "SELECT (ABS(1)).pg_column_compression AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_size": {
+      "example": "SELECT (ABS(1)).pg_column_size AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_toast_chunk_id": {
+      "example": "SELECT (ABS(1)).pg_column_toast_chunk_id AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_conversion_is_visible": {
+      "example": "SELECT (ABS(1)).pg_conversion_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_create_restore_point": {
+      "example": "SELECT (LOWER('x')).pg_create_restore_point AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_current_logfile": {
+      "example": "SELECT (LOWER('x')).pg_current_logfile AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_database_collation_actual_version": {
+      "example": "SELECT (ABS(1)).pg_database_collation_actual_version AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_database_size": {
+      "example": "SELECT (ABS(1)).pg_database_size AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_encoding_max_length": {
+      "example": "SELECT (ABS(1)).pg_encoding_max_length AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_encoding_to_char": {
+      "example": "SELECT (ABS(1)).pg_encoding_to_char AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_function_is_visible": {
+      "example": "SELECT (ABS(1)).pg_function_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_constraintdef": {
+      "example": "SELECT (ABS(1)).pg_get_constraintdef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_arguments": {
+      "example": "SELECT (ABS(1)).pg_get_function_arguments AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_identity_arguments": {
+      "example": "SELECT (ABS(1)).pg_get_function_identity_arguments AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_result": {
+      "example": "SELECT (ABS(1)).pg_get_function_result AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_sqlbody": {
+      "example": "SELECT (ABS(1)).pg_get_function_sqlbody AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_functiondef": {
+      "example": "SELECT (ABS(1)).pg_get_functiondef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_indexdef": {
+      "example": "SELECT (ABS(1)).pg_get_indexdef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_partition_constraintdef": {
+      "example": "SELECT (ABS(1)).pg_get_partition_constraintdef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_partkeydef": {
+      "example": "SELECT (ABS(1)).pg_get_partkeydef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_replica_identity_index": {
+      "example": "SELECT (ABS(1)).pg_get_replica_identity_index AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_ruledef": {
+      "example": "SELECT (ABS(1)).pg_get_ruledef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef": {
+      "example": "SELECT (ABS(1)).pg_get_statisticsobjdef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef_columns": {
+      "example": "SELECT (ABS(1)).pg_get_statisticsobjdef_columns AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef_expressions": {
+      "example": "SELECT (ABS(1)).pg_get_statisticsobjdef_expressions AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_triggerdef": {
+      "example": "SELECT (ABS(1)).pg_get_triggerdef AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_userbyid": {
+      "example": "SELECT (ABS(1)).pg_get_userbyid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_viewdef": {
+      "example": "SELECT (LOWER('x')).pg_get_viewdef AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_import_system_collations": {
+      "example": "SELECT (ABS(1)).pg_import_system_collations AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_indexes_size": {
+      "example": "SELECT (ABS(1)).pg_indexes_size AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_is_other_temp_schema": {
+      "example": "SELECT (ABS(1)).pg_is_other_temp_schema AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_log_backend_memory_contexts": {
+      "example": "SELECT (ABS(1)).pg_log_backend_memory_contexts AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ls_dir": {
+      "example": "SELECT (LOWER('x')).pg_ls_dir AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ls_replslotdir": {
+      "example": "SELECT (LOWER('x')).pg_ls_replslotdir AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ls_tmpdir": {
+      "example": "SELECT (ABS(1)).pg_ls_tmpdir AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_lsn": {
+      "example": "SELECT (ABS(1.5)).pg_lsn AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_opclass_is_visible": {
+      "example": "SELECT (ABS(1)).pg_opclass_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_operator_is_visible": {
+      "example": "SELECT (ABS(1)).pg_operator_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_opfamily_is_visible": {
+      "example": "SELECT (ABS(1)).pg_opfamily_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_options_to_table": {
+      "example": "SELECT (REGEXP_SPLIT_TO_ARRAY('a,b', ',')).pg_options_to_table AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_partition_ancestors": {
+      "example": "SELECT (ABS(1)).pg_partition_ancestors AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_partition_root": {
+      "example": "SELECT (ABS(1)).pg_partition_root AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_partition_tree": {
+      "example": "SELECT (ABS(1)).pg_partition_tree AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_promote": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).pg_promote AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_read_binary_file": {
+      "example": "SELECT (LOWER('x')).pg_read_binary_file AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_read_file": {
+      "example": "SELECT (LOWER('x')).pg_read_file AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_relation_filenode": {
+      "example": "SELECT (ABS(1)).pg_relation_filenode AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_filepath": {
+      "example": "SELECT (ABS(1)).pg_relation_filepath AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_is_publishable": {
+      "example": "SELECT (ABS(1)).pg_relation_is_publishable AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_size": {
+      "example": "SELECT (ABS(1)).pg_relation_size AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_replication_origin_create": {
+      "example": "SELECT (LOWER('x')).pg_replication_origin_create AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_replication_origin_drop": {
+      "example": "SELECT (LOWER('x')).pg_replication_origin_drop AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_replication_origin_oid": {
+      "example": "SELECT (LOWER('x')).pg_replication_origin_oid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_replication_origin_session_progress": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).pg_replication_origin_session_progress AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_replication_origin_session_setup": {
+      "example": "SELECT (LOWER('x')).pg_replication_origin_session_setup AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_safe_snapshot_blocking_pids": {
+      "example": "SELECT (ABS(1)).pg_safe_snapshot_blocking_pids AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sequence_last_value": {
+      "example": "SELECT (ABS(1)).pg_sequence_last_value AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sequence_parameters": {
+      "example": "SELECT (ABS(1)).pg_sequence_parameters AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_settings_get_flags": {
+      "example": "SELECT (LOWER('x')).pg_settings_get_flags AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_size_bytes": {
+      "example": "SELECT (LOWER('x')).pg_size_bytes AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_size_pretty": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_size_pretty AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_sleep": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).pg_sleep AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sleep_for": {
+      "example": "SELECT (AGE(CURRENT_TIMESTAMP)).pg_sleep_for AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sleep_until": {
+      "example": "SELECT (CURRENT_TIMESTAMP).pg_sleep_until AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_split_walfile_name": {
+      "example": "SELECT (LOWER('x')).pg_split_walfile_name AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_file": {
+      "example": "SELECT (LOWER('x')).pg_stat_file AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_activity": {
+      "example": "SELECT (ABS(1)).pg_stat_get_activity AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_analyze_count": {
+      "example": "SELECT (ABS(1)).pg_stat_get_analyze_count AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_autoanalyze_count": {
+      "example": "SELECT (ABS(1)).pg_stat_get_autoanalyze_count AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_autovacuum_count": {
+      "example": "SELECT (ABS(1)).pg_stat_get_autovacuum_count AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_activity": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_activity AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_activity_start": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_activity_start AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_client_addr": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_client_addr AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_client_port": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_client_port AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_dbid": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_dbid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_pid": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_pid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_start": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_start AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_subxact": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_subxact AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_userid": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_userid AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_wait_event": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_wait_event AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_wait_event_type": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_wait_event_type AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_xact_start": {
+      "example": "SELECT (ABS(1)).pg_stat_get_backend_xact_start AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_blocks_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_blocks_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_blocks_hit": {
+      "example": "SELECT (ABS(1)).pg_stat_get_blocks_hit AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_active_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_active_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blk_read_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_blk_read_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blk_write_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_blk_write_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blocks_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_blocks_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blocks_hit": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_blocks_hit AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_checksum_failures": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_checksum_failures AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_checksum_last_failure": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_checksum_last_failure AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_all": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_all AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_bufferpin": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_bufferpin AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_lock": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_lock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_logicalslot": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_logicalslot AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_snapshot": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_snapshot AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_startup_deadlock": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_startup_deadlock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_tablespace": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_conflict_tablespace AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_deadlocks": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_deadlocks AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_idle_in_transaction_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_idle_in_transaction_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_numbackends": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_numbackends AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_session_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_session_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_sessions AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_abandoned": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_sessions_abandoned AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_fatal": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_sessions_fatal AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_killed": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_sessions_killed AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_stat_reset_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_stat_reset_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_temp_bytes": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_temp_bytes AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_temp_files": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_temp_files AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_deleted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_tuples_deleted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_tuples_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_inserted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_tuples_inserted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_returned": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_tuples_returned AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_tuples_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_xact_commit": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_xact_commit AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_xact_rollback": {
+      "example": "SELECT (ABS(1)).pg_stat_get_db_xact_rollback AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_dead_tuples": {
+      "example": "SELECT (ABS(1)).pg_stat_get_dead_tuples AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_calls": {
+      "example": "SELECT (ABS(1)).pg_stat_get_function_calls AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_self_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_function_self_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_total_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_function_total_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_ins_since_vacuum": {
+      "example": "SELECT (ABS(1)).pg_stat_get_ins_since_vacuum AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_analyze_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_last_analyze_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_autoanalyze_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_last_autoanalyze_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_autovacuum_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_last_autovacuum_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_vacuum_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_last_vacuum_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_lastscan": {
+      "example": "SELECT (ABS(1)).pg_stat_get_lastscan AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_live_tuples": {
+      "example": "SELECT (ABS(1)).pg_stat_get_live_tuples AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_mod_since_analyze": {
+      "example": "SELECT (ABS(1)).pg_stat_get_mod_since_analyze AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_numscans": {
+      "example": "SELECT (ABS(1)).pg_stat_get_numscans AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_progress_info": {
+      "example": "SELECT (LOWER('x')).pg_stat_get_progress_info AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_replication_slot": {
+      "example": "SELECT (LOWER('x')).pg_stat_get_replication_slot AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_subscription": {
+      "example": "SELECT (ABS(1)).pg_stat_get_subscription AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_subscription_stats": {
+      "example": "SELECT (ABS(1)).pg_stat_get_subscription_stats AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_deleted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_deleted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_hot_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_hot_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_inserted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_inserted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_newpage_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_newpage_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_returned": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_returned AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_tuples_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_vacuum_count": {
+      "example": "SELECT (ABS(1)).pg_stat_get_vacuum_count AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_xact_blocks_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_blocks_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_blocks_hit": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_blocks_hit AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_calls": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_function_calls AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_self_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_function_self_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_total_time": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_function_total_time AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_numscans": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_numscans AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_deleted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_deleted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_fetched": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_fetched AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_hot_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_hot_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_inserted": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_inserted AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_newpage_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_newpage_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_returned": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_returned AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_updated": {
+      "example": "SELECT (ABS(1)).pg_stat_get_xact_tuples_updated AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_replication_slot": {
+      "example": "SELECT (LOWER('x')).pg_stat_reset_replication_slot AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_shared": {
+      "example": "SELECT (LOWER('x')).pg_stat_reset_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_single_function_counters": {
+      "example": "SELECT (ABS(1)).pg_stat_reset_single_function_counters AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_single_table_counters": {
+      "example": "SELECT (ABS(1)).pg_stat_reset_single_table_counters AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_slru": {
+      "example": "SELECT (LOWER('x')).pg_stat_reset_slru AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_subscription_stats": {
+      "example": "SELECT (ABS(1)).pg_stat_reset_subscription_stats AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_statistics_obj_is_visible": {
+      "example": "SELECT (ABS(1)).pg_statistics_obj_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_table_is_visible": {
+      "example": "SELECT (ABS(1)).pg_table_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_table_size": {
+      "example": "SELECT (ABS(1)).pg_table_size AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_tablespace_databases": {
+      "example": "SELECT (ABS(1)).pg_tablespace_databases AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_tablespace_location": {
+      "example": "SELECT (ABS(1)).pg_tablespace_location AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_tablespace_size": {
+      "example": "SELECT (ABS(1)).pg_tablespace_size AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_terminate_backend": {
+      "example": "SELECT (ABS(1)).pg_terminate_backend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_total_relation_size": {
+      "example": "SELECT (ABS(1)).pg_total_relation_size AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_lock": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_try_advisory_lock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_lock_shared": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_try_advisory_lock_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_xact_lock": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_try_advisory_xact_lock AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_xact_lock_shared": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).pg_try_advisory_xact_lock_shared AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ts_config_is_visible": {
+      "example": "SELECT (ABS(1)).pg_ts_config_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_dict_is_visible": {
+      "example": "SELECT (ABS(1)).pg_ts_dict_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_parser_is_visible": {
+      "example": "SELECT (ABS(1)).pg_ts_parser_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_template_is_visible": {
+      "example": "SELECT (ABS(1)).pg_ts_template_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_type_is_visible": {
+      "example": "SELECT (ABS(1)).pg_type_is_visible AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_typeof": {
+      "example": "SELECT (ABS(1)).pg_typeof AS x LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "field": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.phraseto_tsquery": {
+      "example": "SELECT (LOWER('x')).phraseto_tsquery AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.plainto_tsquery": {
+      "example": "SELECT (LOWER('x')).plainto_tsquery AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.plpgsql_validator": {
+      "example": "SELECT (ABS(1)).plpgsql_validator AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.quote_ident": {
+      "example": "SELECT (LOWER('x')).quote_ident AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.quote_literal": {
+      "example": "SELECT (LOWER('x')).quote_literal AS x LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "field": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 56,
+      "volatility": "i"
+    },
+    "pg_catalog.quote_nullable": {
+      "example": "SELECT (LOWER('x')).quote_nullable AS x LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "field": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 56,
+      "volatility": "i"
+    },
+    "pg_catalog.random_normal": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).random_normal AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.record_out": {
+      "example": "SELECT w.record_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.record_send": {
+      "example": "SELECT w.record_send AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.regclass": {
+      "example": "SELECT (LOWER('x')).regclass AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regclassout": {
+      "example": "SELECT (ABS(1)).regclassout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regclasssend": {
+      "example": "SELECT (ABS(1)).regclasssend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regcollationout": {
+      "example": "SELECT (ABS(1)).regcollationout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regcollationsend": {
+      "example": "SELECT (ABS(1)).regcollationsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regconfigout": {
+      "example": "SELECT (ABS(1)).regconfigout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regconfigsend": {
+      "example": "SELECT (ABS(1)).regconfigsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regdictionaryout": {
+      "example": "SELECT (ABS(1)).regdictionaryout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regdictionarysend": {
+      "example": "SELECT (ABS(1)).regdictionarysend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regnamespaceout": {
+      "example": "SELECT (ABS(1)).regnamespaceout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regnamespacesend": {
+      "example": "SELECT (ABS(1)).regnamespacesend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regoperatorout": {
+      "example": "SELECT (ABS(1)).regoperatorout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regoperatorsend": {
+      "example": "SELECT (ABS(1)).regoperatorsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regoperout": {
+      "example": "SELECT (ABS(1)).regoperout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regopersend": {
+      "example": "SELECT (ABS(1)).regopersend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regprocedureout": {
+      "example": "SELECT (ABS(1)).regprocedureout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regproceduresend": {
+      "example": "SELECT (ABS(1)).regproceduresend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regprocout": {
+      "example": "SELECT (ABS(1)).regprocout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regprocsend": {
+      "example": "SELECT (ABS(1)).regprocsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regroleout": {
+      "example": "SELECT (ABS(1)).regroleout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regrolesend": {
+      "example": "SELECT (ABS(1)).regrolesend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regtypeout": {
+      "example": "SELECT (ABS(1)).regtypeout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regtypesend": {
+      "example": "SELECT (ABS(1)).regtypesend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.row_security_active": {
+      "example": "SELECT (ABS(1)).row_security_active AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "s"
+    },
+    "pg_catalog.setseed": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).setseed AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.similar_to_escape": {
+      "example": "SELECT (LOWER('x')).similar_to_escape AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.sind": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).sind AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.tand": {
+      "example": "SELECT (ABS(CAST(1.5 AS DOUBLE PRECISION))).tand AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.text": {
+      "example": "SELECT (ISFINITE(CURRENT_TIMESTAMP)).text AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.textlen": {
+      "example": "SELECT (LOWER('x')).textlen AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.textout": {
+      "example": "SELECT (LOWER('x')).textout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.textsend": {
+      "example": "SELECT (LOWER('x')).textsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.timestamp_hash": {
+      "example": "SELECT (DATE_TRUNC('DAY', CAST(CURRENT_TIMESTAMP AS TIMESTAMP))).timestamp_hash AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamp_out": {
+      "example": "SELECT (DATE_TRUNC('DAY', CAST(CURRENT_TIMESTAMP AS TIMESTAMP))).timestamp_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.timestamp_send": {
+      "example": "SELECT (DATE_TRUNC('DAY', CAST(CURRENT_TIMESTAMP AS TIMESTAMP))).timestamp_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamptypmodout": {
+      "example": "SELECT (ABS(1)).timestamptypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamptz": {
+      "example": "SELECT (MAKE_DATE(2024, 1, 1)).timestamptz AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "s"
+    },
+    "pg_catalog.timestamptz_out": {
+      "example": "SELECT (CURRENT_TIMESTAMP).timestamptz_out AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.timestamptz_send": {
+      "example": "SELECT (CURRENT_TIMESTAMP).timestamptz_send AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamptztypmodout": {
+      "example": "SELECT (ABS(1)).timestamptztypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timetypmodout": {
+      "example": "SELECT (ABS(1)).timetypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timetz": {
+      "example": "SELECT (CURRENT_TIMESTAMP).timetz AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.timetztypmodout": {
+      "example": "SELECT (ABS(1)).timetztypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.to_ascii": {
+      "example": "SELECT (LOWER('x')).to_ascii AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.to_bin": {
+      "example": "SELECT (ABS(1)).to_bin AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.to_oct": {
+      "example": "SELECT (ABS(1)).to_oct AS x LIMIT 1000",
+      "groups": {
+        "field": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.to_regclass": {
+      "example": "SELECT (LOWER('x')).to_regclass AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regcollation": {
+      "example": "SELECT (LOWER('x')).to_regcollation AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regnamespace": {
+      "example": "SELECT (LOWER('x')).to_regnamespace AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regoper": {
+      "example": "SELECT (LOWER('x')).to_regoper AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regoperator": {
+      "example": "SELECT (LOWER('x')).to_regoperator AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regproc": {
+      "example": "SELECT (LOWER('x')).to_regproc AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regprocedure": {
+      "example": "SELECT (LOWER('x')).to_regprocedure AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regrole": {
+      "example": "SELECT (LOWER('x')).to_regrole AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regtype": {
+      "example": "SELECT (LOWER('x')).to_regtype AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_regtypemod": {
+      "example": "SELECT (LOWER('x')).to_regtypemod AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_tsquery": {
+      "example": "SELECT (LOWER('x')).to_tsquery AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.to_tsvector": {
+      "example": "SELECT (LOWER('x')).to_tsvector AS x LIMIT 1000",
+      "groups": {
+        "field": 12
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 12,
+      "volatility": "s"
+    },
+    "pg_catalog.ts_debug": {
+      "example": "SELECT (LOWER('x')).ts_debug AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.ts_stat": {
+      "example": "SELECT (LOWER('x')).ts_stat AS x LIMIT 1000",
+      "groups": {
+        "field": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.ts_token_type": {
+      "example": "SELECT (ABS(1)).ts_token_type AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.txid_status": {
+      "example": "SELECT (ABS(CAST(1 AS BIGINT))).txid_status AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.unicode_assigned": {
+      "example": "SELECT (LOWER('x')).unicode_assigned AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.unistr": {
+      "example": "SELECT (LOWER('x')).unistr AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.varbittypmodout": {
+      "example": "SELECT (ABS(1)).varbittypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.varcharout": {
+      "example": "SELECT (LOWER('x')).varcharout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.varcharsend": {
+      "example": "SELECT (LOWER('x')).varcharsend AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.varchartypmodout": {
+      "example": "SELECT (ABS(1)).varchartypmodout AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.websearch_to_tsquery": {
+      "example": "SELECT (LOWER('x')).websearch_to_tsquery AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.xml": {
+      "example": "SELECT (LOWER('x')).xml AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.xml_is_well_formed": {
+      "example": "SELECT (LOWER('x')).xml_is_well_formed AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.xml_is_well_formed_content": {
+      "example": "SELECT (LOWER('x')).xml_is_well_formed_content AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.xml_is_well_formed_document": {
+      "example": "SELECT (LOWER('x')).xml_is_well_formed_document AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.xmlcomment": {
+      "example": "SELECT (LOWER('x')).xmlcomment AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.xmltext": {
+      "example": "SELECT (LOWER('x')).xmltext AS x LIMIT 1000",
+      "groups": {
+        "field": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    }
+  },
+  "reachable_by_volatility": {
+    "immutable": [
+      "pg_catalog.acosd",
+      "pg_catalog.any_out",
+      "pg_catalog.anycompatible_out",
+      "pg_catalog.anycompatiblenonarray_out",
+      "pg_catalog.anyelement_out",
+      "pg_catalog.anynonarray_out",
+      "pg_catalog.array_to_tsvector",
+      "pg_catalog.asind",
+      "pg_catalog.atand",
+      "pg_catalog.bittypmodout",
+      "pg_catalog.bool",
+      "pg_catalog.boolout",
+      "pg_catalog.boolsend",
+      "pg_catalog.bpchartypmodout",
+      "pg_catalog.btequalimage",
+      "pg_catalog.btvarstrequalimage",
+      "pg_catalog.cosd",
+      "pg_catalog.cotd",
+      "pg_catalog.date_send",
+      "pg_catalog.dcbrt",
+      "pg_catalog.dexp",
+      "pg_catalog.dlog1",
+      "pg_catalog.dlog10",
+      "pg_catalog.dround",
+      "pg_catalog.dsqrt",
+      "pg_catalog.dtrunc",
+      "pg_catalog.erf",
+      "pg_catalog.erfc",
+      "pg_catalog.float4",
+      "pg_catalog.float4abs",
+      "pg_catalog.float4out",
+      "pg_catalog.float4send",
+      "pg_catalog.float4um",
+      "pg_catalog.float4up",
+      "pg_catalog.float8",
+      "pg_catalog.float8abs",
+      "pg_catalog.float8out",
+      "pg_catalog.float8send",
+      "pg_catalog.float8um",
+      "pg_catalog.float8up",
+      "pg_catalog.hash_array",
+      "pg_catalog.hash_numeric",
+      "pg_catalog.hash_record",
+      "pg_catalog.hashfloat4",
+      "pg_catalog.hashfloat8",
+      "pg_catalog.hashint2",
+      "pg_catalog.hashint4",
+      "pg_catalog.hashint8",
+      "pg_catalog.hashoid",
+      "pg_catalog.hashtext",
+      "pg_catalog.int2",
+      "pg_catalog.int2abs",
+      "pg_catalog.int2not",
+      "pg_catalog.int2out",
+      "pg_catalog.int2send",
+      "pg_catalog.int2um",
+      "pg_catalog.int2up",
+      "pg_catalog.int4",
+      "pg_catalog.int4abs",
+      "pg_catalog.int4inc",
+      "pg_catalog.int4not",
+      "pg_catalog.int4out",
+      "pg_catalog.int4send",
+      "pg_catalog.int4um",
+      "pg_catalog.int4up",
+      "pg_catalog.int8",
+      "pg_catalog.int8abs",
+      "pg_catalog.int8dec",
+      "pg_catalog.int8inc",
+      "pg_catalog.int8not",
+      "pg_catalog.int8out",
+      "pg_catalog.int8send",
+      "pg_catalog.int8um",
+      "pg_catalog.int8up",
+      "pg_catalog.interval_hash",
+      "pg_catalog.interval_send",
+      "pg_catalog.interval_um",
+      "pg_catalog.intervaltypmodout",
+      "pg_catalog.is_normalized",
+      "pg_catalog.json_array_elements",
+      "pg_catalog.json_array_elements_text",
+      "pg_catalog.json_each",
+      "pg_catalog.json_each_text",
+      "pg_catalog.json_object_keys",
+      "pg_catalog.json_out",
+      "pg_catalog.json_send",
+      "pg_catalog.jsonb_hash",
+      "pg_catalog.jsonb_object",
+      "pg_catalog.jsonb_out",
+      "pg_catalog.jsonb_send",
+      "pg_catalog.min_scale",
+      "pg_catalog.name",
+      "pg_catalog.numeric",
+      "pg_catalog.numeric_abs",
+      "pg_catalog.numeric_exp",
+      "pg_catalog.numeric_inc",
+      "pg_catalog.numeric_ln",
+      "pg_catalog.numeric_out",
+      "pg_catalog.numeric_send",
+      "pg_catalog.numeric_sqrt",
+      "pg_catalog.numeric_uminus",
+      "pg_catalog.numeric_uplus",
+      "pg_catalog.numerictypmodout",
+      "pg_catalog.oid",
+      "pg_catalog.oidout",
+      "pg_catalog.oidsend",
+      "pg_catalog.parse_ident",
+      "pg_catalog.pg_encoding_max_length",
+      "pg_catalog.pg_lsn",
+      "pg_catalog.pg_partition_root",
+      "pg_catalog.pg_size_bytes",
+      "pg_catalog.pg_size_pretty",
+      "pg_catalog.quote_ident",
+      "pg_catalog.quote_literal",
+      "pg_catalog.quote_nullable",
+      "pg_catalog.regclasssend",
+      "pg_catalog.regcollationsend",
+      "pg_catalog.regconfigsend",
+      "pg_catalog.regdictionarysend",
+      "pg_catalog.regnamespacesend",
+      "pg_catalog.regoperatorsend",
+      "pg_catalog.regopersend",
+      "pg_catalog.regproceduresend",
+      "pg_catalog.regprocsend",
+      "pg_catalog.regrolesend",
+      "pg_catalog.regtypesend",
+      "pg_catalog.similar_to_escape",
+      "pg_catalog.sind",
+      "pg_catalog.tand",
+      "pg_catalog.text",
+      "pg_catalog.textlen",
+      "pg_catalog.textout",
+      "pg_catalog.timestamp_hash",
+      "pg_catalog.timestamp_send",
+      "pg_catalog.timestamptypmodout",
+      "pg_catalog.timestamptz_send",
+      "pg_catalog.timestamptztypmodout",
+      "pg_catalog.timetypmodout",
+      "pg_catalog.timetztypmodout",
+      "pg_catalog.to_ascii",
+      "pg_catalog.to_bin",
+      "pg_catalog.to_oct",
+      "pg_catalog.ts_token_type",
+      "pg_catalog.unicode_assigned",
+      "pg_catalog.unistr",
+      "pg_catalog.varbittypmodout",
+      "pg_catalog.varcharout",
+      "pg_catalog.varchartypmodout",
+      "pg_catalog.xml_is_well_formed_content",
+      "pg_catalog.xml_is_well_formed_document",
+      "pg_catalog.xmlcomment",
+      "pg_catalog.xmltext"
+    ],
+    "stable": [
+      "pg_catalog.anyarray_out",
+      "pg_catalog.anyarray_send",
+      "pg_catalog.anycompatiblearray_out",
+      "pg_catalog.anycompatiblearray_send",
+      "pg_catalog.array_out",
+      "pg_catalog.array_send",
+      "pg_catalog.current_schemas",
+      "pg_catalog.current_setting",
+      "pg_catalog.date_out",
+      "pg_catalog.fmgr_c_validator",
+      "pg_catalog.fmgr_internal_validator",
+      "pg_catalog.fmgr_sql_validator",
+      "pg_catalog.interval_out",
+      "pg_catalog.json_agg_strict",
+      "pg_catalog.json_to_record",
+      "pg_catalog.json_to_recordset",
+      "pg_catalog.jsonb_agg_strict",
+      "pg_catalog.jsonb_to_record",
+      "pg_catalog.jsonb_to_recordset",
+      "pg_catalog.money",
+      "pg_catalog.obj_description",
+      "pg_catalog.pg_basetype",
+      "pg_catalog.pg_collation_for",
+      "pg_catalog.pg_collation_is_visible",
+      "pg_catalog.pg_column_compression",
+      "pg_catalog.pg_column_size",
+      "pg_catalog.pg_column_toast_chunk_id",
+      "pg_catalog.pg_conversion_is_visible",
+      "pg_catalog.pg_encoding_to_char",
+      "pg_catalog.pg_function_is_visible",
+      "pg_catalog.pg_get_constraintdef",
+      "pg_catalog.pg_get_function_arguments",
+      "pg_catalog.pg_get_function_identity_arguments",
+      "pg_catalog.pg_get_function_result",
+      "pg_catalog.pg_get_function_sqlbody",
+      "pg_catalog.pg_get_functiondef",
+      "pg_catalog.pg_get_indexdef",
+      "pg_catalog.pg_get_partition_constraintdef",
+      "pg_catalog.pg_get_partkeydef",
+      "pg_catalog.pg_get_replica_identity_index",
+      "pg_catalog.pg_get_ruledef",
+      "pg_catalog.pg_get_statisticsobjdef",
+      "pg_catalog.pg_get_statisticsobjdef_columns",
+      "pg_catalog.pg_get_statisticsobjdef_expressions",
+      "pg_catalog.pg_get_triggerdef",
+      "pg_catalog.pg_get_userbyid",
+      "pg_catalog.pg_get_viewdef",
+      "pg_catalog.pg_is_other_temp_schema",
+      "pg_catalog.pg_opclass_is_visible",
+      "pg_catalog.pg_operator_is_visible",
+      "pg_catalog.pg_opfamily_is_visible",
+      "pg_catalog.pg_options_to_table",
+      "pg_catalog.pg_relation_filenode",
+      "pg_catalog.pg_relation_filepath",
+      "pg_catalog.pg_relation_is_publishable",
+      "pg_catalog.pg_replication_origin_oid",
+      "pg_catalog.pg_sequence_parameters",
+      "pg_catalog.pg_settings_get_flags",
+      "pg_catalog.pg_split_walfile_name",
+      "pg_catalog.pg_stat_get_activity",
+      "pg_catalog.pg_stat_get_analyze_count",
+      "pg_catalog.pg_stat_get_autoanalyze_count",
+      "pg_catalog.pg_stat_get_autovacuum_count",
+      "pg_catalog.pg_stat_get_backend_activity",
+      "pg_catalog.pg_stat_get_backend_activity_start",
+      "pg_catalog.pg_stat_get_backend_client_addr",
+      "pg_catalog.pg_stat_get_backend_client_port",
+      "pg_catalog.pg_stat_get_backend_dbid",
+      "pg_catalog.pg_stat_get_backend_pid",
+      "pg_catalog.pg_stat_get_backend_start",
+      "pg_catalog.pg_stat_get_backend_subxact",
+      "pg_catalog.pg_stat_get_backend_userid",
+      "pg_catalog.pg_stat_get_backend_wait_event",
+      "pg_catalog.pg_stat_get_backend_wait_event_type",
+      "pg_catalog.pg_stat_get_backend_xact_start",
+      "pg_catalog.pg_stat_get_blocks_fetched",
+      "pg_catalog.pg_stat_get_blocks_hit",
+      "pg_catalog.pg_stat_get_db_active_time",
+      "pg_catalog.pg_stat_get_db_blk_read_time",
+      "pg_catalog.pg_stat_get_db_blk_write_time",
+      "pg_catalog.pg_stat_get_db_blocks_fetched",
+      "pg_catalog.pg_stat_get_db_blocks_hit",
+      "pg_catalog.pg_stat_get_db_checksum_failures",
+      "pg_catalog.pg_stat_get_db_checksum_last_failure",
+      "pg_catalog.pg_stat_get_db_conflict_all",
+      "pg_catalog.pg_stat_get_db_conflict_bufferpin",
+      "pg_catalog.pg_stat_get_db_conflict_lock",
+      "pg_catalog.pg_stat_get_db_conflict_logicalslot",
+      "pg_catalog.pg_stat_get_db_conflict_snapshot",
+      "pg_catalog.pg_stat_get_db_conflict_startup_deadlock",
+      "pg_catalog.pg_stat_get_db_conflict_tablespace",
+      "pg_catalog.pg_stat_get_db_deadlocks",
+      "pg_catalog.pg_stat_get_db_idle_in_transaction_time",
+      "pg_catalog.pg_stat_get_db_numbackends",
+      "pg_catalog.pg_stat_get_db_session_time",
+      "pg_catalog.pg_stat_get_db_sessions",
+      "pg_catalog.pg_stat_get_db_sessions_abandoned",
+      "pg_catalog.pg_stat_get_db_sessions_fatal",
+      "pg_catalog.pg_stat_get_db_sessions_killed",
+      "pg_catalog.pg_stat_get_db_stat_reset_time",
+      "pg_catalog.pg_stat_get_db_temp_bytes",
+      "pg_catalog.pg_stat_get_db_temp_files",
+      "pg_catalog.pg_stat_get_db_tuples_deleted",
+      "pg_catalog.pg_stat_get_db_tuples_fetched",
+      "pg_catalog.pg_stat_get_db_tuples_inserted",
+      "pg_catalog.pg_stat_get_db_tuples_returned",
+      "pg_catalog.pg_stat_get_db_tuples_updated",
+      "pg_catalog.pg_stat_get_db_xact_commit",
+      "pg_catalog.pg_stat_get_db_xact_rollback",
+      "pg_catalog.pg_stat_get_dead_tuples",
+      "pg_catalog.pg_stat_get_function_calls",
+      "pg_catalog.pg_stat_get_function_self_time",
+      "pg_catalog.pg_stat_get_function_total_time",
+      "pg_catalog.pg_stat_get_ins_since_vacuum",
+      "pg_catalog.pg_stat_get_last_analyze_time",
+      "pg_catalog.pg_stat_get_last_autoanalyze_time",
+      "pg_catalog.pg_stat_get_last_autovacuum_time",
+      "pg_catalog.pg_stat_get_last_vacuum_time",
+      "pg_catalog.pg_stat_get_lastscan",
+      "pg_catalog.pg_stat_get_live_tuples",
+      "pg_catalog.pg_stat_get_mod_since_analyze",
+      "pg_catalog.pg_stat_get_numscans",
+      "pg_catalog.pg_stat_get_progress_info",
+      "pg_catalog.pg_stat_get_replication_slot",
+      "pg_catalog.pg_stat_get_subscription",
+      "pg_catalog.pg_stat_get_subscription_stats",
+      "pg_catalog.pg_stat_get_tuples_deleted",
+      "pg_catalog.pg_stat_get_tuples_fetched",
+      "pg_catalog.pg_stat_get_tuples_hot_updated",
+      "pg_catalog.pg_stat_get_tuples_inserted",
+      "pg_catalog.pg_stat_get_tuples_newpage_updated",
+      "pg_catalog.pg_stat_get_tuples_returned",
+      "pg_catalog.pg_stat_get_tuples_updated",
+      "pg_catalog.pg_stat_get_vacuum_count",
+      "pg_catalog.pg_statistics_obj_is_visible",
+      "pg_catalog.pg_table_is_visible",
+      "pg_catalog.pg_tablespace_databases",
+      "pg_catalog.pg_tablespace_location",
+      "pg_catalog.pg_ts_config_is_visible",
+      "pg_catalog.pg_ts_dict_is_visible",
+      "pg_catalog.pg_ts_parser_is_visible",
+      "pg_catalog.pg_ts_template_is_visible",
+      "pg_catalog.pg_type_is_visible",
+      "pg_catalog.pg_typeof",
+      "pg_catalog.phraseto_tsquery",
+      "pg_catalog.plainto_tsquery",
+      "pg_catalog.record_out",
+      "pg_catalog.record_send",
+      "pg_catalog.regclass",
+      "pg_catalog.regclassout",
+      "pg_catalog.regcollationout",
+      "pg_catalog.regconfigout",
+      "pg_catalog.regdictionaryout",
+      "pg_catalog.regnamespaceout",
+      "pg_catalog.regoperatorout",
+      "pg_catalog.regoperout",
+      "pg_catalog.regprocedureout",
+      "pg_catalog.regprocout",
+      "pg_catalog.regroleout",
+      "pg_catalog.regtypeout",
+      "pg_catalog.row_security_active",
+      "pg_catalog.textsend",
+      "pg_catalog.timestamp_out",
+      "pg_catalog.timestamptz",
+      "pg_catalog.timestamptz_out",
+      "pg_catalog.timetz",
+      "pg_catalog.to_regclass",
+      "pg_catalog.to_regcollation",
+      "pg_catalog.to_regnamespace",
+      "pg_catalog.to_regoper",
+      "pg_catalog.to_regoperator",
+      "pg_catalog.to_regproc",
+      "pg_catalog.to_regprocedure",
+      "pg_catalog.to_regrole",
+      "pg_catalog.to_regtype",
+      "pg_catalog.to_regtypemod",
+      "pg_catalog.to_tsquery",
+      "pg_catalog.to_tsvector",
+      "pg_catalog.ts_debug",
+      "pg_catalog.varcharsend",
+      "pg_catalog.websearch_to_tsquery",
+      "pg_catalog.xml",
+      "pg_catalog.xml_is_well_formed"
+    ],
+    "volatile": [
+      "pg_catalog.amvalidate",
+      "pg_catalog.array_shuffle",
+      "pg_catalog.binary_upgrade_set_next_array_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_heap_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_heap_relfilenode",
+      "pg_catalog.binary_upgrade_set_next_index_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_index_relfilenode",
+      "pg_catalog.binary_upgrade_set_next_multirange_array_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_multirange_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_authid_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_enum_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_tablespace_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_toast_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_toast_relfilenode",
+      "pg_catalog.binary_upgrade_set_record_init_privs",
+      "pg_catalog.brin_summarize_new_values",
+      "pg_catalog.currval",
+      "pg_catalog.gin_clean_pending_list",
+      "pg_catalog.lo_close",
+      "pg_catalog.lo_creat",
+      "pg_catalog.lo_create",
+      "pg_catalog.lo_get",
+      "pg_catalog.lo_import",
+      "pg_catalog.lo_tell",
+      "pg_catalog.lo_tell64",
+      "pg_catalog.lo_unlink",
+      "pg_catalog.nextval",
+      "pg_catalog.pg_advisory_lock",
+      "pg_catalog.pg_advisory_lock_shared",
+      "pg_catalog.pg_advisory_unlock",
+      "pg_catalog.pg_advisory_unlock_shared",
+      "pg_catalog.pg_advisory_xact_lock",
+      "pg_catalog.pg_advisory_xact_lock_shared",
+      "pg_catalog.pg_backup_start",
+      "pg_catalog.pg_backup_stop",
+      "pg_catalog.pg_blocking_pids",
+      "pg_catalog.pg_cancel_backend",
+      "pg_catalog.pg_collation_actual_version",
+      "pg_catalog.pg_create_restore_point",
+      "pg_catalog.pg_current_logfile",
+      "pg_catalog.pg_database_collation_actual_version",
+      "pg_catalog.pg_database_size",
+      "pg_catalog.pg_import_system_collations",
+      "pg_catalog.pg_indexes_size",
+      "pg_catalog.pg_log_backend_memory_contexts",
+      "pg_catalog.pg_ls_dir",
+      "pg_catalog.pg_ls_replslotdir",
+      "pg_catalog.pg_ls_tmpdir",
+      "pg_catalog.pg_partition_ancestors",
+      "pg_catalog.pg_partition_tree",
+      "pg_catalog.pg_promote",
+      "pg_catalog.pg_read_binary_file",
+      "pg_catalog.pg_read_file",
+      "pg_catalog.pg_relation_size",
+      "pg_catalog.pg_replication_origin_create",
+      "pg_catalog.pg_replication_origin_drop",
+      "pg_catalog.pg_replication_origin_session_progress",
+      "pg_catalog.pg_replication_origin_session_setup",
+      "pg_catalog.pg_safe_snapshot_blocking_pids",
+      "pg_catalog.pg_sequence_last_value",
+      "pg_catalog.pg_sleep",
+      "pg_catalog.pg_sleep_for",
+      "pg_catalog.pg_sleep_until",
+      "pg_catalog.pg_stat_file",
+      "pg_catalog.pg_stat_get_xact_blocks_fetched",
+      "pg_catalog.pg_stat_get_xact_blocks_hit",
+      "pg_catalog.pg_stat_get_xact_function_calls",
+      "pg_catalog.pg_stat_get_xact_function_self_time",
+      "pg_catalog.pg_stat_get_xact_function_total_time",
+      "pg_catalog.pg_stat_get_xact_numscans",
+      "pg_catalog.pg_stat_get_xact_tuples_deleted",
+      "pg_catalog.pg_stat_get_xact_tuples_fetched",
+      "pg_catalog.pg_stat_get_xact_tuples_hot_updated",
+      "pg_catalog.pg_stat_get_xact_tuples_inserted",
+      "pg_catalog.pg_stat_get_xact_tuples_newpage_updated",
+      "pg_catalog.pg_stat_get_xact_tuples_returned",
+      "pg_catalog.pg_stat_get_xact_tuples_updated",
+      "pg_catalog.pg_stat_reset_replication_slot",
+      "pg_catalog.pg_stat_reset_shared",
+      "pg_catalog.pg_stat_reset_single_function_counters",
+      "pg_catalog.pg_stat_reset_single_table_counters",
+      "pg_catalog.pg_stat_reset_slru",
+      "pg_catalog.pg_stat_reset_subscription_stats",
+      "pg_catalog.pg_table_size",
+      "pg_catalog.pg_tablespace_size",
+      "pg_catalog.pg_terminate_backend",
+      "pg_catalog.pg_total_relation_size",
+      "pg_catalog.pg_try_advisory_lock",
+      "pg_catalog.pg_try_advisory_lock_shared",
+      "pg_catalog.pg_try_advisory_xact_lock",
+      "pg_catalog.pg_try_advisory_xact_lock_shared",
+      "pg_catalog.plpgsql_validator",
+      "pg_catalog.random_normal",
+      "pg_catalog.setseed",
+      "pg_catalog.ts_stat",
+      "pg_catalog.txid_status"
+    ]
+  },
+  "refused_by_postgres_sqlstates": {
+    "0A000": 54,
+    "42703": 30432,
+    "42803": 332,
+    "42809": 2568
+  },
+  "resolved_node_types": {
+    "AGGREF": 4423,
+    "ALIAS": 8932,
+    "ARRAYEXPR": 56,
+    "COERCEVIAIO": 36,
+    "COMMONTABLEEXPR": 124,
+    "CONST": 8111,
+    "FROMEXPR": 7320,
+    "FUNCEXPR": 9494,
+    "JOINEXPR": 124,
+    "NULLTEST": 2416,
+    "QUERY": 7320,
+    "RANGETBLENTRY": 4838,
+    "RANGETBLREF": 4714,
+    "RELABELTYPE": 736,
+    "RTEPERMISSIONINFO": 620,
+    "SORTGROUPCLAUSE": 934,
+    "SQLVALUEFUNCTION": 174,
+    "TARGETENTRY": 8958,
+    "VAR": 2604
+  },
+  "seconds": 64.9,
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "total": {
+    "admitted": 36736,
+    "flagged": 2306,
+    "generated": 52480,
+    "refused_by_postgres": 33386,
+    "resolved": 3350,
+    "with_io_cast": 36,
+    "with_literal_cast": 652
+  }
+}

@@ -1,0 +1,548 @@
+{
+  "by_group": {
+    "cte": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "field": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:as_cte": {
+      "admitted": 52480,
+      "flagged": 760,
+      "generated": 52480,
+      "refused_by_postgres": 51080,
+      "resolved": 1400,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:as_subquery": {
+      "admitted": 52480,
+      "flagged": 760,
+      "generated": 52480,
+      "refused_by_postgres": 51080,
+      "resolved": 1400,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:identity": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 40,
+      "refused_by_postgres": 0,
+      "resolved": 40,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:outer_alias": {
+      "admitted": 62976,
+      "flagged": 816,
+      "generated": 62976,
+      "refused_by_postgres": 61680,
+      "resolved": 1296,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_alias": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_name": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias_mart": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "scalar_from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "subquery": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "values": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "by_position": {
+    "filter": {
+      "admitted": 7872,
+      "flagged": 102,
+      "generated": 13120,
+      "refused_by_postgres": 7710,
+      "resolved": 162,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "order_by": {
+      "admitted": 7872,
+      "flagged": 114,
+      "generated": 13120,
+      "refused_by_postgres": 7662,
+      "resolved": 210,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "query": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 40,
+      "refused_by_postgres": 0,
+      "resolved": 40,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "select": {
+      "admitted": 112832,
+      "flagged": 1634,
+      "generated": 118080,
+      "refused_by_postgres": 109822,
+      "resolved": 3010,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "where": {
+      "admitted": 70848,
+      "flagged": 918,
+      "generated": 76096,
+      "refused_by_postgres": 69390,
+      "resolved": 1458,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "commit": "a78c6dd",
+  "disabled_fixes": [],
+  "functions": 1312,
+  "label": "before",
+  "reachable": {
+    "pg_catalog.any_out": {
+      "example": "SELECT w.any_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatible_out": {
+      "example": "SELECT w.anycompatible_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatiblenonarray_out": {
+      "example": "SELECT w.anycompatiblenonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.anyelement_out": {
+      "example": "SELECT w.anyelement_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.anynonarray_out": {
+      "example": "SELECT w.anynonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.hash_record": {
+      "example": "SELECT w.hash_record AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "i"
+    },
+    "pg_catalog.json_agg_strict": {
+      "example": "SELECT w.json_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 92,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_agg_strict": {
+      "example": "SELECT w.jsonb_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 92,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_collation_for": {
+      "example": "SELECT w.pg_collation_for AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_compression": {
+      "example": "SELECT w.pg_column_compression AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_size": {
+      "example": "SELECT w.pg_column_size AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_toast_chunk_id": {
+      "example": "SELECT w.pg_column_toast_chunk_id AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_typeof": {
+      "example": "SELECT w.pg_typeof AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.quote_literal": {
+      "example": "SELECT w.quote_literal AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "gold:as_cte": 80,
+        "gold:as_subquery": 80,
+        "gold:outer_alias": 96,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 304,
+      "volatility": "s"
+    },
+    "pg_catalog.quote_nullable": {
+      "example": "SELECT w.quote_nullable AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "gold:as_cte": 80,
+        "gold:as_subquery": 80,
+        "gold:outer_alias": 96,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 304,
+      "volatility": "s"
+    },
+    "pg_catalog.record_out": {
+      "example": "SELECT w.record_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "s"
+    },
+    "pg_catalog.record_send": {
+      "example": "SELECT w.record_send AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "gold:as_cte": 40,
+        "gold:as_subquery": 40,
+        "gold:outer_alias": 48,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 152,
+      "volatility": "s"
+    }
+  },
+  "reachable_by_volatility": {
+    "immutable": [
+      "pg_catalog.any_out",
+      "pg_catalog.anycompatible_out",
+      "pg_catalog.anycompatiblenonarray_out",
+      "pg_catalog.anyelement_out",
+      "pg_catalog.anynonarray_out",
+      "pg_catalog.hash_record"
+    ],
+    "stable": [
+      "pg_catalog.json_agg_strict",
+      "pg_catalog.jsonb_agg_strict",
+      "pg_catalog.pg_collation_for",
+      "pg_catalog.pg_column_compression",
+      "pg_catalog.pg_column_size",
+      "pg_catalog.pg_column_toast_chunk_id",
+      "pg_catalog.pg_typeof",
+      "pg_catalog.quote_literal",
+      "pg_catalog.quote_nullable",
+      "pg_catalog.record_out",
+      "pg_catalog.record_send"
+    ]
+  },
+  "refused_by_postgres_sqlstates": {
+    "42703": 192736,
+    "42803": 480,
+    "42809": 1368
+  },
+  "resolved_node_types": {
+    "AGGREF": 10343,
+    "ALIAS": 24720,
+    "BOOLEXPR": 2260,
+    "COALESCEEXPR": 250,
+    "COMMONTABLEEXPR": 1524,
+    "CONST": 11456,
+    "FROMEXPR": 13376,
+    "FUNCEXPR": 10225,
+    "JOINEXPR": 1124,
+    "NULLTEST": 1928,
+    "OPEXPR": 6163,
+    "QUERY": 13376,
+    "RANGETBLENTRY": 15500,
+    "RANGETBLREF": 14376,
+    "RTEPERMISSIONINFO": 5756,
+    "SORTGROUPCLAUSE": 2947,
+    "TARGETENTRY": 18421,
+    "VAR": 43864,
+    "WINDOWCLAUSE": 196,
+    "WINDOWFUNC": 196
+  },
+  "seconds": 459.3,
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "total": {
+    "admitted": 199464,
+    "flagged": 2768,
+    "generated": 220456,
+    "refused_by_postgres": 194584,
+    "resolved": 4880,
+    "with_io_cast": 0,
+    "with_literal_cast": 0
+  }
+}
