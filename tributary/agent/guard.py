@@ -55,7 +55,12 @@ a function returning a scalar is that scalar. So ``SELECT p.pg_terminate_backend
 FROM generate_series(1, 99999) AS p`` signals every backend of the role,
 written as a plain column. A qualified column on a function in FROM must name
 one of that function's columns: those its alias declares, else the alias
-itself (a scalar function's one column). Two parser differentials are closed
+itself (a scalar function's one column). The same holds for a relation, a
+derived table, a CTE or VALUES: ``w.pg_typeof`` over a mart is
+``pg_typeof(w)``. Built with the catalog's columns (:meth:`Guard.for_catalog`),
+the guard binds each qualifier as PostgreSQL scopes it and refuses a name that
+is not a column of the bound source but is the name of a pg_catalog function
+PostgreSQL could call with the row. Two parser differentials are closed
 the same way, by refusing what sqlglot reads differently: ``x IS DOCUMENT``
 (sqlglot sees a column named document; PostgreSQL parses ``x`` as xml) and
 ``OPERATOR(schema.op)``, an operator, hence a function, from any schema. A
@@ -66,13 +71,21 @@ parsing: sqlglot's subscript handling is quadratic, and a few thousand
 
 from __future__ import annotations
 
+import contextlib
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
+from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.tokenizer_core import TokenType
+
+from tributary.agent.pg_functions import ONE_ARGUMENT_FUNCTIONS
+
+if TYPE_CHECKING:
+    from tributary.agent.catalog import Catalog
 
 DIALECT = "postgres"
 
@@ -153,6 +166,55 @@ ANONYMOUS_ALLOWED: frozenset[str] = frozenset(
 
 _SYSTEM_SCHEMAS = frozenset({"pg_catalog", "information_schema"})
 
+# Every name sqlglot parses into a typed expression class rather than exp.Anonymous: a
+# call by one of these names is allowed unless the denylist matches it.
+_PARSER = Dialect.get_or_raise(DIALECT).parser_class
+TYPED_FUNCTIONS: frozenset[str] = frozenset(
+    name.lower() for name in (*_PARSER.FUNCTIONS, *_PARSER.FUNCTION_PARSERS)
+)
+
+# The checks added after a bypass was found, by name: the three found by reading the
+# code, and the one the differential oracle found. Its evaluation switches each off in
+# turn to show it would have found that bypass (eval/guard/differential.py); nothing
+# else may.
+HISTORICAL_FIXES: tuple[str, ...] = ("field_notation", "function_alias", "alias_intersection")
+SWITCHABLE_FIXES: tuple[str, ...] = (*HISTORICAL_FIXES, "relation_alias")
+_disabled_fixes: set[str] = set()
+
+
+@contextlib.contextmanager
+def fixes_disabled(*names: str) -> Iterator[None]:
+    """Run the guard with the named checks switched off (evaluation and tests only)."""
+    unknown = sorted(set(names) - set(SWITCHABLE_FIXES))
+    if unknown:
+        raise ValueError(f"unknown guard fix: {', '.join(unknown)}")
+    previous = set(_disabled_fixes)
+    _disabled_fixes.update(names)
+    try:
+        yield
+    finally:
+        _disabled_fixes.clear()
+        _disabled_fixes.update(previous)
+
+
+def _enabled(fix: str) -> bool:
+    return fix not in _disabled_fixes
+
+
+def function_refusal(name: str, *, explicit_call: bool) -> str | None:
+    """Why the guard's function policy refuses ``name``, or None if it allows it.
+
+    The denylist applies however a function is reached; the allowlist for
+    unknown names applies to a call written by name (``f(x)``), since an
+    operator, a cast or SQL syntax such as ``EXTRACT`` names no function.
+    """
+    if _DENIED_FUNCTION.match(name):
+        return "denied"
+    if explicit_call and name not in ANONYMOUS_ALLOWED and name not in TYPED_FUNCTIONS:
+        return "not_allowed"
+    return None
+
+
 # Brackets (array literals and subscripts) one statement may hold; sqlglot types every
 # subscript chain again at each step, so the parse is quadratic in the chain's length.
 MAX_SUBSCRIPTS = 64
@@ -208,6 +270,10 @@ _NOT_QUERY: tuple[type[exp.Expr], ...] = (
     exp.Execute,
     exp.Summarize,
 )
+
+# A derived table's columns the guard cannot name: a placeholder no identifier can match,
+# so every callable name on it is refused (compared by identity, never by value).
+_UNKNOWN: tuple[str, ...] = ("\x00unknown",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -303,7 +369,18 @@ def _unknown_function_name(func: exp.Func) -> str | None:
 class Guard:
     """The policy for one allowlist of relations; :meth:`check` is pure."""
 
-    def __init__(self, relations: Iterable[str], *, max_rows: int = 1000) -> None:
+    def __init__(
+        self,
+        relations: Iterable[str],
+        *,
+        max_rows: int = 1000,
+        columns: Mapping[str, Iterable[str]] | None = None,
+    ) -> None:
+        """``columns``: each relation's columns, so ``alias.name`` can be told from a call.
+
+        Without them a qualified name on a relation is not checked; the agent
+        and every evaluation build the guard with :meth:`for_catalog`.
+        """
         if max_rows < 1:
             raise ValueError("max_rows must be positive")
         allowed: set[str] = set()
@@ -317,6 +394,18 @@ class Guard:
         self.relations = frozenset(allowed)
         self._by_table = {table: sorted(set(schemas)) for table, schemas in by_table.items()}
         self.max_rows = max_rows
+        self._columns: dict[str, tuple[str, ...]] = {
+            relation.strip().lower(): tuple(names) for relation, names in (columns or {}).items()
+        }
+
+    @classmethod
+    def for_catalog(cls, catalog: Catalog, *, max_rows: int = 1000) -> Guard:
+        """The guard for a catalog: its relations, and each one's columns."""
+        return cls(
+            catalog.relations(),
+            max_rows=max_rows,
+            columns={t.relation: [c.name for c in t.columns] for t in catalog.tables},
+        )
 
     def enforce(self, sql: str) -> GuardResult:
         """Check ``sql`` and raise :class:`GuardBlocked` unless it is allowed."""
@@ -368,6 +457,8 @@ class Guard:
         for statement in statements:
             self._check_root(statement, reasons)
             self._check_tree(statement, reasons, tables)
+            if _enabled("relation_alias") and not reasons:
+                self._check_relation_columns(statement, reasons)
 
         limit: int | None = None
         out = ""
@@ -420,7 +511,8 @@ class Guard:
                 self._check_table(node, reasons, tables)
             elif isinstance(node, exp.Column):
                 self._check_column(node, reasons)
-                _check_function_column(node, function_columns, reasons)
+                if _enabled("function_alias"):
+                    _check_function_column(node, function_columns, reasons)
             elif isinstance(node, exp.Is) and not isinstance(node.expression, _IS_OPERANDS):
                 reasons.append(
                     f"parse_error: {node.sql(dialect=DIALECT)} is not an IS the guard understands"
@@ -531,11 +623,164 @@ class Guard:
         shown = dot.sql(dialect=DIALECT)
         if isinstance(dot.expression, exp.Func):
             reasons.append(f"qualified_function: {shown} is schema-qualified")
-        else:
+        elif _enabled("field_notation"):
             reasons.append(
                 f"field_notation: {shown} is a function call written as a field "
                 "(PostgreSQL reads (x).f as f(x)) or a name with too many parts"
             )
+
+    def _check_relation_columns(self, statement: exp.Expr, reasons: list[str]) -> None:
+        """``alias.name`` on a relation, a derived table, a CTE or VALUES must be a column.
+
+        PostgreSQL resolves ``w.f`` to the call ``f(w)`` on the whole row when
+        ``f`` is not a column of ``w``, so ``w.pg_typeof`` over a mart is a call
+        the function policy never sees. Each qualifier is bound as PostgreSQL
+        scopes it (innermost query first, sqlglot's scope analysis), and the
+        name must be one of the bound source's columns: the catalog's for a
+        relation, the query's own output for a derived table or CTE. Runs
+        after the tree walk, which has pinned every relation's schema.
+        Function items in FROM are the function-alias check's.
+
+        Only a name PostgreSQL could call is refused: one of pg_catalog's
+        one-argument functions (the agent's search_path is empty), or a name
+        the denylist matches. Any other name that is not a column is a typo
+        the database refuses with "column does not exist", which is the
+        better message for the model to repair from.
+        """
+        try:
+            scopes = traverse_scope(statement)
+        except Exception as error:  # a scope sqlglot cannot build is not understood
+            reasons.append(f"parse_error: cannot resolve the query's scopes ({error})")
+            return
+        visited: set[int] = set()
+        for scope in scopes:
+            visited.update(id(column) for column in scope.columns)
+        for column in statement.find_all(exp.Column):
+            # A column no scope lists (sqlglot misses a subquery in JOIN ... ON) is not
+            # bound by the guard; PostgreSQL binds it, so a callable name is refused.
+            qualifier = _ident(column.args.get("table"))
+            name = _ident(column.this)
+            if id(column) in visited or qualifier is None or name is None:
+                continue
+            if _callable(name):
+                reasons.append(
+                    f"field_notation: {column.sql(dialect=DIALECT)} names {qualifier},"
+                    f" which the guard cannot bind, so PostgreSQL may call"
+                    f" {name}({qualifier})"
+                )
+        for scope in scopes:
+            for column in scope.columns:
+                qualifier = _ident(column.args.get("table"))
+                name = _ident(column.this)
+                if qualifier is None or name is None or isinstance(column.this, exp.Star):
+                    continue
+                schema = _ident(column.args.get("db"))
+                if schema is not None:
+                    known = self._columns.get(f"{schema}.{qualifier}")
+                    candidates: list[tuple[str, tuple[str, ...] | None]] = [
+                        (f"{schema}.{qualifier}", known)
+                    ]
+                else:
+                    candidates = self._bindings(scope, qualifier)
+                if not _callable(name):
+                    continue  # no call to hide: PostgreSQL refuses the unknown column itself
+                if not candidates:
+                    # sqlglot's scopes did not bind it (a LATERAL subquery, a parenthesised
+                    # join's alias, a subquery in JOIN ... ON), but PostgreSQL may: fail closed.
+                    reasons.append(
+                        f"field_notation: {column.sql(dialect=DIALECT)} names {qualifier},"
+                        f" which the guard cannot bind, so PostgreSQL may call"
+                        f" {name}({qualifier})"
+                    )
+                    continue
+                for shown, names in candidates:
+                    if names is None or _has_column(names, name):
+                        continue
+                    reasons.append(
+                        f"field_notation: {column.sql(dialect=DIALECT)} is not a column of"
+                        f" {shown}, so PostgreSQL calls {name}({qualifier})"
+                    )
+
+    def _bindings(self, scope: Scope, qualifier: str) -> list[tuple[str, tuple[str, ...] | None]]:
+        """What ``qualifier`` names at ``scope``: each source and its columns (None: unchecked).
+
+        The innermost scope that binds the name wins, as in PostgreSQL. If more
+        than one source there could match (a quoted and an unquoted spelling),
+        every one is returned and the name must be a column of all of them.
+        """
+        current: Scope | None = scope
+        while current is not None:
+            matches = [
+                source
+                for key, source in current.sources.items()
+                if _reference_name(current, key, source) == qualifier
+            ]
+            if matches:
+                return [self._source_columns(qualifier, source) for source in matches]
+            current = current.parent
+        return []  # unbound here; the caller refuses a callable name
+
+    def _source_columns(
+        self, qualifier: str, source: exp.Expr | Scope
+    ) -> tuple[str, tuple[str, ...] | None]:
+        if isinstance(source, Scope):
+            node = source.expression
+            alias = _alias_columns(node.parent if node.parent is not None else node)
+            if isinstance(node, exp.Values):
+                alias = alias or _alias_columns(node)
+                width = len(node.expressions[0].expressions) if node.expressions else 0
+                own: tuple[str, ...] | None = tuple(f"column{i + 1}" for i in range(width))
+            elif isinstance(node, exp.Query):
+                own = self._output_columns(node, source)
+            elif isinstance(node, exp.Unnest):  # a function in FROM: the function-alias check's
+                return qualifier, None
+            else:  # LATERAL, a parenthesised join's alias: columns the guard does not name
+                return f"the source {qualifier}", _UNKNOWN
+            renamed = _renamed(own, alias)
+            # Output the guard cannot name (a * over a function in FROM): no name is
+            # vouched for, so a callable one is refused.
+            return f"the subquery {qualifier}", _UNKNOWN if renamed is None else renamed
+        if isinstance(source, exp.Table) and isinstance(source.this, exp.Identifier):
+            relation = ".".join(
+                p for p in (_ident(source.args.get("db")), _ident(source.this)) if p
+            )
+            return relation, _renamed(self._columns.get(relation), _alias_columns(source))
+        return qualifier, None  # a function in FROM
+
+    def _output_columns(self, query: exp.Query, scope: Scope) -> tuple[str, ...] | None:
+        """The column names a query outputs, as PostgreSQL names them; None if unknown."""
+        while isinstance(query, exp.Subquery):
+            query = query.this
+        if isinstance(query, exp.SetOperation):
+            left = query.left
+            branch = next((s for s in scope.set_operation_scopes if s.expression is left), scope)
+            return self._output_columns(left, branch) if isinstance(left, exp.Query) else None
+        if not isinstance(query, exp.Select):
+            return None
+        names: list[str] = []
+        for projection in query.expressions:
+            if isinstance(projection, exp.Star) or (
+                isinstance(projection, exp.Column) and isinstance(projection.this, exp.Star)
+            ):
+                qualifier = _ident(projection.args.get("table")) if projection.args else None
+                expanded = self._expand_star(scope, qualifier)
+                if expanded is None:
+                    return None
+                names.extend(expanded)
+            else:
+                names.append(_output_name(projection))
+        return tuple(names)
+
+    def _expand_star(self, scope: Scope, qualifier: str | None) -> list[str] | None:
+        out: list[str] = []
+        for key, source in scope.selected_sources.items():
+            if qualifier is not None and _source_name(key, source[1]) != qualifier:
+                continue
+            _, names = self._source_columns(key, source[1])
+            if names is None or names is _UNKNOWN:
+                return None
+            out.extend(names)
+        return out
 
     # -- functions -----------------------------------------------------------------------
 
@@ -625,8 +870,10 @@ def _function_from_items(statement: exp.Expr) -> dict[str, set[str]]:
         for name in names:
             if name is None:
                 continue
-            if name in items:
+            if name in items and _enabled("alias_intersection"):
                 items[name] &= columns
+            elif name in items:
+                items[name] |= columns
             else:
                 items[name] = set(columns)
     return items
@@ -662,6 +909,77 @@ def _check_function_column(
         f"field_notation: {column.sql(dialect=DIALECT)} is not a column of the function"
         f" {qualifier} in FROM, so PostgreSQL calls {name}({qualifier})"
     )
+
+
+def _reference_name(scope: Scope, key: str, source: exp.Expr | Scope) -> str | None:
+    """The name ``source`` is referenced by in ``scope``, folded as PostgreSQL folds it.
+
+    A CTE is referenced by the alias its FROM item gives it (``FROM c AS m`` is ``m``),
+    not by the CTE's own name, so it is named from that table reference.
+    """
+    if isinstance(source, Scope) and source.is_cte:
+        for table in scope.tables:
+            if table.alias_or_name == key:
+                alias = table.args.get("alias")
+                if isinstance(alias, exp.TableAlias) and alias.this is not None:
+                    return _ident(alias.this)
+                return _ident(table.this)
+    return _source_name(key, source)
+
+
+def _source_name(key: str, source: exp.Expr | Scope) -> str | None:
+    """The name a FROM source is referenced by, folded as PostgreSQL folds it."""
+    node = source.expression.parent if isinstance(source, Scope) else source
+    if isinstance(source, Scope) and isinstance(source.expression, exp.Values | exp.Unnest):
+        node = source.expression
+    alias = node.args.get("alias") if node is not None else None
+    if isinstance(alias, exp.TableAlias) and alias.this is not None:
+        return _ident(alias.this)
+    if isinstance(node, exp.Table) and isinstance(node.this, exp.Identifier):
+        return _ident(node.this)
+    return key.lower()
+
+
+def _alias_columns(node: exp.Expr) -> tuple[str, ...]:
+    alias = node.args.get("alias")
+    if isinstance(alias, exp.TableAlias):
+        return tuple(n for n in (_ident(c) for c in alias.columns) if n is not None)
+    return ()
+
+
+def _renamed(names: tuple[str, ...] | None, alias: tuple[str, ...]) -> tuple[str, ...] | None:
+    """A source's columns after ``AS a(x, y)`` renames the first ones."""
+    if names is None:
+        return None
+    return alias + names[len(alias) :]
+
+
+def _callable(name: str) -> bool:
+    """Whether ``alias.name`` could resolve to a call when ``name`` is not a column."""
+    return name in ONE_ARGUMENT_FUNCTIONS or bool(_DENIED_FUNCTION.match(name))
+
+
+def _has_column(names: tuple[str, ...], name: str) -> bool:
+    """``name`` is a column; a catalog that recorded a different case still counts."""
+    return name in names or name.casefold() in {n.casefold() for n in names}
+
+
+def _output_name(projection: exp.Expr) -> str:
+    """The column name PostgreSQL gives a select-list entry (its FigureColname)."""
+    if isinstance(projection, exp.Alias):
+        return _ident(projection.args.get("alias")) or "?column?"
+    node = projection
+    while True:
+        if isinstance(node, exp.Column):
+            return _ident(node.this) or "?column?"
+        if isinstance(node, exp.Window | exp.Cast | exp.Paren):
+            node = node.this
+        elif isinstance(node, exp.Anonymous):
+            return _unknown_function_name(node) or "?column?"
+        elif isinstance(node, exp.Func):
+            return node.sql_name().lower()
+        else:
+            return "?column?"
 
 
 def _literal_int(node: exp.Expr | None) -> int | None:

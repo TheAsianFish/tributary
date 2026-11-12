@@ -23,8 +23,9 @@ from tests.unit.agent_doubles import (
     result,
 )
 from tributary.agent.catalog import Catalog
-from tributary.agent.execute import ExecutionError
-from tributary.agent.service import CatalogSource, Limits, StaticCatalog
+from tributary.agent.execute import ExecutionError, PostgresExecutor
+from tributary.agent.service import CatalogSource, Limits, StaticCatalog, build_agent
+from tributary.config import Settings
 
 GOOD = "SELECT count(*) AS edits FROM marts.fct_edits"
 GOOD_RAN = "SELECT COUNT(*) AS edits FROM marts.fct_edits LIMIT 1000"
@@ -114,6 +115,13 @@ def test_sql_failed_keeps_the_rewritten_sql() -> None:
     assert answer.status == "failed"
     assert answer.sql == GOOD_RAN
     assert answer.text == error.feedback()
+
+
+def test_build_agent_passes_the_result_byte_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TRIBUTARY_AGENT_MAX_RESULT_BYTES", "4096")
+    agent = build_agent(Settings(_env_file=None), provider=ScriptedProvider([]))
+    assert isinstance(agent.executor, PostgresExecutor)
+    assert agent.executor.max_result_bytes == 4096
 
 
 def test_freshness_covers_every_table() -> None:

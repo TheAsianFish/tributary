@@ -1,0 +1,218 @@
+{
+  "by_group": {
+    "cte": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "field": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:as_cte": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 52480,
+      "refused_by_postgres": 40,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:as_subquery": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 52480,
+      "refused_by_postgres": 40,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:identity": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 40,
+      "refused_by_postgres": 0,
+      "resolved": 40,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "gold:outer_alias": {
+      "admitted": 48,
+      "flagged": 0,
+      "generated": 62976,
+      "refused_by_postgres": 48,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_alias": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_name": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias_mart": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "scalar_from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "subquery": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "values": {
+      "admitted": 4,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 4,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "by_position": {
+    "filter": {
+      "admitted": 6,
+      "flagged": 0,
+      "generated": 13120,
+      "refused_by_postgres": 6,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "order_by": {
+      "admitted": 6,
+      "flagged": 0,
+      "generated": 13120,
+      "refused_by_postgres": 6,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "query": {
+      "admitted": 40,
+      "flagged": 0,
+      "generated": 40,
+      "refused_by_postgres": 0,
+      "resolved": 40,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "select": {
+      "admitted": 86,
+      "flagged": 0,
+      "generated": 118080,
+      "refused_by_postgres": 86,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "where": {
+      "admitted": 54,
+      "flagged": 0,
+      "generated": 76096,
+      "refused_by_postgres": 54,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "commit": "673503e",
+  "disabled_fixes": [],
+  "functions": 1312,
+  "label": "after",
+  "reachable": {},
+  "reachable_by_volatility": {},
+  "refused_by_postgres_sqlstates": {
+    "42703": 152
+  },
+  "resolved_node_types": {
+    "AGGREF": 83,
+    "ALIAS": 156,
+    "BOOLEXPR": 17,
+    "COALESCEEXPR": 2,
+    "CONST": 89,
+    "FROMEXPR": 82,
+    "FUNCEXPR": 47,
+    "JOINEXPR": 8,
+    "NULLTEST": 1,
+    "OPEXPR": 56,
+    "QUERY": 82,
+    "RANGETBLENTRY": 98,
+    "RANGETBLREF": 90,
+    "RTEPERMISSIONINFO": 48,
+    "SORTGROUPCLAUSE": 26,
+    "TARGETENTRY": 117,
+    "VAR": 312,
+    "WINDOWCLAUSE": 2,
+    "WINDOWFUNC": 2
+  },
+  "seconds": 129.4,
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "total": {
+    "admitted": 192,
+    "flagged": 0,
+    "generated": 220456,
+    "refused_by_postgres": 152,
+    "resolved": 40,
+    "with_io_cast": 0,
+    "with_literal_cast": 0
+  }
+}

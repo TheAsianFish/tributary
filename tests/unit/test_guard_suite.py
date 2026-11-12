@@ -17,7 +17,9 @@ SUITE = ge.load_unsafe(ge.UNSAFE_PATH)
 
 @pytest.fixture
 def guard() -> Guard:
-    return Guard(ge.catalog_relations())
+    from tributary.agent.catalog import load_dbt
+
+    return Guard.for_catalog(load_dbt(ge.CATALOG_PATH))
 
 
 def test_suite_is_large_ids_unique_and_categories_valid() -> None:

@@ -540,3 +540,56 @@ unsafe:
     category: encoding
     sql: SELECT 1 OPERATOR(public.+) 1
     why: an operator is a function call, and OPERATOR() reaches one in any schema.
+  # -- column notation on a relation, a subquery, a CTE or VALUES (found by the
+  # differential oracle, eval/guard/differential.py): w.f is f(w) on the whole row -----
+  - id: relation-alias-pg-typeof
+    category: dangerous_function
+    sql: SELECT w.pg_typeof FROM marts.dim_wiki AS w
+    why: pg_typeof(w), a denied function written as a column of a mart.
+  - id: relation-name-column-size
+    category: system_catalog
+    sql: SELECT fct_edits.pg_column_size FROM marts.fct_edits
+    why: pg_column_size of every row, storage reconnaissance through the relation's own name.
+  - id: subquery-alias-quote-literal
+    category: dangerous_function
+    sql: SELECT s.quote_literal FROM (SELECT wiki, edits FROM marts.dim_wiki) AS s
+    why: quote_literal(s) on a derived table's row, a function off the allowlist.
+  - id: cte-alias-record-send
+    category: dangerous_function
+    sql: WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT c.record_send FROM c
+    why: record_send(c), the binary output function of a CTE's row.
+  - id: values-alias-toast-chunk
+    category: system_catalog
+    sql: SELECT v.pg_column_toast_chunk_id FROM (VALUES (1, 'a')) AS v(n, t)
+    why: pg_column_toast_chunk_id(v) on a VALUES row.
+  - id: relation-alias-in-filter
+    category: system_catalog
+    sql: SELECT count(*) FILTER (WHERE w.pg_column_compression IS NOT NULL) FROM marts.dim_wiki AS w
+    why: the same spelling in an aggregate's FILTER, where nothing reads like a call.
+  - id: relation-alias-aggregate
+    category: dangerous_function
+    sql: SELECT w.jsonb_agg_strict FROM marts.dim_wiki AS w
+    why: field notation reaches an aggregate too; jsonb_agg_strict(w) is off the allowlist.
+  - id: relation-alias-rebound-in-lateral
+    category: dangerous_function
+    sql: |
+      SELECT 1 FROM marts.dim_wiki AS w
+      CROSS JOIN LATERAL (SELECT 1 AS one FROM (SELECT 1 AS pg_typeof) AS w) AS n
+      WHERE w.pg_typeof IS NOT NULL
+    why: an inner w with a column pg_typeof must not vouch for the outer w, the mart.
+  - id: cte-reference-alias-pg-typeof
+    category: dangerous_function
+    sql: WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT m.pg_typeof FROM c AS m
+    why: a CTE referenced under an alias; m binds to the reference, not the CTE's name.
+  - id: lateral-alias-pg-typeof
+    category: dangerous_function
+    sql: SELECT l.pg_typeof FROM marts.dim_wiki AS w, LATERAL (SELECT w.wiki) AS l
+    why: pg_typeof(l) on a LATERAL subquery's row, a source sqlglot's scopes do not name.
+  - id: join-alias-pg-typeof
+    category: dangerous_function
+    sql: SELECT j.pg_typeof FROM (marts.dim_wiki JOIN marts.fct_edits USING (wiki)) AS j
+    why: pg_typeof(j) on a parenthesised join's alias.
+  - id: join-on-subquery-pg-typeof
+    category: dangerous_function
+    sql: SELECT 1 FROM marts.dim_wiki AS a JOIN marts.dim_wiki AS b ON (SELECT b.pg_typeof IS NOT NULL)
+    why: a subquery in JOIN ... ON, whose columns no sqlglot scope lists.

@@ -7,6 +7,37 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A differential oracle for the guard (M9).** `make eval-guard-diff` crosses
+  every one-argument function in `pg_proc` with committed spelling templates
+  and the 40 gold queries, and asks PostgreSQL, without running anything, which
+  functions each admitted statement resolves to (a rolled-back temporary view
+  and `pg_rewrite.ev_action`), judged against the guard's own policy. A
+  dispatch-only workflow runs it.
+- **A result byte cap.** `TRIBUTARY_AGENT_MAX_RESULT_BYTES` (8 MiB): PostgreSQL
+  measures the values it is about to send and fails the query past the cap,
+  reported as the repairable error `too_large`, before the client holds a
+  byte of it.
+
+### Fixed
+
+- **The guard admitted calls written as a column of a relation.** PostgreSQL
+  reads `w.f` as `f(w)` when `f` is not a column; over a mart, a subquery, a
+  CTE or `VALUES`, 17 functions outside the policy were reachable this way
+  (`pg_typeof`, `pg_column_size`, `quote_literal`, `record_send` and others,
+  none volatile). The guard now knows each relation's columns and refuses a
+  qualified name that is not a column but is a function PostgreSQL could
+  call. A source whose columns it cannot name (a `LATERAL` subquery, a
+  parenthesised join's alias, a qualifier no scope binds) fails closed, and a
+  CTE is bound by the alias it is referenced under. Twelve statements were
+  added to the unsafe suite.
+- **A `char(n)` value's padding escaped the byte cap.** Its cast to `text`
+  drops the trailing spaces the server still sends; it is now measured as it
+  is.
+- `test_marts_from_information_schema` skips with the reason when the marts
+  are not built.
+
 ## [0.1.0] - 2026-11-11
 
 The first release: the pipeline, the warehouse and lake, the guarded agent, its

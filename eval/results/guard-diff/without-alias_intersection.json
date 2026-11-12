@@ -1,0 +1,3738 @@
+{
+  "by_group": {
+    "cte": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "field": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_alias": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_name": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias": {
+      "admitted": 5248,
+      "flagged": 1384,
+      "generated": 5248,
+      "refused_by_postgres": 3286,
+      "resolved": 1962,
+      "with_io_cast": 48,
+      "with_literal_cast": 0
+    },
+    "reused_alias_mart": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "scalar_from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "subquery": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "values": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "by_position": {
+    "filter": {
+      "admitted": 9184,
+      "flagged": 443,
+      "generated": 13120,
+      "refused_by_postgres": 8593,
+      "resolved": 591,
+      "with_io_cast": 12,
+      "with_literal_cast": 0
+    },
+    "order_by": {
+      "admitted": 9184,
+      "flagged": 465,
+      "generated": 13120,
+      "refused_by_postgres": 8422,
+      "resolved": 762,
+      "with_io_cast": 12,
+      "with_literal_cast": 0
+    },
+    "select": {
+      "admitted": 9184,
+      "flagged": 465,
+      "generated": 13120,
+      "refused_by_postgres": 8422,
+      "resolved": 762,
+      "with_io_cast": 12,
+      "with_literal_cast": 0
+    },
+    "where": {
+      "admitted": 9184,
+      "flagged": 443,
+      "generated": 13120,
+      "refused_by_postgres": 8593,
+      "resolved": 591,
+      "with_io_cast": 12,
+      "with_literal_cast": 0
+    }
+  },
+  "commit": "a78c6dd",
+  "disabled_fixes": [
+    "alias_intersection"
+  ],
+  "functions": 1312,
+  "label": "without-alias_intersection",
+  "reachable": {
+    "pg_catalog.acosd": {
+      "example": "SELECT p.acosd AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(acosd)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.amvalidate": {
+      "example": "SELECT p.amvalidate AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(amvalidate)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.any_out": {
+      "example": "SELECT w.any_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatible_out": {
+      "example": "SELECT w.anycompatible_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatiblenonarray_out": {
+      "example": "SELECT w.anycompatiblenonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anyelement_out": {
+      "example": "SELECT w.anyelement_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.anynonarray_out": {
+      "example": "SELECT w.anynonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.asind": {
+      "example": "SELECT p.asind AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(asind)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.atand": {
+      "example": "SELECT p.atand AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(atand)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.binary_upgrade_set_next_array_pg_type_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_array_pg_type_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_array_pg_type_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_heap_pg_class_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_heap_pg_class_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_heap_pg_class_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_heap_relfilenode": {
+      "example": "SELECT p.binary_upgrade_set_next_heap_relfilenode AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_heap_relfilenode)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_index_pg_class_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_index_pg_class_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_index_pg_class_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_index_relfilenode": {
+      "example": "SELECT p.binary_upgrade_set_next_index_relfilenode AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_index_relfilenode)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_multirange_array_pg_type_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_multirange_array_pg_type_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_multirange_array_pg_type_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_multirange_pg_type_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_multirange_pg_type_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_multirange_pg_type_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_authid_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_pg_authid_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_pg_authid_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_enum_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_pg_enum_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_pg_enum_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_tablespace_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_pg_tablespace_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_pg_tablespace_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_pg_type_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_pg_type_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_pg_type_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_toast_pg_class_oid": {
+      "example": "SELECT p.binary_upgrade_set_next_toast_pg_class_oid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_toast_pg_class_oid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.binary_upgrade_set_next_toast_relfilenode": {
+      "example": "SELECT p.binary_upgrade_set_next_toast_relfilenode AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(binary_upgrade_set_next_toast_relfilenode)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.bittypmodout": {
+      "example": "SELECT p.bittypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(bittypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.bool": {
+      "example": "SELECT p.bool AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(bool)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.bpchartypmodout": {
+      "example": "SELECT p.bpchartypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(bpchartypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.brin_summarize_new_values": {
+      "example": "SELECT p.brin_summarize_new_values AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(brin_summarize_new_values)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.btequalimage": {
+      "example": "SELECT p.btequalimage AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(btequalimage)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.btvarstrequalimage": {
+      "example": "SELECT p.btvarstrequalimage AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(btvarstrequalimage)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.cosd": {
+      "example": "SELECT p.cosd AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(cosd)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.cotd": {
+      "example": "SELECT p.cotd AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(cotd)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.currval": {
+      "example": "SELECT p.currval AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(currval)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.dcbrt": {
+      "example": "SELECT p.dcbrt AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dcbrt)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dexp": {
+      "example": "SELECT p.dexp AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dexp)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dlog1": {
+      "example": "SELECT p.dlog1 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dlog1)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dlog10": {
+      "example": "SELECT p.dlog10 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dlog10)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dround": {
+      "example": "SELECT p.dround AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dround)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dsqrt": {
+      "example": "SELECT p.dsqrt AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dsqrt)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.dtrunc": {
+      "example": "SELECT p.dtrunc AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(dtrunc)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.erf": {
+      "example": "SELECT p.erf AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(erf)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.erfc": {
+      "example": "SELECT p.erfc AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(erfc)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4": {
+      "example": "SELECT p.float4 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.float4abs": {
+      "example": "SELECT p.float4abs AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4abs)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4out": {
+      "example": "SELECT p.float4out AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4out)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4send": {
+      "example": "SELECT p.float4send AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4send)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4um": {
+      "example": "SELECT p.float4um AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4um)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float4up": {
+      "example": "SELECT p.float4up AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float4up)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8": {
+      "example": "SELECT p.float8 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.float8abs": {
+      "example": "SELECT p.float8abs AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8abs)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8out": {
+      "example": "SELECT p.float8out AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8out)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8send": {
+      "example": "SELECT p.float8send AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8send)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8um": {
+      "example": "SELECT p.float8um AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8um)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.float8up": {
+      "example": "SELECT p.float8up AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(float8up)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.fmgr_c_validator": {
+      "example": "SELECT p.fmgr_c_validator AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(fmgr_c_validator)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.fmgr_internal_validator": {
+      "example": "SELECT p.fmgr_internal_validator AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(fmgr_internal_validator)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.fmgr_sql_validator": {
+      "example": "SELECT p.fmgr_sql_validator AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(fmgr_sql_validator)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.gin_clean_pending_list": {
+      "example": "SELECT p.gin_clean_pending_list AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(gin_clean_pending_list)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.hash_numeric": {
+      "example": "SELECT p.hash_numeric AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hash_numeric)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hash_record": {
+      "example": "SELECT w.hash_record AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.hashfloat4": {
+      "example": "SELECT p.hashfloat4 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hashfloat4)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashfloat8": {
+      "example": "SELECT p.hashfloat8 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hashfloat8)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashint4": {
+      "example": "SELECT p.hashint4 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hashint4)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashint8": {
+      "example": "SELECT p.hashint8 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hashint8)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.hashoid": {
+      "example": "SELECT p.hashoid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(hashoid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int2": {
+      "example": "SELECT p.int2 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int2)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 24
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.int4abs": {
+      "example": "SELECT p.int4abs AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4abs)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4inc": {
+      "example": "SELECT p.int4inc AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4inc)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4not": {
+      "example": "SELECT p.int4not AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4not)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4out": {
+      "example": "SELECT p.int4out AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4out)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4send": {
+      "example": "SELECT p.int4send AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4send)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4um": {
+      "example": "SELECT p.int4um AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4um)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int4up": {
+      "example": "SELECT p.int4up AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int4up)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8": {
+      "example": "SELECT p.int8 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 32
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 32,
+      "volatility": "i"
+    },
+    "pg_catalog.int8abs": {
+      "example": "SELECT p.int8abs AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8abs)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8dec": {
+      "example": "SELECT p.int8dec AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8dec)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8inc": {
+      "example": "SELECT p.int8inc AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8inc)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8not": {
+      "example": "SELECT p.int8not AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8not)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8out": {
+      "example": "SELECT p.int8out AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8out)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8send": {
+      "example": "SELECT p.int8send AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8send)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8um": {
+      "example": "SELECT p.int8um AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8um)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.int8up": {
+      "example": "SELECT p.int8up AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(int8up)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.intervaltypmodout": {
+      "example": "SELECT p.intervaltypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(intervaltypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.json_agg_strict": {
+      "example": "SELECT w.json_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 14,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_agg_strict": {
+      "example": "SELECT w.jsonb_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 14,
+      "volatility": "s"
+    },
+    "pg_catalog.lo_close": {
+      "example": "SELECT p.lo_close AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_close)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_creat": {
+      "example": "SELECT p.lo_creat AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_creat)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_create": {
+      "example": "SELECT p.lo_create AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_create)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_get": {
+      "example": "SELECT p.lo_get AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_get)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_tell": {
+      "example": "SELECT p.lo_tell AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_tell)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_tell64": {
+      "example": "SELECT p.lo_tell64 AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_tell64)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.lo_unlink": {
+      "example": "SELECT p.lo_unlink AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(lo_unlink)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.min_scale": {
+      "example": "SELECT p.min_scale AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(min_scale)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.money": {
+      "example": "SELECT p.money AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(money)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 12
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 12,
+      "volatility": "s"
+    },
+    "pg_catalog.nextval": {
+      "example": "SELECT p.nextval AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(nextval)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.numeric": {
+      "example": "SELECT p.\"numeric\" AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(\"numeric\")) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 28
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 28,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_abs": {
+      "example": "SELECT p.numeric_abs AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_abs)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_exp": {
+      "example": "SELECT p.numeric_exp AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_exp)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_inc": {
+      "example": "SELECT p.numeric_inc AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_inc)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_ln": {
+      "example": "SELECT p.numeric_ln AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_ln)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_out": {
+      "example": "SELECT p.numeric_out AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_out)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_send": {
+      "example": "SELECT p.numeric_send AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_send)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_sqrt": {
+      "example": "SELECT p.numeric_sqrt AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_sqrt)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_uminus": {
+      "example": "SELECT p.numeric_uminus AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_uminus)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numeric_uplus": {
+      "example": "SELECT p.numeric_uplus AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numeric_uplus)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.numerictypmodout": {
+      "example": "SELECT p.numerictypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(numerictypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.obj_description": {
+      "example": "SELECT p.obj_description AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(obj_description)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.oidout": {
+      "example": "SELECT p.oidout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(oidout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.oidsend": {
+      "example": "SELECT p.oidsend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(oidsend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_advisory_lock": {
+      "example": "SELECT p.pg_advisory_lock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_lock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_lock_shared": {
+      "example": "SELECT p.pg_advisory_lock_shared AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_lock_shared)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_unlock": {
+      "example": "SELECT p.pg_advisory_unlock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_unlock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_unlock_shared": {
+      "example": "SELECT p.pg_advisory_unlock_shared AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_unlock_shared)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_xact_lock": {
+      "example": "SELECT p.pg_advisory_xact_lock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_xact_lock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_advisory_xact_lock_shared": {
+      "example": "SELECT p.pg_advisory_xact_lock_shared AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_advisory_xact_lock_shared)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_basetype": {
+      "example": "SELECT p.pg_basetype AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_basetype)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_blocking_pids": {
+      "example": "SELECT p.pg_blocking_pids AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_blocking_pids)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_cancel_backend": {
+      "example": "SELECT p.pg_cancel_backend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_cancel_backend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_collation_actual_version": {
+      "example": "SELECT p.pg_collation_actual_version AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_collation_actual_version)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_collation_for": {
+      "example": "SELECT w.pg_collation_for AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_collation_is_visible": {
+      "example": "SELECT p.pg_collation_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_collation_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_compression": {
+      "example": "SELECT w.pg_column_compression AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_size": {
+      "example": "SELECT w.pg_column_size AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_toast_chunk_id": {
+      "example": "SELECT w.pg_column_toast_chunk_id AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_conversion_is_visible": {
+      "example": "SELECT p.pg_conversion_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_conversion_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_database_collation_actual_version": {
+      "example": "SELECT p.pg_database_collation_actual_version AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_database_collation_actual_version)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_database_size": {
+      "example": "SELECT p.pg_database_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_database_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_encoding_max_length": {
+      "example": "SELECT p.pg_encoding_max_length AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_encoding_max_length)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_encoding_to_char": {
+      "example": "SELECT p.pg_encoding_to_char AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_encoding_to_char)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_function_is_visible": {
+      "example": "SELECT p.pg_function_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_function_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_constraintdef": {
+      "example": "SELECT p.pg_get_constraintdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_constraintdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_arguments": {
+      "example": "SELECT p.pg_get_function_arguments AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_function_arguments)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_identity_arguments": {
+      "example": "SELECT p.pg_get_function_identity_arguments AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_function_identity_arguments)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_result": {
+      "example": "SELECT p.pg_get_function_result AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_function_result)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_function_sqlbody": {
+      "example": "SELECT p.pg_get_function_sqlbody AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_function_sqlbody)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_functiondef": {
+      "example": "SELECT p.pg_get_functiondef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_functiondef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_indexdef": {
+      "example": "SELECT p.pg_get_indexdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_indexdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_partition_constraintdef": {
+      "example": "SELECT p.pg_get_partition_constraintdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_partition_constraintdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_partkeydef": {
+      "example": "SELECT p.pg_get_partkeydef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_partkeydef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_replica_identity_index": {
+      "example": "SELECT p.pg_get_replica_identity_index AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_replica_identity_index)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_ruledef": {
+      "example": "SELECT p.pg_get_ruledef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_ruledef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef": {
+      "example": "SELECT p.pg_get_statisticsobjdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_statisticsobjdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef_columns": {
+      "example": "SELECT p.pg_get_statisticsobjdef_columns AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_statisticsobjdef_columns)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_statisticsobjdef_expressions": {
+      "example": "SELECT p.pg_get_statisticsobjdef_expressions AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_statisticsobjdef_expressions)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_triggerdef": {
+      "example": "SELECT p.pg_get_triggerdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_triggerdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_userbyid": {
+      "example": "SELECT p.pg_get_userbyid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_userbyid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_get_viewdef": {
+      "example": "SELECT p.pg_get_viewdef AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_get_viewdef)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_import_system_collations": {
+      "example": "SELECT p.pg_import_system_collations AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_import_system_collations)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_indexes_size": {
+      "example": "SELECT p.pg_indexes_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_indexes_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_is_other_temp_schema": {
+      "example": "SELECT p.pg_is_other_temp_schema AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_is_other_temp_schema)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_log_backend_memory_contexts": {
+      "example": "SELECT p.pg_log_backend_memory_contexts AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_log_backend_memory_contexts)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ls_tmpdir": {
+      "example": "SELECT p.pg_ls_tmpdir AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_ls_tmpdir)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_lsn": {
+      "example": "SELECT p.pg_lsn AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_lsn)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_opclass_is_visible": {
+      "example": "SELECT p.pg_opclass_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_opclass_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_operator_is_visible": {
+      "example": "SELECT p.pg_operator_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_operator_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_opfamily_is_visible": {
+      "example": "SELECT p.pg_opfamily_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_opfamily_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_partition_ancestors": {
+      "example": "SELECT p.pg_partition_ancestors AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_partition_ancestors)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_partition_root": {
+      "example": "SELECT p.pg_partition_root AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_partition_root)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.pg_partition_tree": {
+      "example": "SELECT p.pg_partition_tree AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_partition_tree)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_relation_filenode": {
+      "example": "SELECT p.pg_relation_filenode AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_relation_filenode)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_filepath": {
+      "example": "SELECT p.pg_relation_filepath AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_relation_filepath)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_is_publishable": {
+      "example": "SELECT p.pg_relation_is_publishable AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_relation_is_publishable)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_relation_size": {
+      "example": "SELECT p.pg_relation_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_relation_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_safe_snapshot_blocking_pids": {
+      "example": "SELECT p.pg_safe_snapshot_blocking_pids AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_safe_snapshot_blocking_pids)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sequence_last_value": {
+      "example": "SELECT p.pg_sequence_last_value AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_sequence_last_value)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_sequence_parameters": {
+      "example": "SELECT p.pg_sequence_parameters AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_sequence_parameters)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_sleep": {
+      "example": "SELECT p.pg_sleep AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_sleep)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_activity": {
+      "example": "SELECT p.pg_stat_get_activity AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_activity)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_analyze_count": {
+      "example": "SELECT p.pg_stat_get_analyze_count AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_analyze_count)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_autoanalyze_count": {
+      "example": "SELECT p.pg_stat_get_autoanalyze_count AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_autoanalyze_count)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_autovacuum_count": {
+      "example": "SELECT p.pg_stat_get_autovacuum_count AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_autovacuum_count)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_activity": {
+      "example": "SELECT p.pg_stat_get_backend_activity AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_activity)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_activity_start": {
+      "example": "SELECT p.pg_stat_get_backend_activity_start AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_activity_start)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_client_addr": {
+      "example": "SELECT p.pg_stat_get_backend_client_addr AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_client_addr)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_client_port": {
+      "example": "SELECT p.pg_stat_get_backend_client_port AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_client_port)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_dbid": {
+      "example": "SELECT p.pg_stat_get_backend_dbid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_dbid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_pid": {
+      "example": "SELECT p.pg_stat_get_backend_pid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_pid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_start": {
+      "example": "SELECT p.pg_stat_get_backend_start AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_start)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_subxact": {
+      "example": "SELECT p.pg_stat_get_backend_subxact AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_subxact)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_userid": {
+      "example": "SELECT p.pg_stat_get_backend_userid AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_userid)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_wait_event": {
+      "example": "SELECT p.pg_stat_get_backend_wait_event AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_wait_event)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_wait_event_type": {
+      "example": "SELECT p.pg_stat_get_backend_wait_event_type AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_wait_event_type)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_backend_xact_start": {
+      "example": "SELECT p.pg_stat_get_backend_xact_start AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_backend_xact_start)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_blocks_fetched": {
+      "example": "SELECT p.pg_stat_get_blocks_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_blocks_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_blocks_hit": {
+      "example": "SELECT p.pg_stat_get_blocks_hit AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_blocks_hit)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_active_time": {
+      "example": "SELECT p.pg_stat_get_db_active_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_active_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blk_read_time": {
+      "example": "SELECT p.pg_stat_get_db_blk_read_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_blk_read_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blk_write_time": {
+      "example": "SELECT p.pg_stat_get_db_blk_write_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_blk_write_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blocks_fetched": {
+      "example": "SELECT p.pg_stat_get_db_blocks_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_blocks_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_blocks_hit": {
+      "example": "SELECT p.pg_stat_get_db_blocks_hit AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_blocks_hit)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_checksum_failures": {
+      "example": "SELECT p.pg_stat_get_db_checksum_failures AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_checksum_failures)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_checksum_last_failure": {
+      "example": "SELECT p.pg_stat_get_db_checksum_last_failure AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_checksum_last_failure)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_all": {
+      "example": "SELECT p.pg_stat_get_db_conflict_all AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_all)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_bufferpin": {
+      "example": "SELECT p.pg_stat_get_db_conflict_bufferpin AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_bufferpin)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_lock": {
+      "example": "SELECT p.pg_stat_get_db_conflict_lock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_lock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_logicalslot": {
+      "example": "SELECT p.pg_stat_get_db_conflict_logicalslot AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_logicalslot)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_snapshot": {
+      "example": "SELECT p.pg_stat_get_db_conflict_snapshot AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_snapshot)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_startup_deadlock": {
+      "example": "SELECT p.pg_stat_get_db_conflict_startup_deadlock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_startup_deadlock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_conflict_tablespace": {
+      "example": "SELECT p.pg_stat_get_db_conflict_tablespace AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_conflict_tablespace)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_deadlocks": {
+      "example": "SELECT p.pg_stat_get_db_deadlocks AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_deadlocks)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_idle_in_transaction_time": {
+      "example": "SELECT p.pg_stat_get_db_idle_in_transaction_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_idle_in_transaction_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_numbackends": {
+      "example": "SELECT p.pg_stat_get_db_numbackends AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_numbackends)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_session_time": {
+      "example": "SELECT p.pg_stat_get_db_session_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_session_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions": {
+      "example": "SELECT p.pg_stat_get_db_sessions AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_sessions)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_abandoned": {
+      "example": "SELECT p.pg_stat_get_db_sessions_abandoned AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_sessions_abandoned)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_fatal": {
+      "example": "SELECT p.pg_stat_get_db_sessions_fatal AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_sessions_fatal)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_sessions_killed": {
+      "example": "SELECT p.pg_stat_get_db_sessions_killed AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_sessions_killed)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_stat_reset_time": {
+      "example": "SELECT p.pg_stat_get_db_stat_reset_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_stat_reset_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_temp_bytes": {
+      "example": "SELECT p.pg_stat_get_db_temp_bytes AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_temp_bytes)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_temp_files": {
+      "example": "SELECT p.pg_stat_get_db_temp_files AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_temp_files)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_deleted": {
+      "example": "SELECT p.pg_stat_get_db_tuples_deleted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_tuples_deleted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_fetched": {
+      "example": "SELECT p.pg_stat_get_db_tuples_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_tuples_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_inserted": {
+      "example": "SELECT p.pg_stat_get_db_tuples_inserted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_tuples_inserted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_returned": {
+      "example": "SELECT p.pg_stat_get_db_tuples_returned AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_tuples_returned)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_tuples_updated": {
+      "example": "SELECT p.pg_stat_get_db_tuples_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_tuples_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_xact_commit": {
+      "example": "SELECT p.pg_stat_get_db_xact_commit AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_xact_commit)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_db_xact_rollback": {
+      "example": "SELECT p.pg_stat_get_db_xact_rollback AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_db_xact_rollback)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_dead_tuples": {
+      "example": "SELECT p.pg_stat_get_dead_tuples AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_dead_tuples)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_calls": {
+      "example": "SELECT p.pg_stat_get_function_calls AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_function_calls)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_self_time": {
+      "example": "SELECT p.pg_stat_get_function_self_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_function_self_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_function_total_time": {
+      "example": "SELECT p.pg_stat_get_function_total_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_function_total_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_ins_since_vacuum": {
+      "example": "SELECT p.pg_stat_get_ins_since_vacuum AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_ins_since_vacuum)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_analyze_time": {
+      "example": "SELECT p.pg_stat_get_last_analyze_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_last_analyze_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_autoanalyze_time": {
+      "example": "SELECT p.pg_stat_get_last_autoanalyze_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_last_autoanalyze_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_autovacuum_time": {
+      "example": "SELECT p.pg_stat_get_last_autovacuum_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_last_autovacuum_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_last_vacuum_time": {
+      "example": "SELECT p.pg_stat_get_last_vacuum_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_last_vacuum_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_lastscan": {
+      "example": "SELECT p.pg_stat_get_lastscan AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_lastscan)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_live_tuples": {
+      "example": "SELECT p.pg_stat_get_live_tuples AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_live_tuples)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_mod_since_analyze": {
+      "example": "SELECT p.pg_stat_get_mod_since_analyze AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_mod_since_analyze)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_numscans": {
+      "example": "SELECT p.pg_stat_get_numscans AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_numscans)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_subscription": {
+      "example": "SELECT p.pg_stat_get_subscription AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_subscription)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_subscription_stats": {
+      "example": "SELECT p.pg_stat_get_subscription_stats AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_subscription_stats)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_deleted": {
+      "example": "SELECT p.pg_stat_get_tuples_deleted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_deleted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_fetched": {
+      "example": "SELECT p.pg_stat_get_tuples_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_hot_updated": {
+      "example": "SELECT p.pg_stat_get_tuples_hot_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_hot_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_inserted": {
+      "example": "SELECT p.pg_stat_get_tuples_inserted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_inserted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_newpage_updated": {
+      "example": "SELECT p.pg_stat_get_tuples_newpage_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_newpage_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_returned": {
+      "example": "SELECT p.pg_stat_get_tuples_returned AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_returned)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_tuples_updated": {
+      "example": "SELECT p.pg_stat_get_tuples_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_tuples_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_vacuum_count": {
+      "example": "SELECT p.pg_stat_get_vacuum_count AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_vacuum_count)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_stat_get_xact_blocks_fetched": {
+      "example": "SELECT p.pg_stat_get_xact_blocks_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_blocks_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_blocks_hit": {
+      "example": "SELECT p.pg_stat_get_xact_blocks_hit AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_blocks_hit)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_calls": {
+      "example": "SELECT p.pg_stat_get_xact_function_calls AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_function_calls)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_self_time": {
+      "example": "SELECT p.pg_stat_get_xact_function_self_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_function_self_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_function_total_time": {
+      "example": "SELECT p.pg_stat_get_xact_function_total_time AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_function_total_time)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_numscans": {
+      "example": "SELECT p.pg_stat_get_xact_numscans AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_numscans)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_deleted": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_deleted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_deleted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_fetched": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_fetched AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_fetched)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_hot_updated": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_hot_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_hot_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_inserted": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_inserted AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_inserted)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_newpage_updated": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_newpage_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_newpage_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_returned": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_returned AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_returned)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_get_xact_tuples_updated": {
+      "example": "SELECT p.pg_stat_get_xact_tuples_updated AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_get_xact_tuples_updated)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_single_function_counters": {
+      "example": "SELECT p.pg_stat_reset_single_function_counters AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_reset_single_function_counters)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_single_table_counters": {
+      "example": "SELECT p.pg_stat_reset_single_table_counters AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_reset_single_table_counters)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_stat_reset_subscription_stats": {
+      "example": "SELECT p.pg_stat_reset_subscription_stats AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_stat_reset_subscription_stats)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_statistics_obj_is_visible": {
+      "example": "SELECT p.pg_statistics_obj_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_statistics_obj_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_table_is_visible": {
+      "example": "SELECT p.pg_table_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_table_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_table_size": {
+      "example": "SELECT p.pg_table_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_table_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_tablespace_databases": {
+      "example": "SELECT p.pg_tablespace_databases AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_tablespace_databases)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 2
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 2,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_tablespace_location": {
+      "example": "SELECT p.pg_tablespace_location AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_tablespace_location)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_tablespace_size": {
+      "example": "SELECT p.pg_tablespace_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_tablespace_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 8,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_terminate_backend": {
+      "example": "SELECT p.pg_terminate_backend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_terminate_backend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_total_relation_size": {
+      "example": "SELECT p.pg_total_relation_size AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_total_relation_size)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_lock": {
+      "example": "SELECT p.pg_try_advisory_lock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_try_advisory_lock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_lock_shared": {
+      "example": "SELECT p.pg_try_advisory_lock_shared AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_try_advisory_lock_shared)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_xact_lock": {
+      "example": "SELECT p.pg_try_advisory_xact_lock AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_try_advisory_xact_lock)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_try_advisory_xact_lock_shared": {
+      "example": "SELECT p.pg_try_advisory_xact_lock_shared AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_try_advisory_xact_lock_shared)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.pg_ts_config_is_visible": {
+      "example": "SELECT p.pg_ts_config_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_ts_config_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_dict_is_visible": {
+      "example": "SELECT p.pg_ts_dict_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_ts_dict_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_parser_is_visible": {
+      "example": "SELECT p.pg_ts_parser_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_ts_parser_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_ts_template_is_visible": {
+      "example": "SELECT p.pg_ts_template_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_ts_template_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_type_is_visible": {
+      "example": "SELECT p.pg_type_is_visible AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(pg_type_is_visible)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_typeof": {
+      "example": "SELECT w.pg_typeof AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 28,
+      "volatility": "s"
+    },
+    "pg_catalog.plpgsql_validator": {
+      "example": "SELECT p.plpgsql_validator AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(plpgsql_validator)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.quote_literal": {
+      "example": "SELECT w.quote_literal AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 56,
+      "volatility": "s"
+    },
+    "pg_catalog.quote_nullable": {
+      "example": "SELECT w.quote_nullable AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 56,
+      "volatility": "s"
+    },
+    "pg_catalog.random_normal": {
+      "example": "SELECT p.random_normal AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(random_normal)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.record_out": {
+      "example": "SELECT w.record_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.record_send": {
+      "example": "SELECT w.record_send AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.regclassout": {
+      "example": "SELECT p.regclassout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regclassout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regclasssend": {
+      "example": "SELECT p.regclasssend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regclasssend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regcollationout": {
+      "example": "SELECT p.regcollationout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regcollationout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regcollationsend": {
+      "example": "SELECT p.regcollationsend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regcollationsend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regconfigout": {
+      "example": "SELECT p.regconfigout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regconfigout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regconfigsend": {
+      "example": "SELECT p.regconfigsend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regconfigsend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regdictionaryout": {
+      "example": "SELECT p.regdictionaryout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regdictionaryout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regdictionarysend": {
+      "example": "SELECT p.regdictionarysend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regdictionarysend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regnamespaceout": {
+      "example": "SELECT p.regnamespaceout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regnamespaceout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regnamespacesend": {
+      "example": "SELECT p.regnamespacesend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regnamespacesend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regoperatorout": {
+      "example": "SELECT p.regoperatorout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regoperatorout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regoperatorsend": {
+      "example": "SELECT p.regoperatorsend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regoperatorsend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regoperout": {
+      "example": "SELECT p.regoperout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regoperout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regopersend": {
+      "example": "SELECT p.regopersend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regopersend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regprocedureout": {
+      "example": "SELECT p.regprocedureout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regprocedureout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regproceduresend": {
+      "example": "SELECT p.regproceduresend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regproceduresend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regprocout": {
+      "example": "SELECT p.regprocout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regprocout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regprocsend": {
+      "example": "SELECT p.regprocsend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regprocsend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regroleout": {
+      "example": "SELECT p.regroleout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regroleout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regrolesend": {
+      "example": "SELECT p.regrolesend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regrolesend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.regtypeout": {
+      "example": "SELECT p.regtypeout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regtypeout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "s"
+    },
+    "pg_catalog.regtypesend": {
+      "example": "SELECT p.regtypesend AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(regtypesend)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.row_security_active": {
+      "example": "SELECT p.row_security_active AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(row_security_active)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "s"
+    },
+    "pg_catalog.setseed": {
+      "example": "SELECT p.setseed AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(setseed)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.sind": {
+      "example": "SELECT p.sind AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(sind)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.tand": {
+      "example": "SELECT p.tand AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(tand)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamptypmodout": {
+      "example": "SELECT p.timestamptypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(timestamptypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timestamptztypmodout": {
+      "example": "SELECT p.timestamptztypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(timestamptztypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timetypmodout": {
+      "example": "SELECT p.timetypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(timetypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.timetztypmodout": {
+      "example": "SELECT p.timetztypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(timetztypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.to_bin": {
+      "example": "SELECT p.to_bin AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(to_bin)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.to_oct": {
+      "example": "SELECT p.to_oct AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(to_oct)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 8,
+      "volatility": "i"
+    },
+    "pg_catalog.ts_token_type": {
+      "example": "SELECT p.ts_token_type AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(ts_token_type)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.txid_status": {
+      "example": "SELECT p.txid_status AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(txid_status)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 4,
+      "volatility": "v"
+    },
+    "pg_catalog.varbittypmodout": {
+      "example": "SELECT p.varbittypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(varbittypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    },
+    "pg_catalog.varchartypmodout": {
+      "example": "SELECT p.varchartypmodout AS x FROM GENERATE_SERIES(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM GENERATE_SERIES(1, 1) AS p(varchartypmodout)) AS n LIMIT 1000",
+      "groups": {
+        "reused_alias": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 4,
+      "volatility": "i"
+    }
+  },
+  "reachable_by_volatility": {
+    "immutable": [
+      "pg_catalog.acosd",
+      "pg_catalog.any_out",
+      "pg_catalog.anycompatible_out",
+      "pg_catalog.anycompatiblenonarray_out",
+      "pg_catalog.anyelement_out",
+      "pg_catalog.anynonarray_out",
+      "pg_catalog.asind",
+      "pg_catalog.atand",
+      "pg_catalog.bittypmodout",
+      "pg_catalog.bool",
+      "pg_catalog.bpchartypmodout",
+      "pg_catalog.btequalimage",
+      "pg_catalog.btvarstrequalimage",
+      "pg_catalog.cosd",
+      "pg_catalog.cotd",
+      "pg_catalog.dcbrt",
+      "pg_catalog.dexp",
+      "pg_catalog.dlog1",
+      "pg_catalog.dlog10",
+      "pg_catalog.dround",
+      "pg_catalog.dsqrt",
+      "pg_catalog.dtrunc",
+      "pg_catalog.erf",
+      "pg_catalog.erfc",
+      "pg_catalog.float4",
+      "pg_catalog.float4abs",
+      "pg_catalog.float4out",
+      "pg_catalog.float4send",
+      "pg_catalog.float4um",
+      "pg_catalog.float4up",
+      "pg_catalog.float8",
+      "pg_catalog.float8abs",
+      "pg_catalog.float8out",
+      "pg_catalog.float8send",
+      "pg_catalog.float8um",
+      "pg_catalog.float8up",
+      "pg_catalog.hash_numeric",
+      "pg_catalog.hash_record",
+      "pg_catalog.hashfloat4",
+      "pg_catalog.hashfloat8",
+      "pg_catalog.hashint4",
+      "pg_catalog.hashint8",
+      "pg_catalog.hashoid",
+      "pg_catalog.int2",
+      "pg_catalog.int4abs",
+      "pg_catalog.int4inc",
+      "pg_catalog.int4not",
+      "pg_catalog.int4out",
+      "pg_catalog.int4send",
+      "pg_catalog.int4um",
+      "pg_catalog.int4up",
+      "pg_catalog.int8",
+      "pg_catalog.int8abs",
+      "pg_catalog.int8dec",
+      "pg_catalog.int8inc",
+      "pg_catalog.int8not",
+      "pg_catalog.int8out",
+      "pg_catalog.int8send",
+      "pg_catalog.int8um",
+      "pg_catalog.int8up",
+      "pg_catalog.intervaltypmodout",
+      "pg_catalog.min_scale",
+      "pg_catalog.numeric",
+      "pg_catalog.numeric_abs",
+      "pg_catalog.numeric_exp",
+      "pg_catalog.numeric_inc",
+      "pg_catalog.numeric_ln",
+      "pg_catalog.numeric_out",
+      "pg_catalog.numeric_send",
+      "pg_catalog.numeric_sqrt",
+      "pg_catalog.numeric_uminus",
+      "pg_catalog.numeric_uplus",
+      "pg_catalog.numerictypmodout",
+      "pg_catalog.oidout",
+      "pg_catalog.oidsend",
+      "pg_catalog.pg_encoding_max_length",
+      "pg_catalog.pg_lsn",
+      "pg_catalog.pg_partition_root",
+      "pg_catalog.regclasssend",
+      "pg_catalog.regcollationsend",
+      "pg_catalog.regconfigsend",
+      "pg_catalog.regdictionarysend",
+      "pg_catalog.regnamespacesend",
+      "pg_catalog.regoperatorsend",
+      "pg_catalog.regopersend",
+      "pg_catalog.regproceduresend",
+      "pg_catalog.regprocsend",
+      "pg_catalog.regrolesend",
+      "pg_catalog.regtypesend",
+      "pg_catalog.sind",
+      "pg_catalog.tand",
+      "pg_catalog.timestamptypmodout",
+      "pg_catalog.timestamptztypmodout",
+      "pg_catalog.timetypmodout",
+      "pg_catalog.timetztypmodout",
+      "pg_catalog.to_bin",
+      "pg_catalog.to_oct",
+      "pg_catalog.ts_token_type",
+      "pg_catalog.varbittypmodout",
+      "pg_catalog.varchartypmodout"
+    ],
+    "stable": [
+      "pg_catalog.fmgr_c_validator",
+      "pg_catalog.fmgr_internal_validator",
+      "pg_catalog.fmgr_sql_validator",
+      "pg_catalog.json_agg_strict",
+      "pg_catalog.jsonb_agg_strict",
+      "pg_catalog.money",
+      "pg_catalog.obj_description",
+      "pg_catalog.pg_basetype",
+      "pg_catalog.pg_collation_for",
+      "pg_catalog.pg_collation_is_visible",
+      "pg_catalog.pg_column_compression",
+      "pg_catalog.pg_column_size",
+      "pg_catalog.pg_column_toast_chunk_id",
+      "pg_catalog.pg_conversion_is_visible",
+      "pg_catalog.pg_encoding_to_char",
+      "pg_catalog.pg_function_is_visible",
+      "pg_catalog.pg_get_constraintdef",
+      "pg_catalog.pg_get_function_arguments",
+      "pg_catalog.pg_get_function_identity_arguments",
+      "pg_catalog.pg_get_function_result",
+      "pg_catalog.pg_get_function_sqlbody",
+      "pg_catalog.pg_get_functiondef",
+      "pg_catalog.pg_get_indexdef",
+      "pg_catalog.pg_get_partition_constraintdef",
+      "pg_catalog.pg_get_partkeydef",
+      "pg_catalog.pg_get_replica_identity_index",
+      "pg_catalog.pg_get_ruledef",
+      "pg_catalog.pg_get_statisticsobjdef",
+      "pg_catalog.pg_get_statisticsobjdef_columns",
+      "pg_catalog.pg_get_statisticsobjdef_expressions",
+      "pg_catalog.pg_get_triggerdef",
+      "pg_catalog.pg_get_userbyid",
+      "pg_catalog.pg_get_viewdef",
+      "pg_catalog.pg_is_other_temp_schema",
+      "pg_catalog.pg_opclass_is_visible",
+      "pg_catalog.pg_operator_is_visible",
+      "pg_catalog.pg_opfamily_is_visible",
+      "pg_catalog.pg_relation_filenode",
+      "pg_catalog.pg_relation_filepath",
+      "pg_catalog.pg_relation_is_publishable",
+      "pg_catalog.pg_sequence_parameters",
+      "pg_catalog.pg_stat_get_activity",
+      "pg_catalog.pg_stat_get_analyze_count",
+      "pg_catalog.pg_stat_get_autoanalyze_count",
+      "pg_catalog.pg_stat_get_autovacuum_count",
+      "pg_catalog.pg_stat_get_backend_activity",
+      "pg_catalog.pg_stat_get_backend_activity_start",
+      "pg_catalog.pg_stat_get_backend_client_addr",
+      "pg_catalog.pg_stat_get_backend_client_port",
+      "pg_catalog.pg_stat_get_backend_dbid",
+      "pg_catalog.pg_stat_get_backend_pid",
+      "pg_catalog.pg_stat_get_backend_start",
+      "pg_catalog.pg_stat_get_backend_subxact",
+      "pg_catalog.pg_stat_get_backend_userid",
+      "pg_catalog.pg_stat_get_backend_wait_event",
+      "pg_catalog.pg_stat_get_backend_wait_event_type",
+      "pg_catalog.pg_stat_get_backend_xact_start",
+      "pg_catalog.pg_stat_get_blocks_fetched",
+      "pg_catalog.pg_stat_get_blocks_hit",
+      "pg_catalog.pg_stat_get_db_active_time",
+      "pg_catalog.pg_stat_get_db_blk_read_time",
+      "pg_catalog.pg_stat_get_db_blk_write_time",
+      "pg_catalog.pg_stat_get_db_blocks_fetched",
+      "pg_catalog.pg_stat_get_db_blocks_hit",
+      "pg_catalog.pg_stat_get_db_checksum_failures",
+      "pg_catalog.pg_stat_get_db_checksum_last_failure",
+      "pg_catalog.pg_stat_get_db_conflict_all",
+      "pg_catalog.pg_stat_get_db_conflict_bufferpin",
+      "pg_catalog.pg_stat_get_db_conflict_lock",
+      "pg_catalog.pg_stat_get_db_conflict_logicalslot",
+      "pg_catalog.pg_stat_get_db_conflict_snapshot",
+      "pg_catalog.pg_stat_get_db_conflict_startup_deadlock",
+      "pg_catalog.pg_stat_get_db_conflict_tablespace",
+      "pg_catalog.pg_stat_get_db_deadlocks",
+      "pg_catalog.pg_stat_get_db_idle_in_transaction_time",
+      "pg_catalog.pg_stat_get_db_numbackends",
+      "pg_catalog.pg_stat_get_db_session_time",
+      "pg_catalog.pg_stat_get_db_sessions",
+      "pg_catalog.pg_stat_get_db_sessions_abandoned",
+      "pg_catalog.pg_stat_get_db_sessions_fatal",
+      "pg_catalog.pg_stat_get_db_sessions_killed",
+      "pg_catalog.pg_stat_get_db_stat_reset_time",
+      "pg_catalog.pg_stat_get_db_temp_bytes",
+      "pg_catalog.pg_stat_get_db_temp_files",
+      "pg_catalog.pg_stat_get_db_tuples_deleted",
+      "pg_catalog.pg_stat_get_db_tuples_fetched",
+      "pg_catalog.pg_stat_get_db_tuples_inserted",
+      "pg_catalog.pg_stat_get_db_tuples_returned",
+      "pg_catalog.pg_stat_get_db_tuples_updated",
+      "pg_catalog.pg_stat_get_db_xact_commit",
+      "pg_catalog.pg_stat_get_db_xact_rollback",
+      "pg_catalog.pg_stat_get_dead_tuples",
+      "pg_catalog.pg_stat_get_function_calls",
+      "pg_catalog.pg_stat_get_function_self_time",
+      "pg_catalog.pg_stat_get_function_total_time",
+      "pg_catalog.pg_stat_get_ins_since_vacuum",
+      "pg_catalog.pg_stat_get_last_analyze_time",
+      "pg_catalog.pg_stat_get_last_autoanalyze_time",
+      "pg_catalog.pg_stat_get_last_autovacuum_time",
+      "pg_catalog.pg_stat_get_last_vacuum_time",
+      "pg_catalog.pg_stat_get_lastscan",
+      "pg_catalog.pg_stat_get_live_tuples",
+      "pg_catalog.pg_stat_get_mod_since_analyze",
+      "pg_catalog.pg_stat_get_numscans",
+      "pg_catalog.pg_stat_get_subscription",
+      "pg_catalog.pg_stat_get_subscription_stats",
+      "pg_catalog.pg_stat_get_tuples_deleted",
+      "pg_catalog.pg_stat_get_tuples_fetched",
+      "pg_catalog.pg_stat_get_tuples_hot_updated",
+      "pg_catalog.pg_stat_get_tuples_inserted",
+      "pg_catalog.pg_stat_get_tuples_newpage_updated",
+      "pg_catalog.pg_stat_get_tuples_returned",
+      "pg_catalog.pg_stat_get_tuples_updated",
+      "pg_catalog.pg_stat_get_vacuum_count",
+      "pg_catalog.pg_statistics_obj_is_visible",
+      "pg_catalog.pg_table_is_visible",
+      "pg_catalog.pg_tablespace_databases",
+      "pg_catalog.pg_tablespace_location",
+      "pg_catalog.pg_ts_config_is_visible",
+      "pg_catalog.pg_ts_dict_is_visible",
+      "pg_catalog.pg_ts_parser_is_visible",
+      "pg_catalog.pg_ts_template_is_visible",
+      "pg_catalog.pg_type_is_visible",
+      "pg_catalog.pg_typeof",
+      "pg_catalog.quote_literal",
+      "pg_catalog.quote_nullable",
+      "pg_catalog.record_out",
+      "pg_catalog.record_send",
+      "pg_catalog.regclassout",
+      "pg_catalog.regcollationout",
+      "pg_catalog.regconfigout",
+      "pg_catalog.regdictionaryout",
+      "pg_catalog.regnamespaceout",
+      "pg_catalog.regoperatorout",
+      "pg_catalog.regoperout",
+      "pg_catalog.regprocedureout",
+      "pg_catalog.regprocout",
+      "pg_catalog.regroleout",
+      "pg_catalog.regtypeout",
+      "pg_catalog.row_security_active"
+    ],
+    "volatile": [
+      "pg_catalog.amvalidate",
+      "pg_catalog.binary_upgrade_set_next_array_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_heap_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_heap_relfilenode",
+      "pg_catalog.binary_upgrade_set_next_index_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_index_relfilenode",
+      "pg_catalog.binary_upgrade_set_next_multirange_array_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_multirange_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_authid_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_enum_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_tablespace_oid",
+      "pg_catalog.binary_upgrade_set_next_pg_type_oid",
+      "pg_catalog.binary_upgrade_set_next_toast_pg_class_oid",
+      "pg_catalog.binary_upgrade_set_next_toast_relfilenode",
+      "pg_catalog.brin_summarize_new_values",
+      "pg_catalog.currval",
+      "pg_catalog.gin_clean_pending_list",
+      "pg_catalog.lo_close",
+      "pg_catalog.lo_creat",
+      "pg_catalog.lo_create",
+      "pg_catalog.lo_get",
+      "pg_catalog.lo_tell",
+      "pg_catalog.lo_tell64",
+      "pg_catalog.lo_unlink",
+      "pg_catalog.nextval",
+      "pg_catalog.pg_advisory_lock",
+      "pg_catalog.pg_advisory_lock_shared",
+      "pg_catalog.pg_advisory_unlock",
+      "pg_catalog.pg_advisory_unlock_shared",
+      "pg_catalog.pg_advisory_xact_lock",
+      "pg_catalog.pg_advisory_xact_lock_shared",
+      "pg_catalog.pg_blocking_pids",
+      "pg_catalog.pg_cancel_backend",
+      "pg_catalog.pg_collation_actual_version",
+      "pg_catalog.pg_database_collation_actual_version",
+      "pg_catalog.pg_database_size",
+      "pg_catalog.pg_import_system_collations",
+      "pg_catalog.pg_indexes_size",
+      "pg_catalog.pg_log_backend_memory_contexts",
+      "pg_catalog.pg_ls_tmpdir",
+      "pg_catalog.pg_partition_ancestors",
+      "pg_catalog.pg_partition_tree",
+      "pg_catalog.pg_relation_size",
+      "pg_catalog.pg_safe_snapshot_blocking_pids",
+      "pg_catalog.pg_sequence_last_value",
+      "pg_catalog.pg_sleep",
+      "pg_catalog.pg_stat_get_xact_blocks_fetched",
+      "pg_catalog.pg_stat_get_xact_blocks_hit",
+      "pg_catalog.pg_stat_get_xact_function_calls",
+      "pg_catalog.pg_stat_get_xact_function_self_time",
+      "pg_catalog.pg_stat_get_xact_function_total_time",
+      "pg_catalog.pg_stat_get_xact_numscans",
+      "pg_catalog.pg_stat_get_xact_tuples_deleted",
+      "pg_catalog.pg_stat_get_xact_tuples_fetched",
+      "pg_catalog.pg_stat_get_xact_tuples_hot_updated",
+      "pg_catalog.pg_stat_get_xact_tuples_inserted",
+      "pg_catalog.pg_stat_get_xact_tuples_newpage_updated",
+      "pg_catalog.pg_stat_get_xact_tuples_returned",
+      "pg_catalog.pg_stat_get_xact_tuples_updated",
+      "pg_catalog.pg_stat_reset_single_function_counters",
+      "pg_catalog.pg_stat_reset_single_table_counters",
+      "pg_catalog.pg_stat_reset_subscription_stats",
+      "pg_catalog.pg_table_size",
+      "pg_catalog.pg_tablespace_size",
+      "pg_catalog.pg_terminate_backend",
+      "pg_catalog.pg_total_relation_size",
+      "pg_catalog.pg_try_advisory_lock",
+      "pg_catalog.pg_try_advisory_lock_shared",
+      "pg_catalog.pg_try_advisory_xact_lock",
+      "pg_catalog.pg_try_advisory_xact_lock_shared",
+      "pg_catalog.plpgsql_validator",
+      "pg_catalog.random_normal",
+      "pg_catalog.setseed",
+      "pg_catalog.txid_status"
+    ]
+  },
+  "refused_by_postgres_sqlstates": {
+    "0A000": 16,
+    "42703": 33432,
+    "42803": 326,
+    "42809": 256
+  },
+  "resolved_node_types": {
+    "AGGREF": 3623,
+    "ALIAS": 21378,
+    "COERCEVIAIO": 48,
+    "COMMONTABLEEXPR": 124,
+    "CONST": 14365,
+    "FROMEXPR": 7994,
+    "FUNCEXPR": 9346,
+    "JOINEXPR": 2086,
+    "NULLTEST": 1944,
+    "QUERY": 7994,
+    "RANGETBLENTRY": 12042,
+    "RANGETBLFUNCTION": 3924,
+    "RANGETBLREF": 9956,
+    "RELABELTYPE": 746,
+    "RTEPERMISSIONINFO": 620,
+    "SORTGROUPCLAUSE": 762,
+    "TARGETENTRY": 9454,
+    "VAR": 8490
+  },
+  "seconds": 66.8,
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "total": {
+    "admitted": 36736,
+    "flagged": 1816,
+    "generated": 52480,
+    "refused_by_postgres": 34030,
+    "resolved": 2706,
+    "with_io_cast": 48,
+    "with_literal_cast": 0
+  }
+}

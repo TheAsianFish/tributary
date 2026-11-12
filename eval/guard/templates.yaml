@@ -1,0 +1,88 @@
+# Spellings of a function call that do not look like one, for the guard's differential
+# oracle (eval/guard/differential.py). Fixed before the M9 guard change and not edited
+# after it: the oracle's findings are only evidence if the generator was not tuned to them.
+#
+# Every one-argument function in pg_proc is substituted for {f} (quoted when PostgreSQL
+# needs it) and each expression is placed in four positions: the select list, WHERE,
+# ORDER BY and an aggregate's FILTER. {arg} is a call that returns the function's
+# argument type (`arguments` below; `default` for any type not listed), so a scalar
+# FROM function is crossed with the functions that accept its value.
+positions:
+  select: "{with}SELECT {expr} AS x{from}"
+  where: "{with}SELECT 1 AS x{from} WHERE ({expr}) IS NOT NULL"
+  order_by: "{with}SELECT 1 AS x{from} ORDER BY ({expr}) IS NULL"
+  filter: "{with}SELECT count(*) FILTER (WHERE ({expr}) IS NOT NULL) AS x{from}"
+
+templates:
+  - id: field
+    expr: "({arg}).{f}"
+    why: field notation, which PostgreSQL reads as f(x) (the M3 bypass)
+  - id: mart_alias
+    expr: "w.{f}"
+    from: "marts.dim_wiki AS w"
+    why: a relation alias; f(w) on the whole row when f is not a column of dim_wiki
+  - id: mart_name
+    expr: "dim_wiki.{f}"
+    from: "marts.dim_wiki"
+    why: the same, qualified by the relation's own name
+  - id: subquery
+    expr: "s.{f}"
+    from: "(SELECT wiki, edits FROM marts.dim_wiki) AS s"
+    why: a derived table's alias; its whole row is an anonymous record
+  - id: cte
+    with: "WITH c AS (SELECT wiki, edits FROM marts.dim_wiki) "
+    expr: "c.{f}"
+    from: "c"
+    why: a CTE referenced by name
+  - id: values
+    expr: "v.{f}"
+    from: "(VALUES (1, 'a')) AS v(n, t)"
+    why: a VALUES list in FROM
+  - id: from_function
+    expr: "g.{f}"
+    from: "generate_series(1, 2) AS g"
+    why: a set-returning function in FROM (the M8 bypass); its whole row is the integer
+  - id: scalar_from_function
+    expr: "t.{f}"
+    from: "{arg} AS t"
+    why: a scalar function in FROM whose value has the function's argument type
+  - id: reused_alias
+    expr: "p.{f}"
+    from: "generate_series(1, 2) AS p CROSS JOIN LATERAL (SELECT 1 AS one FROM generate_series(1, 1) AS p({f})) AS n"
+    why: the alias p bound again in a nested scope with a column named f (the M8 review's bypass)
+  - id: reused_alias_mart
+    expr: "w.{f}"
+    from: "marts.dim_wiki AS w CROSS JOIN LATERAL (SELECT 1 AS one FROM (SELECT 1 AS {f}) AS w) AS n"
+    why: a mart alias bound again in a nested scope, where f is a column
+
+# A call that returns a value of each argument type, written the way the guard admits.
+arguments:
+  default: abs(1)
+  integer: abs(1)
+  bigint: abs(CAST(1 AS bigint))
+  smallint: abs(CAST(1 AS smallint))
+  numeric: abs(1.5)
+  double precision: abs(CAST(1.5 AS double precision))
+  real: abs(CAST(1.5 AS real))
+  text: lower('x')
+  character varying: lower('x')
+  boolean: isfinite(now())
+  timestamp with time zone: now()
+  timestamp without time zone: date_trunc('day', CAST(now() AS timestamp))
+  date: make_date(2024, 1, 1)
+  interval: age(now())
+  json: to_json(1)
+  jsonb: to_jsonb(1)
+  integer[]: array_positions(ARRAY[1], 1)
+  text[]: regexp_split_to_array('a,b', ',')
+  anyarray: array_positions(ARRAY[1], 1)
+  anycompatiblearray: array_positions(ARRAY[1], 1)
+  anyelement: abs(1)
+  anynonarray: abs(1)
+  anycompatible: abs(1)
+  '"any"': abs(1)
+
+# The 40 warehouse gold queries (eval/warehouse_questions.yaml) are rewritten the same
+# way: unchanged; with alias.f added to the outer WHERE for every relation alias of the
+# outer FROM; and wrapped as a derived table and as a CTE, g.f selected from it.
+gold_rewrites: [identity, outer_alias, as_subquery, as_cte]

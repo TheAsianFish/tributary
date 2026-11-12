@@ -17,8 +17,17 @@ guard wrongly lets through cannot do much. Every query
   so a cross join of the fact table is stopped before it starts (the ceiling
   sees rows, not work: ``md5(repeat('x', 10^8))`` costs 0.01 to the planner,
   and only the statement timeout bounds it),
-- returns at most ``row_cap`` rows; the cursor stops fetching there, and the
-  result says it was cut.
+- returns at most ``row_cap`` rows; the server stops producing rows there
+  (the cursor stops fetching there with the byte cap off), and the result
+  says it was cut,
+- returns at most ``max_result_bytes`` of values, measured by the server
+  before it sends a row: the query is wrapped so that PostgreSQL adds up the
+  text size of every value it is about to send and fails the statement past
+  the cap (a cast error carrying the size, reported as ``too_large``). A
+  single row over the cap is refused before it is even buffered for the sum,
+  so one ``repeat('x', 10^8)`` costs the server no more than running it bare
+  and the client nothing. The rows sent before the total crossed the cap
+  (under the cap together) are dropped with the error.
 
 One connection per query keeps sessions from sharing state (a ``set_config``
 that slipped through would die with its connection). The transaction is
@@ -36,6 +45,7 @@ from __future__ import annotations
 import contextlib
 import json
 import math
+import re
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -51,7 +61,14 @@ from psycopg import errors, sql
 
 log = structlog.get_logger(__name__)
 
-ErrorKind = Literal["timeout", "too_expensive", "read_only", "permission", "database", "connection"]
+ErrorKind = Literal[
+    "timeout", "too_expensive", "too_large", "read_only", "permission", "database", "connection"
+]
+
+# The text the size check casts to bigint when a result crosses the cap; the cast's
+# error message quotes it, size included.
+OVER_CAP_MARKER = "result_bytes_over_cap:"
+_OVER_CAP = re.compile(re.escape(OVER_CAP_MARKER) + r"(\d+)")
 
 
 class ExecutionError(Exception):
@@ -67,8 +84,8 @@ class ExecutionError(Exception):
     def repairable(self) -> bool:
         """Whether a different query could succeed where this one failed.
 
-        A syntax or column error, a timeout, a refused cost or a write in a
-        read-only transaction is the query's fault. An unreachable warehouse
+        A syntax or column error, a timeout, a refused cost or size or a write
+        in a read-only transaction is the query's fault. An unreachable warehouse
         or a missing privilege is the deployment's: the planner stops rather
         than spend model calls on repairs, and the API reports it as its own
         failure, not the caller's.
@@ -85,6 +102,8 @@ class ExecutionError(Exception):
             return f"The query was cancelled by the statement timeout: {self.message}"
         if self.kind == "too_expensive":
             return f"The query was refused before running: {self.message}"
+        if self.kind == "too_large":
+            return f"The query's result was refused: {self.message}"
         state = f" (SQLSTATE {self.sqlstate})" if self.sqlstate else ""
         return f"PostgreSQL error{state}: {self.message}"
 
@@ -141,11 +160,20 @@ def jsonable(value: object) -> object:
     return str(value)
 
 
-def _classify(exc: psycopg.Error) -> ExecutionError:
+def _classify(exc: psycopg.Error, max_result_bytes: int | None = None) -> ExecutionError:
     diag = getattr(exc, "diag", None)
     message = (getattr(diag, "message_primary", None) or str(exc)).strip()
     sqlstate = getattr(exc, "sqlstate", None)
     kind: ErrorKind
+    over = _OVER_CAP.search(message) if isinstance(exc, errors.InvalidTextRepresentation) else None
+    if over and max_result_bytes is not None:
+        size = int(over.group(1))
+        return ExecutionError(
+            "too_large",
+            f"the result reached {size:,} bytes, over the cap of {max_result_bytes:,}; "
+            "select fewer or shorter columns, or aggregate",
+            sqlstate,
+        )
     if isinstance(exc, errors.QueryCanceled):
         kind = "timeout"
     elif isinstance(exc, errors.ReadOnlySqlTransaction):
@@ -171,6 +199,82 @@ def plan_cost(explain_json: Any) -> float:
         raise ExecutionError("database", "EXPLAIN did not return a plan") from None
 
 
+def capped_columns(width: int) -> list[sql.Identifier]:
+    """The positional names a size-capped query's columns get: ``_c1`` ... ``_c{width}``."""
+    return [sql.Identifier(f"_c{i}") for i in range(1, width + 1)]
+
+
+# bpchar: its cast to text strips the padding that the server still sends.
+BPCHAR_OID = 1042
+
+
+def row_bytes(types: Sequence[int]) -> sql.Composed:
+    """A row's size in bytes as the cap counts it, over ``r._c1`` ... (a bigint expression).
+
+    ``types`` are the columns' type oids, as the bare query's description gives
+    them (a domain reports its base type). The sum of its values' ``::text``
+    lengths, a NULL counting 0: what the text protocol sends, less the 4-byte
+    length word per value (and but for a boolean, whose cast spells ``true``
+    where the protocol sends ``t``). A ``char(n)`` value is measured as it is,
+    because its cast to ``text`` drops the trailing spaces the server sends:
+    ``''::char(10485760)`` is 0 bytes as text and 10 MiB on the wire.
+    """
+    return sql.SQL(" + ").join(
+        sql.SQL(
+            "coalesce(octet_length(r.{}), 0)::bigint"
+            if oid == BPCHAR_OID
+            else "coalesce(octet_length(r.{}::text), 0)::bigint"
+        ).format(c)
+        for c, oid in zip(capped_columns(len(types)), types, strict=True)
+    )
+
+
+def size_capped(query: str, types: Sequence[int], *, cap: int, limit: int) -> sql.Composed:
+    """``query`` wrapped so that the server refuses a result over ``cap`` bytes.
+
+    The query's columns (``types``, their type oids) are renamed positionally (``_c1`` ...), so a
+    duplicate or unnamed column needs no reference by name; the caller takes
+    the names from the bare query's description. A row's size is
+    :func:`row_bytes`. Each row is checked on its own as it is
+    produced, before a window buffers it, and the running total as rows are
+    emitted, in order: the first row past the cap fails the statement with a
+    cast error quoting ``OVER_CAP_MARKER`` and the size. The last column,
+    ``_over_cap``, is NULL on every row that is sent; the caller drops it.
+    At most ``limit`` rows are produced.
+
+    Two fences keep the plan honest. The ``LIMIT`` right around ``query``
+    stops it being pulled up into the wrapper, where the planner would
+    evaluate each of its output expressions once per mention in the size
+    expression (constant-folding ``repeat('x', 10^8)`` three times). The
+    ``OFFSET 0`` keeps the per-row check below the window, so a row over the
+    cap fails before the window copies it into its buffer.
+    """
+    if not types:
+        raise ValueError("a size-capped query needs at least one column")
+    columns = capped_columns(len(types))
+    size = row_bytes(types)
+    over = sql.SQL("({} || {})::bigint").format(sql.Literal(OVER_CAP_MARKER), size)
+    total = sql.SQL("sum(s._bytes) OVER w")
+    return sql.SQL(
+        "SELECT {outer}, CASE WHEN {total} > {cap} THEN ({marker} || {total})::bigint END"
+        " AS _over_cap FROM ("
+        "SELECT r.*, CASE WHEN {size} > {cap} THEN {over} ELSE {size} END AS _bytes"
+        " FROM (SELECT * FROM (\n{query}\n) AS q LIMIT {limit}) AS r({columns})"
+        " OFFSET 0"
+        ") AS s WINDOW w AS (ROWS UNBOUNDED PRECEDING)"
+    ).format(
+        outer=sql.SQL(", ").join(sql.SQL("s.{}").format(c) for c in columns),
+        total=total,
+        cap=sql.Literal(cap),
+        marker=sql.Literal(OVER_CAP_MARKER),
+        size=size,
+        over=over,
+        query=sql.SQL(query),
+        columns=sql.SQL(", ").join(columns),
+        limit=sql.Literal(limit),
+    )
+
+
 class PostgresExecutor:
     """:class:`Executor` over a role-restricted PostgreSQL connection."""
 
@@ -184,6 +288,7 @@ class PostgresExecutor:
         connect_timeout: int = 5,
         search_path: str = "",
         parallel: bool = True,
+        max_result_bytes: int | None = 8_388_608,
     ) -> None:
         self._conninfo = conninfo
         self.statement_timeout_ms = statement_timeout_ms
@@ -196,6 +301,8 @@ class PostgresExecutor:
         # Off for reproducible results: a parallel aggregate adds partial sums in whatever
         # order the workers finish, so a float4 SUM can differ between runs.
         self.parallel = parallel
+        # None runs the query bare (benchmarks): no size check, no server-side row limit.
+        self.max_result_bytes = max_result_bytes
 
     def _settings(self) -> Sequence[sql.SQL | sql.Composed]:
         timeout = sql.Literal(f"{self.statement_timeout_ms}ms")
@@ -234,13 +341,9 @@ class PostgresExecutor:
                             f"estimated cost {cost:,.0f} is above the ceiling "
                             f"{self.cost_ceiling:,.0f}; filter or aggregate earlier",
                         )
-                cur.execute(sql.SQL(query), prepare=True)
-                if cur.description is None:
-                    raise ExecutionError("database", "the statement returned no result set")
-                columns = tuple(d.name for d in cur.description)
-                fetched = cur.fetchmany(self.row_cap + 1)
+                columns, fetched = self._fetch(cur, query)
         except psycopg.Error as exc:
-            raise _classify(exc) from None
+            raise _classify(exc, self.max_result_bytes) from None
         finally:
             # The query may have killed its own connection (pg_terminate_backend is open to
             # a role for its own sessions); a failed rollback must not mask the error.
@@ -258,3 +361,30 @@ class PostgresExecutor:
             elapsed_ms=round(elapsed),
         )
         return QueryResult(columns, rows, truncated, elapsed, cost)
+
+    def _fetch(self, cur: psycopg.Cursor[Any], query: str) -> tuple[tuple[str, ...], list[Any]]:
+        """The query's column names and up to ``row_cap + 1`` rows, size-capped if set.
+
+        Any: rows are tuples of whatever types the columns decode to.
+        """
+        if self.max_result_bytes is not None:
+            # The bare query's description, without running it (LIMIT 0 pulls no row):
+            # its names, duplicates and ``?column?`` included, and its width.
+            cur.execute(
+                sql.SQL("SELECT * FROM (\n{}\n) AS q LIMIT 0").format(sql.SQL(query)),
+                prepare=True,
+            )
+            if cur.description is None:
+                raise ExecutionError("database", "the statement returned no result set")
+            columns = tuple(d.name for d in cur.description)
+            if columns:  # a zero-column SELECT has no value to measure
+                types = [d.type_code for d in cur.description]
+                capped = size_capped(
+                    query, types, cap=self.max_result_bytes, limit=self.row_cap + 1
+                )
+                cur.execute(capped, prepare=True)
+                return columns, [row[:-1] for row in cur.fetchmany(self.row_cap + 1)]
+        cur.execute(sql.SQL(query), prepare=True)
+        if cur.description is None:
+            raise ExecutionError("database", "the statement returned no result set")
+        return tuple(d.name for d in cur.description), cur.fetchmany(self.row_cap + 1)

@@ -1,0 +1,18 @@
+after (fixes disabled: none)
+  generated 220456, admitted 192, refused by PostgreSQL 152, resolved 40, flagged 0
+  invisible to the oracle: 0 admitted with a literal cast, 0 resolved with an I/O conversion cast
+  cte                    gen   5248  adm      4  pg-refused      4  flagged     0
+  field                  gen   5248  adm      0  pg-refused      0  flagged     0
+  from_function          gen   5248  adm      0  pg-refused      0  flagged     0
+  gold:as_cte            gen  52480  adm     40  pg-refused     40  flagged     0
+  gold:as_subquery       gen  52480  adm     40  pg-refused     40  flagged     0
+  gold:identity          gen     40  adm     40  pg-refused      0  flagged     0
+  gold:outer_alias       gen  62976  adm     48  pg-refused     48  flagged     0
+  mart_alias             gen   5248  adm      4  pg-refused      4  flagged     0
+  mart_name              gen   5248  adm      4  pg-refused      4  flagged     0
+  reused_alias           gen   5248  adm      0  pg-refused      0  flagged     0
+  reused_alias_mart      gen   5248  adm      4  pg-refused      4  flagged     0
+  scalar_from_function   gen   5248  adm      0  pg-refused      0  flagged     0
+  subquery               gen   5248  adm      4  pg-refused      4  flagged     0
+  values                 gen   5248  adm      4  pg-refused      4  flagged     0
+wrote /tmp/m9/after-results/after.json

@@ -203,7 +203,7 @@ def evaluate_bird(max_rows: int = 100_000) -> dict[str, dict[str, object]]:
     from eval.bird.load import load_catalogs
 
     catalogs = load_catalogs()
-    guards = {db: Guard(c.relations(), max_rows=max_rows) for db, c in catalogs.items()}
+    guards = {db: Guard.for_catalog(c, max_rows=max_rows) for db, c in catalogs.items()}
     out: dict[str, dict[str, object]] = {}
     for track in data.TRACKS:
         blocked = []
@@ -253,11 +253,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     # suite's point, and the verdicts already say what happened.
     logging.getLogger("sqlglot").setLevel(logging.ERROR)
 
-    relations = (
-        tuple(r.strip() for r in args.relations.split(",") if r.strip())
-        if args.relations
-        else catalog_relations(args.catalog)
-    )
+    if args.relations:
+        relations = tuple(r.strip() for r in args.relations.split(",") if r.strip())
+        guard = Guard(relations, max_rows=args.max_rows)
+    else:
+        from tributary.agent.catalog import load_dbt
+
+        guard = Guard.for_catalog(load_dbt(args.catalog), max_rows=args.max_rows)
     benign_paths: list[Path] = args.benign or [BENIGN_PATH]
     benign: list[Item] = []
     for path in benign_paths:
@@ -271,7 +273,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
 
-    report = evaluate(Guard(relations, max_rows=args.max_rows), load_unsafe(args.unsafe), benign)
+    report = evaluate(guard, load_unsafe(args.unsafe), benign)
     print(render(report))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report.to_json(), indent=2, sort_keys=True) + "\n")

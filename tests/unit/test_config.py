@@ -68,3 +68,12 @@ def test_an_installed_package_resolves_data_from_the_current_directory(tmp_path:
     # A checkout is recognised by its pyproject next to the package.
     (site_packages / "pyproject.toml").touch()
     assert project_dir(site_packages, cwd=clone) == site_packages
+
+
+def test_agent_result_byte_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert Settings(_env_file=None).agent_max_result_bytes == 8_388_608
+    monkeypatch.setenv("TRIBUTARY_AGENT_MAX_RESULT_BYTES", "1024")
+    assert Settings(_env_file=None).agent_max_result_bytes == 1024
+    monkeypatch.setenv("TRIBUTARY_AGENT_MAX_RESULT_BYTES", "0")
+    with pytest.raises(ValueError, match="agent_max_result_bytes"):
+        Settings(_env_file=None)

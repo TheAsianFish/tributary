@@ -6,11 +6,11 @@ The guard is meant to be the first of two layers. This runs every statement
 of ``eval/guard/unsafe.yaml`` straight through
 :class:`~tributary.agent.execute.PostgresExecutor` as the agent's role, with
 the executor's settings (read-only transaction, statement timeout, empty
-``search_path``, cost ceiling) but no guard, and records what PostgreSQL did:
-refused it (and how), or ran it. A statement that ran is not necessarily
-harmful (``SELECT version()`` leaks a string, nothing more), but each one is a
-case where the guard is the only thing in the way, which is the point of
-measuring it.
+``search_path``, cost ceiling, result byte cap) but no guard, and records
+what PostgreSQL did: refused it (and how), or ran it. A statement that ran is
+not necessarily harmful (``SELECT version()`` leaks a string, nothing more),
+but each one is a case where the guard is the only thing in the way, which is
+the point of measuring it.
 
 Run it against a disposable database: the statements are attacks.
 """
@@ -46,6 +46,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         statement_timeout_ms=args.timeout_ms,
         row_cap=settings.agent_row_cap,
         cost_ceiling=settings.agent_cost_ceiling,
+        max_result_bytes=settings.agent_max_result_bytes,
     )
     items = []
     for item in load_unsafe(args.unsafe):

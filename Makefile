@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist
+.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -67,6 +67,16 @@ eval-guard: ## Guard suite: every unsafe statement blocked, no warehouse gold qu
 
 eval-guard-db: ## The unsafe suite with the guard off: what the agent's role alone refuses (disposable DB!)
 	uv run python -m eval.guard_db
+
+GUARD_DIFF_DIR ?= eval/results/guard-diff
+GUARD_FIXES := field_notation function_alias alias_intersection relation_alias
+
+eval-guard-diff: ## Differential oracle: generated spellings through the guard, resolved by PostgreSQL (~30 min)
+	uv run python -m eval.guard.differential run --label current --output-dir $(GUARD_DIFF_DIR)
+	for fix in $(GUARD_FIXES); do \
+		uv run python -m eval.guard.differential run --label without-$$fix --disable $$fix \
+			--no-gold --output-dir $(GUARD_DIFF_DIR) || exit 1; \
+	done
 
 eval-warehouse: ## The 40 warehouse questions (PROVIDER=fake replays recordings); needs PostgreSQL
 	uv run python -m eval.warehouse_eval --provider $(PROVIDER)

@@ -1,0 +1,16 @@
+after-without-relation_alias (fixes disabled: relation_alias)
+  generated 52480, admitted 31488, refused by PostgreSQL 30744, resolved 744, flagged 432
+  invisible to the oracle: 0 admitted with a literal cast, 0 resolved with an I/O conversion cast
+  cte                    gen   5248  adm   5248  pg-refused   5124  flagged    72
+  field                  gen   5248  adm      0  pg-refused      0  flagged     0
+  from_function          gen   5248  adm      0  pg-refused      0  flagged     0
+  mart_alias             gen   5248  adm   5248  pg-refused   5124  flagged    72
+  mart_name              gen   5248  adm   5248  pg-refused   5124  flagged    72
+  reused_alias           gen   5248  adm      0  pg-refused      0  flagged     0
+  reused_alias_mart      gen   5248  adm   5248  pg-refused   5124  flagged    72
+  scalar_from_function   gen   5248  adm      0  pg-refused      0  flagged     0
+  subquery               gen   5248  adm   5248  pg-refused   5124  flagged    72
+  values                 gen   5248  adm   5248  pg-refused   5124  flagged    72
+  reachable outside the policy, immutable: pg_catalog.any_out, pg_catalog.anycompatible_out, pg_catalog.anycompatiblenonarray_out, pg_catalog.anyelement_out, pg_catalog.anynonarray_out, pg_catalog.hash_record
+  reachable outside the policy, stable: pg_catalog.json_agg_strict, pg_catalog.jsonb_agg_strict, pg_catalog.pg_collation_for, pg_catalog.pg_column_compression, pg_catalog.pg_column_size, pg_catalog.pg_column_toast_chunk_id, pg_catalog.pg_typeof, pg_catalog.quote_literal, pg_catalog.quote_nullable, pg_catalog.record_out, pg_catalog.record_send
+wrote /tmp/m9/after-results/after-without-relation_alias.json

@@ -1,0 +1,451 @@
+{
+  "by_group": {
+    "cte": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "field": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_alias": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "mart_name": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "reused_alias_mart": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "scalar_from_function": {
+      "admitted": 0,
+      "flagged": 0,
+      "generated": 5248,
+      "refused_by_postgres": 0,
+      "resolved": 0,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "subquery": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "values": {
+      "admitted": 5248,
+      "flagged": 72,
+      "generated": 5248,
+      "refused_by_postgres": 5124,
+      "resolved": 124,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "by_position": {
+    "filter": {
+      "admitted": 7872,
+      "flagged": 102,
+      "generated": 13120,
+      "refused_by_postgres": 7710,
+      "resolved": 162,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "order_by": {
+      "admitted": 7872,
+      "flagged": 114,
+      "generated": 13120,
+      "refused_by_postgres": 7662,
+      "resolved": 210,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "select": {
+      "admitted": 7872,
+      "flagged": 114,
+      "generated": 13120,
+      "refused_by_postgres": 7662,
+      "resolved": 210,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    },
+    "where": {
+      "admitted": 7872,
+      "flagged": 102,
+      "generated": 13120,
+      "refused_by_postgres": 7710,
+      "resolved": 162,
+      "with_io_cast": 0,
+      "with_literal_cast": 0
+    }
+  },
+  "commit": "673503e",
+  "disabled_fixes": [
+    "relation_alias"
+  ],
+  "functions": 1312,
+  "label": "after-without-relation_alias",
+  "reachable": {
+    "pg_catalog.any_out": {
+      "example": "SELECT w.any_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatible_out": {
+      "example": "SELECT w.anycompatible_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.anycompatiblenonarray_out": {
+      "example": "SELECT w.anycompatiblenonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.anyelement_out": {
+      "example": "SELECT w.anyelement_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.anynonarray_out": {
+      "example": "SELECT w.anynonarray_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.hash_record": {
+      "example": "SELECT w.hash_record AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "i"
+    },
+    "pg_catalog.json_agg_strict": {
+      "example": "SELECT w.json_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 12,
+      "volatility": "s"
+    },
+    "pg_catalog.jsonb_agg_strict": {
+      "example": "SELECT w.jsonb_agg_strict AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 2,
+        "mart_alias": 2,
+        "mart_name": 2,
+        "reused_alias_mart": 2,
+        "subquery": 2,
+        "values": 2
+      },
+      "kind": "aggregate",
+      "rule": "not_allowed",
+      "statements": 12,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_collation_for": {
+      "example": "SELECT w.pg_collation_for AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_compression": {
+      "example": "SELECT w.pg_column_compression AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_size": {
+      "example": "SELECT w.pg_column_size AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_column_toast_chunk_id": {
+      "example": "SELECT w.pg_column_toast_chunk_id AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.pg_typeof": {
+      "example": "SELECT w.pg_typeof AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "denied",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.quote_literal": {
+      "example": "SELECT w.quote_literal AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 48,
+      "volatility": "s"
+    },
+    "pg_catalog.quote_nullable": {
+      "example": "SELECT w.quote_nullable AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 8,
+        "mart_alias": 8,
+        "mart_name": 8,
+        "reused_alias_mart": 8,
+        "subquery": 8,
+        "values": 8
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 48,
+      "volatility": "s"
+    },
+    "pg_catalog.record_out": {
+      "example": "SELECT w.record_out AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    },
+    "pg_catalog.record_send": {
+      "example": "SELECT w.record_send AS x FROM marts.dim_wiki AS w LIMIT 1000",
+      "groups": {
+        "cte": 4,
+        "mart_alias": 4,
+        "mart_name": 4,
+        "reused_alias_mart": 4,
+        "subquery": 4,
+        "values": 4
+      },
+      "kind": "call",
+      "rule": "not_allowed",
+      "statements": 24,
+      "volatility": "s"
+    }
+  },
+  "reachable_by_volatility": {
+    "immutable": [
+      "pg_catalog.any_out",
+      "pg_catalog.anycompatible_out",
+      "pg_catalog.anycompatiblenonarray_out",
+      "pg_catalog.anyelement_out",
+      "pg_catalog.anynonarray_out",
+      "pg_catalog.hash_record"
+    ],
+    "stable": [
+      "pg_catalog.json_agg_strict",
+      "pg_catalog.jsonb_agg_strict",
+      "pg_catalog.pg_collation_for",
+      "pg_catalog.pg_column_compression",
+      "pg_catalog.pg_column_size",
+      "pg_catalog.pg_column_toast_chunk_id",
+      "pg_catalog.pg_typeof",
+      "pg_catalog.quote_literal",
+      "pg_catalog.quote_nullable",
+      "pg_catalog.record_out",
+      "pg_catalog.record_send"
+    ]
+  },
+  "refused_by_postgres_sqlstates": {
+    "42703": 30432,
+    "42803": 96,
+    "42809": 216
+  },
+  "resolved_node_types": {
+    "AGGREF": 1002,
+    "ALIAS": 3720,
+    "COMMONTABLEEXPR": 124,
+    "CONST": 1612,
+    "FROMEXPR": 2108,
+    "FUNCEXPR": 1392,
+    "JOINEXPR": 124,
+    "NULLTEST": 534,
+    "QUERY": 2108,
+    "RANGETBLENTRY": 2232,
+    "RANGETBLREF": 2108,
+    "RTEPERMISSIONINFO": 620,
+    "SORTGROUPCLAUSE": 210,
+    "TARGETENTRY": 2786,
+    "VAR": 2604
+  },
+  "seconds": 55.7,
+  "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "total": {
+    "admitted": 31488,
+    "flagged": 432,
+    "generated": 52480,
+    "refused_by_postgres": 30744,
+    "resolved": 744,
+    "with_io_cast": 0,
+    "with_literal_cast": 0
+  }
+}

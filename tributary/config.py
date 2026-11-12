@@ -154,6 +154,10 @@ class Settings(BaseSettings):
     # 500x the costliest of the 40 warehouse gold queries on the sample (2,068); a
     # cross join of fct_edits with itself is 10 M. Raise it with the data volume.
     agent_cost_ceiling: float = Field(default=1_000_000.0, gt=0)
+    # Bytes of values (as text) a result may hold, counted by PostgreSQL before it sends
+    # a row; a query past it fails as too_large. One row can be any size, so the row cap
+    # alone does not bound the memory a result takes.
+    agent_max_result_bytes: int = Field(default=8_388_608, ge=1)
     # A relation not rebuilt for this long is flagged as stale in answers.
     agent_stale_after_minutes: int = Field(default=120, ge=1)
 
