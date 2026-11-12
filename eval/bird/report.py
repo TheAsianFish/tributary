@@ -32,11 +32,14 @@ from eval.bird.failures import failures_table, load_labels
 from eval.bird.paired import (
     CANDIDATE,
     CHALLENGER,
+    DECIDING_MODEL,
+    DECIDING_PROVIDER,
     DECIDING_SUBSET,
     PAIRINGS,
     PairingError,
     accuracy,
     decide,
+    deciding_run,
     mcnemar_exact,
     pair,
 )
@@ -417,18 +420,18 @@ def decision_text(report: dict[str, Any]) -> str:
 
 def m10_reports(
     reports: Sequence[tuple[str, dict[str, Any]]],
+    model: str = DECIDING_MODEL,
+    provider: str = DECIDING_PROVIDER,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
-    """The held-out run and every run of the same model to pool with it (dev50 first)."""
-    held = [r for _, r in reports if r.get("subset") == DECIDING_SUBSET]
-    if not held:
+    """The held-out run the rule was stated for and every run of the same model to pool with
+    it (dev50 first). A run of another model, whatever its file name, takes no part."""
+    holdout = deciding_run([r for _, r in reports], model, provider)
+    if holdout is None:
         return None
-    holdout = held[0]
     same = [
         r
         for _, r in reports
-        if r.get("model") == holdout["model"]
-        and r.get("provider") == holdout["provider"]
-        and r.get("subset") != "all"
+        if r.get("model") == model and r.get("provider") == provider and r.get("subset") != "all"
     ]
     same.sort(key=lambda r: (r["subset"] != "dev50", r["subset"]))
     return holdout, same

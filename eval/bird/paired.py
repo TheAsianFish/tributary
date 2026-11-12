@@ -46,6 +46,10 @@ PAIRINGS: tuple[tuple[str, str], ...] = (
 CANDIDATE = "full+v+f+a"
 CHALLENGER = "full+a"
 DECIDING_SUBSET = "holdout50"
+# The run the rule was stated for. A later run of the same subset on another model (a Claude
+# run, say) is reported beside it but does not decide the default.
+DECIDING_MODEL = "qwen2.5-coder:7b"
+DECIDING_PROVIDER = "ollama"
 
 
 def mcnemar_exact(gained: int, lost: int) -> float:
@@ -153,6 +157,24 @@ def decide(holdout: dict[str, Any], tracks: Sequence[str] = ("official", "correc
         by_track.append((track, candidate, challenger))
     kept = all(c >= ch for _, c, ch in by_track)
     return Decision(CANDIDATE if kept else CHALLENGER, kept, tuple(by_track))
+
+
+def deciding_run(
+    reports: Sequence[dict[str, Any]],
+    model: str = DECIDING_MODEL,
+    provider: str = DECIDING_PROVIDER,
+) -> dict[str, Any] | None:
+    """The held-out run the rule was stated for, or ``None`` before it is recorded."""
+    found = [
+        r
+        for r in reports
+        if r.get("subset") == DECIDING_SUBSET
+        and r.get("model") == model
+        and r.get("provider") == provider
+    ]
+    if len(found) > 1:
+        raise PairingError(f"{len(found)} {DECIDING_SUBSET} runs of {provider} {model}")
+    return found[0] if found else None
 
 
 def _load_reports(model: str, subsets: Sequence[str], results: Path) -> list[dict[str, Any]]:

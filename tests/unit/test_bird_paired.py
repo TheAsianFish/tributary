@@ -135,9 +135,9 @@ def test_the_rule_is_decided_on_holdout50_only() -> None:
 def test_the_live_default_is_what_the_rule_picks_on_the_committed_run() -> None:
     from eval.bird.run import DEFAULT_LIVE_VARIANTS
 
-    held = [r for _, r in report.run_reports() if r.get("subset") == paired.DECIDING_SUBSET]
-    assert held, "no holdout50 run is committed under eval/results/"
-    assert f"full,{decide(held[0]).default}" == DEFAULT_LIVE_VARIANTS
+    held = paired.deciding_run([r for _, r in report.run_reports()])
+    assert held is not None, "no holdout50 run of the pre-stated model under eval/results/"
+    assert f"full,{decide(held).default}" == DEFAULT_LIVE_VARIANTS
 
 
 # --- rendering --------------------------------------------------------------------------------
@@ -191,12 +191,31 @@ def test_decision_text_names_the_default_the_rule_picks() -> None:
 def test_m10_reports_pools_the_same_model_with_dev50_first() -> None:
     dev, hold = m10_runs()
     other = dict(dev, model="other")
-    found = report.m10_reports([("b", hold), ("c", other), ("a", dev)])
+    found = report.m10_reports([("b", hold), ("c", other), ("a", dev)], model="m")
     assert found is not None
     held, pooled = found
     assert held is hold
     assert [r["subset"] for r in pooled] == ["dev50", "holdout50"]
-    assert report.m10_reports([("a", dev)]) is None
+    assert report.m10_reports([("a", dev)], model="m") is None
+
+
+def test_another_model_s_holdout50_run_does_not_take_the_decision() -> None:
+    dev, hold = m10_runs()
+    # A Claude run of holdout50 sorts first by file name and would flip the default.
+    claude = dict(hold, model="claude-haiku-5-5", provider="anthropic")
+    claude["variants"] = dict(hold["variants"], **{"full+v+f+a": hold["variants"]["full"]})
+    reports = [("bird-holdout50-anthropic.json", claude), ("bird-dev50-ollama.json", dev)]
+    found = report.m10_reports([*reports, ("bird-holdout50-ollama.json", hold)], model="m")
+    assert found is not None
+    assert found[0] is hold
+    assert all(r["model"] == "m" for r in found[1])
+    assert report.m10_reports(reports, model="m") is None
+
+
+def test_two_runs_of_the_deciding_model_on_holdout50_are_refused() -> None:
+    _, hold = m10_runs()
+    with pytest.raises(PairingError, match="2 holdout50 runs"):
+        paired.deciding_run([hold, dict(hold)], model="m")
 
 
 def test_the_cli_prints_each_subset_and_the_pool(
