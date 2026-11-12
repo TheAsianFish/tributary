@@ -187,6 +187,24 @@ def test_fields_belong_to_their_own_node() -> None:
     assert resolution.nodes["ALIAS"] == 2
 
 
+def test_a_bracket_in_a_name_does_not_hide_the_calls_after_it() -> None:
+    # outToken does not escape "[": only ":constvalue <n>" opens a byte array
+    text = (
+        "({QUERY :targetList ({TARGETENTRY :expr {FUNCEXPR :funcid 1619 :funcformat 0}"
+        " :resname [} {TARGETENTRY :expr {FUNCEXPR :funcid 2626 :funcformat 0} :resname z})})"
+    )
+    assert [r.oid for r in parse_ev_action(text).references] == [1619, 2626]
+
+
+def test_a_tablesample_method_is_read() -> None:
+    text = "({QUERY :rtable ({RANGETBLENTRY :tablesample {TABLESAMPLECLAUSE :tsmhandler 3313"
+    text += " :args <>} :relid 42})})"
+    assert [(r.kind, r.oid) for r in parse_ev_action(text).references] == [
+        ("syntax", 3313),
+        ("relation", 42),
+    ]
+
+
 def test_unknown_ids_and_other_schemas_are_findings() -> None:
     catalog = Catalog(
         procs={1: Proc(1, "public", "f", "f", "v", "integer")},

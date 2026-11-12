@@ -30,7 +30,11 @@ folded by the parser into a constant (the type's input function already ran,
 and no id is left), and an I/O conversion cast (``COERCEVIAIO``) calls an
 output and an input function that the tree names by type, not by id. Both
 are pure type I/O for the types the guard admits, but they are counted per
-run so a reader knows how much of the admitted set they touch.
+run so a reader knows how much of the admitted set they touch. Not counted,
+because the tree names them by type or they are chosen only when the plan is
+made: the comparison function behind ``GREATEST``/``LEAST`` (``MINMAXEXPR``),
+a type's subscripting handler, a domain's ``CHECK`` and a SQL/JSON
+expression's coercions. All are pg_catalog's own and pure today.
 """
 
 from __future__ import annotations
@@ -152,7 +156,9 @@ def _nodes(text: str) -> Iterator[tuple[str, dict[str, int | tuple[int, ...]]]]:
                 yield stack.pop()
             i += 1
             continue
-        if tok == "[":
+        # A byte array only follows ":constvalue <length>"; outToken does not escape "[",
+        # so a "[" anywhere else is part of a name ("AS \"[\"") and is skipped alone.
+        if tok == "[" and i >= 2 and tokens[i - 2] == ":constvalue":
             while i < len(tokens) and tokens[i] != "]":
                 i += 1
             i += 1
@@ -246,6 +252,8 @@ def parse_ev_action(text: str) -> Resolution:
             for key in ("startInRangeFunc", "endInRangeFunc"):
                 if fields.get(key):
                     references.append(Reference("syntax", fields[key], name))
+        elif name == "TABLESAMPLECLAUSE" and fields.get("tsmhandler"):
+            references.append(Reference("syntax", fields["tsmhandler"], name))
         elif name == "ROWCOMPAREEXPR":
             opnos = raw.get("opnos", ())
             for opno in opnos if isinstance(opnos, tuple) else ():
