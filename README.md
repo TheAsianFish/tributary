@@ -200,13 +200,14 @@ make bench-results  # re-render RESULTS.md's ingest tables from bench/results/
 Grade the agent on BIRD Mini-Dev (PostgreSQL alone is enough):
 
 ```bash
-make eval                                   # replay the recorded dev50 run: no model, no database
+make eval                                   # replay the recorded dev50 and holdout50 runs: no model, no database
 docker compose up -d postgres && make bird  # 800 MB download once, then about a minute
 docker compose --profile ollama up -d ollama
 docker compose exec ollama ollama pull qwen2.5-coder:7b
 make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b          # live, about 70 min on 4 CPUs
 ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1
 make eval-link                              # schema-linking recall, offline
+uv run python -m eval.bird.paired full+a full+v+f+a  # paired comparison, each subset and pooled
 ```
 
 The demo at the top is a real terminal session against the quickstart's
