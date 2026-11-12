@@ -204,23 +204,35 @@ def capped_columns(width: int) -> list[sql.Identifier]:
     return [sql.Identifier(f"_c{i}") for i in range(1, width + 1)]
 
 
-def row_bytes(width: int) -> sql.Composed:
+# bpchar: its cast to text strips the padding that the server still sends.
+BPCHAR_OID = 1042
+
+
+def row_bytes(types: Sequence[int]) -> sql.Composed:
     """A row's size in bytes as the cap counts it, over ``r._c1`` ... (a bigint expression).
 
-    The sum of its values' ``::text`` lengths, a NULL counting 0: what the
-    text protocol sends, less the 4-byte length word per value (and but for a
-    boolean, whose cast spells ``true`` where the protocol sends ``t``).
+    ``types`` are the columns' type oids, as the bare query's description gives
+    them (a domain reports its base type). The sum of its values' ``::text``
+    lengths, a NULL counting 0: what the text protocol sends, less the 4-byte
+    length word per value (and but for a boolean, whose cast spells ``true``
+    where the protocol sends ``t``). A ``char(n)`` value is measured as it is,
+    because its cast to ``text`` drops the trailing spaces the server sends:
+    ``''::char(10485760)`` is 0 bytes as text and 10 MiB on the wire.
     """
     return sql.SQL(" + ").join(
-        sql.SQL("coalesce(octet_length(r.{}::text), 0)::bigint").format(c)
-        for c in capped_columns(width)
+        sql.SQL(
+            "coalesce(octet_length(r.{}), 0)::bigint"
+            if oid == BPCHAR_OID
+            else "coalesce(octet_length(r.{}::text), 0)::bigint"
+        ).format(c)
+        for c, oid in zip(capped_columns(len(types)), types, strict=True)
     )
 
 
-def size_capped(query: str, width: int, *, cap: int, limit: int) -> sql.Composed:
+def size_capped(query: str, types: Sequence[int], *, cap: int, limit: int) -> sql.Composed:
     """``query`` wrapped so that the server refuses a result over ``cap`` bytes.
 
-    The query's ``width`` columns are renamed positionally (``_c1`` ...), so a
+    The query's columns (``types``, their type oids) are renamed positionally (``_c1`` ...), so a
     duplicate or unnamed column needs no reference by name; the caller takes
     the names from the bare query's description. A row's size is
     :func:`row_bytes`. Each row is checked on its own as it is
@@ -237,10 +249,10 @@ def size_capped(query: str, width: int, *, cap: int, limit: int) -> sql.Composed
     ``OFFSET 0`` keeps the per-row check below the window, so a row over the
     cap fails before the window copies it into its buffer.
     """
-    if width < 1:
+    if not types:
         raise ValueError("a size-capped query needs at least one column")
-    columns = capped_columns(width)
-    size = row_bytes(width)
+    columns = capped_columns(len(types))
+    size = row_bytes(types)
     over = sql.SQL("({} || {})::bigint").format(sql.Literal(OVER_CAP_MARKER), size)
     total = sql.SQL("sum(s._bytes) OVER w")
     return sql.SQL(
@@ -366,8 +378,9 @@ class PostgresExecutor:
                 raise ExecutionError("database", "the statement returned no result set")
             columns = tuple(d.name for d in cur.description)
             if columns:  # a zero-column SELECT has no value to measure
+                types = [d.type_code for d in cur.description]
                 capped = size_capped(
-                    query, len(columns), cap=self.max_result_bytes, limit=self.row_cap + 1
+                    query, types, cap=self.max_result_bytes, limit=self.row_cap + 1
                 )
                 cur.execute(capped, prepare=True)
                 return columns, [row[:-1] for row in cur.fetchmany(self.row_cap + 1)]

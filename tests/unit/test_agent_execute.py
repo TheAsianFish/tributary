@@ -18,6 +18,7 @@ from tributary.agent.execute import (
     _classify,
     jsonable,
     plan_cost,
+    row_bytes,
     size_capped,
 )
 from tributary.agent.render import MAX_ROWS, MAX_WIDTH, render_answer, table
@@ -254,7 +255,9 @@ def test_serial_plans_are_opt_in() -> None:
 
 
 def test_size_capped_wraps_the_query_behind_fences() -> None:
-    rendered = size_capped("SELECT 1 AS a, 2 AS a -- note", 2, cap=100, limit=6).as_string(None)
+    rendered = size_capped("SELECT 1 AS a, 2 AS a -- note", [23, 23], cap=100, limit=6).as_string(
+        None
+    )
     assert rendered == (
         'SELECT s."_c1", s."_c2", CASE WHEN sum(s._bytes) OVER w > 100'
         " THEN ('result_bytes_over_cap:' || sum(s._bytes) OVER w)::bigint END AS _over_cap"
@@ -272,9 +275,18 @@ def test_size_capped_wraps_the_query_behind_fences() -> None:
     )
 
 
+def test_a_char_column_is_measured_with_its_padding() -> None:
+    # bpchar's cast to text strips the trailing spaces the server still sends
+    rendered = row_bytes([1042, 25]).as_string(None)
+    assert rendered == (
+        'coalesce(octet_length(r."_c1"), 0)::bigint'
+        ' + coalesce(octet_length(r."_c2"::text), 0)::bigint'
+    )
+
+
 def test_size_capped_needs_a_column() -> None:
     with pytest.raises(ValueError, match="at least one column"):
-        size_capped("SELECT FROM marts.dim_wiki", 0, cap=1, limit=1)
+        size_capped("SELECT FROM marts.dim_wiki", [], cap=1, limit=1)
 
 
 def test_a_result_over_the_cap_is_too_large() -> None:
@@ -302,6 +314,7 @@ def test_other_invalid_input_stays_a_database_error() -> None:
 class _Description:
     def __init__(self, name: str) -> None:
         self.name = name
+        self.type_code = 25  # text
 
 
 class _Cursor:

@@ -165,13 +165,14 @@ def _measure(cur: psycopg.Cursor[Any], query: str, limit: int) -> tuple[int, int
         sql.SQL(query), sql.Literal(limit)
     )
     cur.execute(bare, prepare=True)
-    width = len(cur.description or ())
+    types = [d.type_code for d in cur.description or ()]
+    width = len(types)
     python = result_bytes(cur.fetchall())
     if not width:
         return cur.rowcount, 0, 0
     cur.execute(
         sql.SQL("SELECT count(*), coalesce(sum({}), 0) FROM ({}) AS r({})").format(
-            row_bytes(width), bare, sql.SQL(", ").join(capped_columns(width))
+            row_bytes(types), bare, sql.SQL(", ").join(capped_columns(width))
         ),
         prepare=True,
     )

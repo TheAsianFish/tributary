@@ -33,6 +33,7 @@ QUERIES = [
     "VALUES (1, 'a'), (2, NULL)",
     "SELECT ARRAY[1, 2], 1.5::numeric, 'NaN'::float8, '\\x00ff'::bytea, ROW(1, 'a'), true",
     "SELECT 1 -- a trailing comment",
+    "SELECT 'ab'::char(4), NULL::char(3)",
     "SELECT FROM marts.dim_wiki LIMIT 3",
 ]
 
@@ -66,6 +67,14 @@ def test_many_small_rows_over_the_cap_are_refused(agent_conninfo: str) -> None:
         executor(agent_conninfo, 1000).run("SELECT wiki FROM marts.dim_wiki ORDER BY wiki")
     assert caught.value.kind == "too_large"
     assert "over the cap of 1,000" in caught.value.message
+
+
+def test_padded_char_values_count_their_padding(agent_conninfo: str) -> None:
+    # ''::char(n) casts to the empty text but is sent as n spaces
+    with pytest.raises(ExecutionError) as caught:
+        executor(agent_conninfo, 1000).run("SELECT ''::char(600) AS pad FROM generate_series(1, 2)")
+    assert caught.value.kind == "too_large"
+    assert "1,200 bytes, over the cap of 1,000" in caught.value.message
 
 
 @pytest.mark.parametrize("query", QUERIES)

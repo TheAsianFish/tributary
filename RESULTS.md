@@ -1412,7 +1412,9 @@ with a cast error carrying the size, reported as the repairable error
 whole-row composite. On a 20 MB row the composite took the server from
 72 MB to 229 MB; positional renaming leaves it at 73 MB. On the first
 attempt the composite twice got the 1 GiB container's backend killed with
-the 200 MB row. An inner `LIMIT row_cap + 1` stops the planner evaluating the
+the 200 MB row. A `char(n)` value is measured as it is, not
+through `::text`, whose cast strips the padding the server still sends
+(`''::char(10485760)` is 0 bytes as text and 10 MiB on the wire). An inner `LIMIT row_cap + 1` stops the planner evaluating the
 query's expressions once per mention. Raw:
 [`eval/results/result-cap/`](eval/results/result-cap/).
 
