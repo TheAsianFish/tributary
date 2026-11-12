@@ -304,7 +304,8 @@ BIRD official and 0 of 449 BIRD corrected gold queries
 One gap the guard does not close, because it is not a policy question:
 `SELECT repeat('x', 1e9)` is a cheap plan that builds a 1 GB value, so only
 the statement timeout bounds it. The row cap does not help, because this is
-one row. A byte cap on results in the executor would; it is on the roadmap.
+one row. A byte cap on results in the executor would, and M9 added one
+([below](#a-result-byte-cap)).
 
 Two executor defects came out of this run and were fixed before the numbers
 above: a parameterless query went over the simple protocol, so a stacked
@@ -312,6 +313,18 @@ above: a parameterless query went over the simple protocol, so a stacked
 queries are now prepared statements, which hold exactly one), and a query
 that terminated its own backend crashed the executor's rollback instead of
 returning an error.
+
+**Re-run for M9** with the suite at 127 statements, on the M9 executor
+(result byte cap on) and the local Compose PostgreSQL 17.11: 92 refused, 35
+ran. All eight new statements (`w.pg_typeof` and the other relation-alias
+spellings) ran, so the guard is the only layer that stops them. Three of the
+original 119 changed outcome, none to the agent's disadvantage. The recursive
+CTE now stops at the row cap instead of the statement timeout, because the
+wrapper's `LIMIT` makes the server stop producing rows. `SELECT ... INTO` is
+a syntax error inside the wrapper rather than a read-only refusal.
+`pg_terminate_backend(pid) FROM pg_stat_activity` was refused for permission:
+the first backend listed belonged to another role (the oracle was running),
+where in M8 it was the statement's own.
 
 ### The 40 warehouse questions
 
@@ -1265,6 +1278,161 @@ PyPI, the `pypi` environment's approval and the push to GHCR cannot run
 without the repository's credentials. RELEASE.md lists them as the
 maintainer's steps.
 
+## A differential oracle for the guard (M9)
+
+Run on 2026-11-12 on the machine above (4 vCPU, 15 GB, PostgreSQL 17.11 from
+`compose.yaml`, the sample loaded and `make dbt` built). $0: no model is
+involved. Raw output: [`eval/results/guard-diff/`](eval/results/guard-diff/),
+one JSON and one text summary per run, each stamped with its commit.
+
+**Method.** `make eval-guard-diff` (`eval/guard/differential.py`). The
+generator takes every function in `pg_proc` callable with one argument
+(1,312: one declared argument, or the rest defaulted) and substitutes each
+into the ten spelling templates of
+[`eval/guard/templates.yaml`](eval/guard/templates.yaml): field notation
+`(x).f`, `alias.f` over a mart and over its bare name, a derived table, a
+CTE, `VALUES`, a set-returning and a scalar function in FROM (the scalar one
+chosen to return the function's own argument type), and an alias rebound in
+a nested scope, over a function and over a mart. Each goes in four positions
+(select list, `WHERE`, `ORDER BY`, `FILTER`). The 40 warehouse gold queries
+are added unchanged, with `alias.f` in the outer `WHERE` for every outer
+alias, and wrapped as a derived table and as a CTE with `g.f` selected:
+220,456 statements in all. The templates were committed (`a78c6dd`) before
+the guard was changed.
+
+The oracle never executes a generated statement. Each one the guard admits
+is wrapped as `SELECT count(*) FROM (<the guard's regenerated SQL>) AS q`,
+created as a temporary view by the owner role with the agent's empty
+`search_path`, in a transaction that is then rolled back. Creating a view
+runs PostgreSQL's parse analysis and stores the resolved tree in
+`pg_rewrite.ev_action`. The oracle reads every function, aggregate, window
+function and operator id out of that tree, plus sort operators and relations,
+and judges each against the guard's own policy (`function_refusal`: the
+denylist for every function however it is reached, and the allowlist for a
+call written by name). A statement is *flagged* if it resolves to something
+the guard would have refused had it seen it. The parser and the judge are
+unit-tested offline against `ev_action` text recorded from this server
+(`tests/fixtures/guard_oracle/`).
+
+**Before the fix** (`before`, commit `a78c6dd`, 459 s):
+
+| Generated | Admitted by the guard | Refused by PostgreSQL at parse analysis | Resolved | Flagged |
+|---:|---:|---:|---:|---:|
+| 220,456 | 199,464 | 194,584 | 4,880 | **2,768** |
+
+Almost everything is admitted because, to sqlglot, `w.f` is a column. Most
+of it then fails parse analysis: 192,736 with "column does not exist"
+(42703), because no function `f` accepts the row. The 4,880 that resolve
+reach 17 functions outside the policy, all through a relation, derived
+table, CTE or `VALUES` alias (72 flagged per template, 760 to 816 per gold
+rewrite):
+
+| Volatility | Functions reachable outside the policy |
+|---|---|
+| immutable (6) | `any_out`, `anycompatible_out`, `anycompatiblenonarray_out`, `anyelement_out`, `anynonarray_out`, `hash_record` |
+| stable (11) | `pg_typeof`, `pg_column_size`, `pg_column_compression`, `pg_column_toast_chunk_id`, `pg_collation_for`, `quote_literal`, `quote_nullable`, `record_out`, `record_send`, `json_agg_strict`, `jsonb_agg_strict` |
+| volatile | none |
+
+The hypothesis was 10 to 25 functions, none volatile; 17, none volatile.
+What it did not predict: field notation reaches aggregates, so
+`w.jsonb_agg_strict` is an aggregate call over the whole table. The
+function-in-FROM templates, field notation and the rebound function alias
+were admitted 0 times, because the three earlier fixes hold. A further 1,368
+statements were refused as 42809 and 480 as 42803, the grouping error.
+
+**Each historical fix switched off in turn** (a test-only switch,
+`fixes_disabled`, at the same commit, templates only, without the gold
+rewrites):
+
+| Fix switched off | Where the oracle flags it | Flagged there | Reachable outside the policy, volatile among them |
+|---|---|---:|---|
+| Field notation `(x).f` (M3) | `field` | 1,874 | 432 functions, 97 volatile: `pg_sleep`, `pg_terminate_backend`, `pg_read_file`, `lo_import`, `pg_advisory_lock`, `setseed`, ... |
+| A qualified column on a function in FROM (M8) | `from_function` 1,384, `scalar_from_function` 1,858, `reused_alias` 1,384 | 4,626 | 428, 96 volatile |
+| Intersecting an alias bound twice (M8 review) | `reused_alias` | 1,384 | 314, 74 volatile |
+
+The oracle flags every one of the three. Switching off the M8 check reopens
+its refinement too, because the rebound alias is a case of it. Each run also
+still flags the 432 relation-alias statements the guard had not yet closed.
+
+**After the fix** (`after`, commit `673503e`, 129 s): the guard binds each
+qualifier as PostgreSQL scopes it (sqlglot's scope analysis) and refuses a
+name that is not a column of the bound source but is one of pg_catalog's
+one-argument functions.
+
+| Generated | Admitted | Refused by PostgreSQL | Resolved | Flagged |
+|---:|---:|---:|---:|---:|
+| 220,456 | 192 | 152 | 40 | **0** |
+
+The 40 that resolve are the unchanged gold queries. The 152 are
+`w._pg_expandarray` in every template and position, a function in
+`information_schema` that the agent's empty `search_path` cannot reach.
+PostgreSQL refused each one, which is the reason the guard's list holds only
+pg_catalog's names. Switching the new check off at the same commit
+(`after-without-relation_alias`) gives back the same 432 flagged template
+statements and the same 17 functions. `make eval-guard` after the fix:
+
+| | |
+|---|---|
+| The 119 statements of the suite before M9 | 119 / 119 blocked |
+| With the eight added for M9 (one per spelling the oracle found) | 127 / 127 blocked |
+| Gold queries blocked | 0 / 40 warehouse, 0 / 500 BIRD official, 0 / 449 BIRD corrected |
+| Recorded model SQL whose verdict changes (381 statements in `tests/recordings/`) | 0; `make eval` replays verdict for verdict and `make eval-warehouse` gives 25 / 40 |
+
+**Why the check stops at callable names.** A first version refused every
+qualified name that was not a column. That changed 51 of the 381 recorded
+model statements. All 51 were model typos, such as `T1.link_to_event` on the
+wrong table or `fe.edits` on `fct_edits`, which PostgreSQL had already
+refused with "column does not exist". That message, with its hint, is what
+the model repaired from. A name that is neither a column nor a callable
+function cannot hide a call, so it is left to the database. The list
+(`tributary/agent/pg_functions.py`, 1,074 names) is generated from the
+server, and `make test-warehouse` fails if the server it runs against has a
+name the list lacks.
+
+**What the oracle cannot see, counted.** A cast of a literal is folded by
+the parser into a constant, so the type's input function has already run
+and leaves no id. An I/O conversion cast (`COERCEVIAIO`) calls an output and
+an input function that the tree names by type, not by id. Both are counted
+per run, not excluded. `before` and `after` have 0 of each: no admitted
+template or gold query casts a literal, and none resolved through an I/O
+conversion. With a fix switched off, 652 admitted statements carry a literal
+cast in the field-notation run and again in the function-alias run (the
+`bigint`, `smallint`, `real` and `double precision` arguments, written
+`CAST(1 AS bigint)`), and 36, 132 and 48 resolved statements in the three
+runs contain an I/O conversion. The input and output functions those run
+are not in the reachable lists above.
+
+### A result byte cap
+
+`TRIBUTARY_AGENT_MAX_RESULT_BYTES` (default 8 MiB). The executor wraps each
+query so that PostgreSQL adds up the text size of the values it is about to
+send, row by row with a running total. Past the cap it fails the statement
+with a cast error carrying the size, reported as the repairable error
+`too_large`. Columns are renamed by position rather than measured as a
+whole-row composite. On a 20 MB row the composite took the server from
+72 MB to 229 MB; positional renaming leaves it at 73 MB. On the first
+attempt the composite twice got the 1 GiB container's backend killed with
+the 200 MB row. An inner `LIMIT row_cap + 1` stops the planner evaluating the
+query's expressions once per mention. Raw:
+[`eval/results/result-cap/`](eval/results/result-cap/).
+
+| `/usr/bin/time -v uv run tributary sql "..."` | Peak RSS before (`4ae818f`) | After | Exit |
+|---|---:|---:|---|
+| `SELECT repeat('x', 200000000)` | 1,639,668 kB | **77,904 kB** | 0 (200 MB printed) → 1, "the result reached 200,000,000 bytes, over the cap of 8,388,608" |
+| `SELECT 1` | 77,528 kB | 77,808 kB | 0 → 0 |
+
+Recorded results over the cap (`uv run python -m eval.result_bytes`):
+**0 of 275**. That is 0 of 94 BIRD gold results (largest 49,955 bytes), 0 of
+141 BIRD results of the model's SQL (largest 580,926 bytes, 42,823 rows) and
+0 of 40 warehouse gold results (largest 177 bytes). The warehouse sizes come
+from PostgreSQL itself, as the agent's role; the BIRD ones from the recorded
+values, with the size function matching PostgreSQL's `::text` on 23 types.
+The BIRD harness runs without the cap, as it runs without the cost ceiling,
+because it scores the model's SQL and replays recorded bare executions. 52
+queries (the 40 gold plus edge cases: `ORDER BY`, duplicate names, `WITH`,
+set operations, `VALUES`, arrays, bytea, NaN) return identical columns, row
+order, values and types with and without the cap.
+
 ## To measure
 
 | What | Command | Milestone | Cost |
@@ -1279,4 +1447,5 @@ maintainer's steps.
 | The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |
 | The provider against the real API: one structured-output call with usage and cost | `ANTHROPIC_API_KEY=... make test-live` (or the `Live` workflow, run by hand) | M8 | under $0.01 on `claude-haiku-5-5` (one call, about 100 input and 50 output tokens) |
 | The 40 warehouse questions with value hints and three worked examples on the local model, so the product's defaults can include them | `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` (about 35 min of CPU, from the 7B run's pace) | M8 | $0 |
+| The `Guard differential` workflow on GitHub (M9 ran it locally only) | `gh workflow run guard-diff.yml --ref dev/m9`, then compare the artifact with `eval/results/guard-diff/after.json` | M9 | $0 (the repository's Actions minutes: about 25 min) |
 | CI on GitHub for this release: `CI`, `Integration` and `Warehouse` green on the pull request, and both release workflows' dry runs green on the branch | push the branch, open the pull request, then `gh workflow run release.yml --ref dev/m8` and `gh workflow run images.yml --ref dev/m8` | M8 | $0 (the repository's Actions minutes: a few minutes for the gate, up to 35 for Integration, about 10 for the images) |
