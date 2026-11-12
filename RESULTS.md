@@ -776,6 +776,8 @@ questions is noise; the p-value says how much.
 
 **The default.** `make eval`'s live default is now `full,full+v+f+a`: the baseline and the variant that is best on both tracks, for 13% more input tokens than the next best. It is the only cell that improved the challenging questions, and neither pairing against `full` is significant at this size, which is what a larger subset (`SUBSET=all`, under To measure) would settle.
 
+M10 tested this choice on 50 questions that did not pick it, under a rule written down first: the default stays, but the gain comes from value hints and examples, not from `+a` (see [the held-out sample](#the-default-variant-on-a-held-out-sample-m10)).
+
 The product's agent keeps value hints and worked examples **off** by default (`TRIBUTARY_AGENT_VALUES=false`, `TRIBUTARY_AGENT_EXAMPLES=0`), for three reasons:
 
 - Over `full+a`, their net gain on BIRD is 1 and 4 questions: 8 and 11 gained, against 7 lost on each track.
@@ -1590,6 +1592,68 @@ Pooled execution accuracy:
 <!-- bird:decision -->
 **The rule, applied.** On holdout50 alone, `full+v+f+a` answers official 24 against 16 for `full+a`; corrected 27 against 19 for `full+a`. `full+v+f+a` is at least level with `full+a` on both tracks, so it stays `make eval`'s live default (`full,full+v+f+a`).
 <!-- /bird:decision -->
+
+`DEFAULT_LIVE_VARIANTS` in `eval/bird/run.py` is unchanged, and a unit test
+(`test_the_live_default_is_what_the_rule_picks_on_the_committed_run`) fails
+if it ever disagrees with the rule applied to the committed holdout50 run.
+
+### The hypotheses, answered
+
+1. **`+a` keeps a net gain over `full`: no.** On holdout50 `full+a` against
+   `full` is +3 −4 official (p = 1.000) and +4 −4 corrected (p = 1.000).
+   The mechanism did work: `full` refused 6 official questions and `full+a`
+   answered all of them, 2 correctly (dev50: 4 of 11). What cancelled it is
+   the rest of the prompt change. All 4 official questions `full+a` lost
+   (707, 717, 733, 1239) were ones `full` had answered correctly, not
+   refusals: adding the rule's sentence changed the SQL the model wrote on
+   questions the rule was never meant to touch (733 became a statement the
+   guard blocked). So M7's +7 −3 on dev50 was a real mechanism plus
+   perturbation that happened to fall its way. On fresh questions the
+   perturbation was as large as the mechanism's gain.
+2. **`+v+f` over `+a` within ±2 on the official track: no, it is larger.**
+   `full+v+f+a` against `full+a` is +12 −4 official (16 → 24, p = 0.077)
+   and +11 −3 corrected (19 → 27, p = 0.057). On dev50 the same pairing was
+   +8 −7. The gain M7 attributed mostly to `+a` belongs, on this sample, to
+   value hints and worked examples. M7 saw the opposite, which is what
+   noise on 50 questions looks like when three variants are compared.
+3. **Pooled to n = 100, at most one of the two pairings against `full`
+   reaches p < 0.05 on the official track: yes, exactly one.**
+   `full+v+f+a` against `full` is +18 −6 (38 → 50 of 100, p = 0.023);
+   `full+a` against `full` is +10 −7 (p = 0.629). On the corrected track
+   the pooled `full+v+f+a` pairing is +24 −8 (37 → 53 of 91, p = 0.007).
+   Read the pooled p with care: dev50 is the sample that chose the variant,
+   so it is biased toward it. holdout50 alone does not reach 0.05 (p =
+   0.092 official, 0.057 corrected), but it points the same way with a
+   larger net (+7 and +8) than dev50 had (+5 and +8).
+
+**What this changes.** The default stays, on fresh evidence rather than on
+the sample that picked it. The explanation of *why* it wins changes: the
+answer-every-question rule alone is a wash, and value hints with worked
+examples carry the gain. The M7 ablation cannot separate `+v` from `+f`
+(the leave-one-out cells are still under [To measure](#to-measure)).
+
+The product's agent still keeps value hints and worked examples off. The
+first of M7's three reasons (a net gain of 1 and 4 over `full+a`) is
+weaker now: on holdout50 it is 8 and 8. The other two stand, and the
+warehouse re-recording under To measure is what would decide it, not
+BIRD.
+
+### The run
+
+`make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=holdout50
+VARIANTS=full+a,full+v+f+a,full RECORD=1 RESUME=1`, `qwen2.5-coder:7b`
+(Ollama digest `dae161e27b0e`, 4.7 GB) on Ollama 0.40.6 in Compose (8 GB
+limit), CPU only, 4 vCPU, temperature 0, seed 0, one request at a time.
+240 model calls, 6.14 h of model time in total (the sum of each recorded
+call's latency). The run took two sessions: the first was interrupted
+after 144 calls (all of `full+a` and the start of `full+v+f+a`; 3.65 h of
+model time); `RESUME=1` answered those from the recordings and made the
+remaining 96 calls live, in 149 min 23 s of wall time (`wall_seconds`
+8960.8 in the report). The corrected track needs few calls of its own,
+because most of its questions are worded as in the official track and
+reuse the same request. BIRD's `calculate_ex` agrees with the harness on
+245 / 245 pairs. Cost: $0. The replay (`make eval`, what CI runs) checks
+the run verdict for verdict in 9 s, beside dev50's.
 
 ## To measure
 
