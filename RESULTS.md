@@ -1298,7 +1298,12 @@ a nested scope, over a function and over a mart. Each goes in four positions
 are added unchanged, with `alias.f` in the outer `WHERE` for every outer
 alias, and wrapped as a derived table and as a CTE with `g.f` selected:
 220,456 statements in all. The templates were committed (`a78c6dd`) before
-the guard was changed.
+the guard was changed. The crossing by argument type is narrower than it
+sounds: the generator has a value for 510 of the 1,312 functions' first
+argument types, and passes the integer `1` to the other 802, so a function
+taking `bytea`, `inet`, `uuid`, `tsvector` or `xml` is never fed a value of
+its own type in the `field` and `scalar_from_function` templates (an integer
+does reach `oid` and the `reg*` types by implicit cast).
 
 The oracle never executes a generated statement. Each one the guard admits
 is wrapped as `SELECT count(*) FROM (<the guard's regenerated SQL>) AS q`,
@@ -1367,7 +1372,14 @@ The 40 that resolve are the unchanged gold queries. The 152 are
 `w._pg_expandarray` in every template and position, a function in
 `information_schema` that the agent's empty `search_path` cannot reach.
 PostgreSQL refused each one, which is the reason the guard's list holds only
-pg_catalog's names. Switching the new check off at the same commit
+pg_catalog's names (the count is one function across 24 template, 40 + 40
+gold-wrap and 48 outer-alias slots; the JSON keeps the totals, not the
+statements). The fix also refuses 2,072 statements that resolved, before it,
+to functions the policy allows (4,880 resolved, less 2,768 flagged and the
+40 gold): `w.to_json`, `w.row_to_json` and the like. That is the same line
+the field-notation check has drawn since M3. A whole-row call is refused
+however harmless, because the guard cannot tell it from a column without
+the catalog. Switching the new check off at the same commit
 (`after-without-relation_alias`) gives back the same 432 flagged template
 statements and the same 17 functions. `make eval-guard` after the fix:
 
@@ -1401,6 +1413,25 @@ cast in the field-notation run and again in the function-alias run (the
 `CAST(1 AS bigint)`), and 36, 132 and 48 resolved statements in the three
 runs contain an I/O conversion. The input and output functions those run
 are not in the reachable lists above.
+
+**Reproducing these files.** `before` and the three `without-*` runs are
+`python -m eval.guard.differential run --label <label> [--disable <fix>
+--no-gold]` at `a78c6dd`, before the relation-alias check existed; `after`
+and `after-without-relation_alias` are the same at `673503e`. `make
+eval-guard-diff` runs the current tree (label `current`) and every fix
+switched off in turn, the relation-alias check included; at a commit after
+the fix the `without-*` runs no longer carry the 432 relation-alias
+statements, since that check stays on in them.
+
+**Known blind spots after the review.** The oracle's tree reader treated
+every `[` as the start of a constant's bytes; a column alias spelled `"["`
+hid every call after it. No committed template or gold query has one, so
+the runs above are unaffected; it now opens a byte array only after
+`:constvalue <length>`. It also reads a `TABLESAMPLE` method's handler now.
+It still cannot see the comparison function behind `GREATEST`/`LEAST`, a
+type's subscripting handler, a domain's `CHECK` or a SQL/JSON expression's
+coercions, which the tree names by type or which are chosen when the plan
+is made; all are pg_catalog's own and pure today.
 
 ### A result byte cap
 

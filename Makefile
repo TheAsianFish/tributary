@@ -69,7 +69,7 @@ eval-guard-db: ## The unsafe suite with the guard off: what the agent's role alo
 	uv run python -m eval.guard_db
 
 GUARD_DIFF_DIR ?= eval/results/guard-diff
-GUARD_FIXES := field_notation function_alias alias_intersection
+GUARD_FIXES := field_notation function_alias alias_intersection relation_alias
 
 eval-guard-diff: ## Differential oracle: generated spellings through the guard, resolved by PostgreSQL (~30 min)
 	uv run python -m eval.guard.differential run --label current --output-dir $(GUARD_DIFF_DIR)
