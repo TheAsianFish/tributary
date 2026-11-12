@@ -324,8 +324,8 @@ RESULTS.md's tables (`make check` tests that).
    in M3, `p.pg_terminate_backend` over a FROM function in M8, the rebound
    alias in M8's review) are one class: sqlglot and PostgreSQL read the same
    text differently. A fourth member of the class is admitted today
-   (`w.row_to_json` over a mart). In stock PostgreSQL only 25 one-argument
-   functions accept a whole row and none I know of has side effects, but
+   (`w.row_to_json` over a mart). In stock PostgreSQL only about 25
+   one-argument functions accept a whole row and none I know of has side effects, but
    "none I know of" is the kind of claim this project exists to replace with
    a count. A probe showed PostgreSQL will name the functions a statement
    resolves to without running it: create a temporary view over the
@@ -354,7 +354,8 @@ RESULTS.md's tables (`make check` tests that).
   three historical fixes switched off in turn, the oracle flags all three;
   on today's guard it finds functions outside the policy reachable only
   through whole-row notation on a relation alias (I expect between 10 and
-  25, none volatile; a second spelling class or a volatile function would be
+  25, none volatile: by argument type, 24 plain functions in `pg_proc` take
+  one `record`, `"any"`, `anyelement`, `anynonarray` or `anycompatible`; a second spelling class or a volatile function would be
   the surprise); after the guard learns each mart's columns, 0 of the same
   statements, with 0 new false blocks on the 989 gold queries. The byte cap
   rides along: 1.64 GB for one admitted row should become a refusal within a
@@ -368,12 +369,16 @@ RESULTS.md's tables (`make check` tests that).
   written down before the run.
 - **M11, a future-stamped event must not cost later events.** *Question:*
   how far ahead can one event be before real events are dropped, and what
-  bound on skew costs nothing? *Hypotheses:* loss is a step, not a slope:
-  with the sample's measured lateness (max 143 s) a poison up to about 450 s
-  ahead drops nothing, one 23 h ahead drops every event in every later
-  micro-batch, and events in the poison's own batch survive (the watermark
-  moves between batches); a skew bound well under the watermark delay
-  rejects 0 of the 50,000 sample events. The M5 incident is reproduced and
+  bound on skew costs nothing? *Hypotheses:* the loss is predictable to the
+  row from the sample alone. A poison `X` seconds ahead moves the watermark
+  to `t_poison + X − 600`, so the later micro-batches lose exactly the
+  events stamped below that line. With the sample's measured lateness (max
+  143 s) nothing is lost up to about 457 s. Between that and the sample's
+  remaining span, the loss is a window that widens with `X`, not a step.
+  At 3,600 s and 82,800 s, every event in every later batch is lost. Events
+  in the poison's own batch survive, because the watermark moves between
+  batches. A skew bound well under the watermark delay rejects 0 of the
+  50,000 sample events. The M5 incident is reproduced and
   explained first: the sample's own timestamps are in the past, so how a
   replay put the watermark two hours ahead is not yet understood.
 
@@ -398,6 +403,21 @@ RESULTS.md's tables (`make check` tests that).
 - *The Claude runs.* No key; they stay under To measure.
 - *An Iceberg REST catalog, a Trino dialect for the guard.* New surface, no
   open question.
+
+**Revised after review.** I re-ran the evidence before merging the plan and
+it reproduced: `make check` 1315 passed, 7 xfailed; the guard suite,
+`make eval-link` and the `make eval` replay as in the table; the
+`row_to_json` admission; 1,639,980 KB peak for the `repeat` row against
+77,484 KB for `SELECT 1`; and a rolled-back temporary view's
+`pg_rewrite.ev_action` naming `row_to_json` and `pg_typeof` by id. Three
+changes followed. First, M11's "a step, not a slope" was wrong: a poison 900 s
+ahead moves the watermark only 300 s past real time, so the loss is a window
+whose exact size the sample predicts, and the hypothesis is now that count.
+Second, the M11 bench stamps each record's Kafka timestamp with its emit time,
+because the bound compares event time with the Kafka timestamp, and a replay
+stamped with the wall clock would never trip it. Third, M9's templates
+include the reused alias and the scalar FROM function, so "flags all three
+historical fixes" does not depend on a template added after the fact.
 
 ## Milestones
 
@@ -469,8 +489,8 @@ RESULTS.md's tables (`make check` tests that).
     - **`tests/live` and the `Live` workflow.** These were planned since M3 (as an `eval-live` job): a dispatch-only workflow that skips every step without the `ANTHROPIC_API_KEY` secret.
     - **The 0.1.0 tag is not created.** A squash merge gives `main` a new commit, so the tag has to be made on `main` after the merge. RELEASE.md has the exact commands.
 
-- [ ] M9: A differential oracle for the guard, and a result byte cap — `eval/guard/differential.py` and `make eval-guard-diff` (PostgreSQL only; a manually triggered workflow, never on pull requests): a generator fixed before any guard change (every one-argument function in `pg_proc` crossed with a committed list of spelling templates: `(x).f`, `alias.f` over a mart, a subquery, a CTE, `VALUES` and a FROM function, in the select list, `WHERE`, `ORDER BY` and `FILTER`; plus the same rewrites applied to the 40 warehouse gold queries), and an oracle that never executes a statement: each one the guard admits is wrapped as `SELECT count(*) FROM (...)`, made a temporary view by the owner role in a transaction that is rolled back, and the functions PostgreSQL resolved are read from `pg_rewrite.ev_action` (function, aggregate, window and operator ids) and compared with the guard's policy; the oracle's own unit tests offline against recorded `ev_action` text. Then the guard checks a column reference on a relation alias against that relation's columns (the catalog's, or the subquery's own output), and the executor refuses a result over a byte cap (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`) before the client holds it. `test_marts_from_information_schema` builds what it needs or skips with the reason. Done when RESULTS.md holds: the statements generated, admitted and flagged before the fix with the reachable functions listed by volatility; each of the three historical fixes disabled in turn (a test-only switch) with the oracle flagging every one, or the one it misses named; the same counts after the fix (0 flagged) with `make eval-guard` still 119 / 119 and 0 false blocks on 40 + 500 + 449; what the oracle cannot see (casts folded to constants, I/O conversion casts) counted in the generated set rather than left out; peak memory of `tributary sql "SELECT repeat('x', 200000000)"` before and after, and the number of recorded BIRD and warehouse gold results over the cap (expected 0); raw output under `eval/results/`; the new unsafe statements added to `eval/guard/unsafe.yaml`.
+- [ ] M9: A differential oracle for the guard, and a result byte cap — `eval/guard/differential.py` and `make eval-guard-diff` (PostgreSQL only; a manually triggered workflow, never on pull requests): a generator fixed before any guard change (every one-argument function in `pg_proc` crossed with a committed list of spelling templates: `(x).f`, `alias.f` over a mart, a subquery, a CTE, `VALUES` and a FROM function (a scalar one too, with functions crossed by argument type), and an alias reused in a nested scope, in the select list, `WHERE`, `ORDER BY` and `FILTER`; plus the same rewrites applied to the 40 warehouse gold queries), and an oracle that never executes a statement: each one the guard admits is wrapped as `SELECT count(*) FROM (...)`, made a temporary view by the owner role in a transaction that is rolled back, and the functions PostgreSQL resolved are read from `pg_rewrite.ev_action` (function, aggregate, window and operator ids) and compared with the guard's policy; the oracle's own unit tests offline against recorded `ev_action` text. Then the guard checks a column reference on a relation alias against that relation's columns (the catalog's, or the subquery's own output), and the executor refuses a result over a byte cap (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`) before the client holds it. `test_marts_from_information_schema` builds what it needs or skips with the reason. Done when RESULTS.md holds: the statements generated, admitted and flagged before the fix with the reachable functions listed by volatility; each of the three historical fixes disabled in turn (a test-only switch) with the oracle flagging every one, or the one it misses named; the same counts after the fix (0 flagged) with `make eval-guard` still 119 / 119 and 0 false blocks on 40 + 500 + 449; what the oracle cannot see (casts folded to constants, I/O conversion casts) counted in the generated set rather than left out; peak memory of `tributary sql "SELECT repeat('x', 200000000)"` before and after, and the number of recorded BIRD and warehouse gold results over the cap (expected 0); raw output under `eval/results/`; the new unsafe statements added to `eval/guard/unsafe.yaml`.
 - [ ] M10: The default variant on a held-out sample — a `holdout50` subset: 50 official questions disjoint from `dev50`, drawn by the same stratified hash rule (15 simple, 25 moderate, 10 challenging), its ids and the decision rule below committed before any model call; `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=holdout50 VARIANTS=full,full+a,full+v+f+a RECORD=1` (about four hours of CPU, resumable with `RESUME=1`; `full+a` and `full+v+f+a` first, since they decide the default), each run's worked examples excluding only its own subset so the committed `dev50` recordings still replay; the report gains a paired comparison between any two variants and a pooled view over both subsets. Decision rule: `full+v+f+a` stays `make eval`'s live default only if, on `holdout50` alone, it is at least level with `full+a` on both tracks; otherwise the default becomes `full+a` and RESULTS.md says the M7 gain did not replicate. Done when RESULTS.md holds the `holdout50` table (both tracks, the Wilson interval, +gained −lost and the exact McNemar p for `full+a` against `full`, and `full+v+f+a` against `full` and against `full+a`), the same pairings pooled at n = 100, each hypothesis answered, and the default restated under the rule; `make eval` in CI replays both subsets verdict for verdict; the model, its version and the wall time are named, at $0.
-- [ ] M11: A future-stamped event must not cost later events — first the M5 incident reproduced in Spark local mode and explained (which records ran ahead of the wall clock, and why); a unit test on the multi-batch harness in `tests/unit/test_stream_spark.py` that fails on today's job: one event stamped 23 hours ahead in an early micro-batch, the later batches' real events dropped, with the exact count; `make bench-skew` (Spark local mode on the committed sample, no Compose; a manual run, not CI): the 50,000 events in stream order in fixed micro-batches with one poison at a fixed position and a skew of 0, 60, 300, 450, 600, 900, 3,600 and 82,800 s, reporting rows dropped by the watermark per skew, before and after the fix; the fix in `tributary/stream/parse.py` and `tributary/events.py`: the future-skew bound tied to the watermark delay (a setting, default justified from the sample's emit delay and lateness), rejected rows counted by reason; and the stream job's `rows_dropped_by_watermark` and rejected counts written with each batch to `ops.stream_progress`, with a quality check in `ops.quality_runs` that fails when either rises above a threshold, so a provenance line can say so. One poisoned run on the Compose stack (`bench/faults.py` gains the scenario) before and after, both sinks. Done when RESULTS.md holds the loss-against-skew table before and after with each hypothesis answered (the step's position against the sample's 143 s maximum lateness; the poison's own batch surviving; 0 of the 50,000 sample events rejected by the new bound), the Compose run's counts in PostgreSQL and Iceberg with the quality check red before the fix and green after, the M5 watermark precondition in the benchmark either removed or kept with the reason, and raw output under `bench/results/m11-skew/`.
+- [ ] M11: A future-stamped event must not cost later events — first the M5 incident reproduced in Spark local mode and explained (which records ran ahead of the wall clock, and why); a unit test on the multi-batch harness in `tests/unit/test_stream_spark.py` that fails on today's job: one event stamped 23 hours ahead in an early micro-batch, the later batches' real events dropped, with the exact count; `make bench-skew` (Spark local mode on the committed sample, no Compose; a manual run, not CI): the 50,000 events in stream order in fixed micro-batches, each record's Kafka timestamp set to its `meta.dt` (the emit time, so the skew bound sees what it would see live), with one poison at a fixed position stamped 0, 60, 300, 450, 600, 900, 3,600 and 82,800 s ahead of its own `meta.dt`, reporting rows dropped by the watermark per skew beside the count predicted from the sample before the run (later-batch events stamped below `t_poison + X − 600`), before and after the fix; the fix in `tributary/stream/parse.py` and `tributary/events.py`: the future-skew bound tied to the watermark delay (a setting, default justified from the sample's emit delay and lateness), rejected rows counted by reason; and the stream job's `rows_dropped_by_watermark` and rejected counts written with each batch to `ops.stream_progress`, with a quality check in `ops.quality_runs` that fails when either rises above a threshold, so a provenance line can say so. One poisoned run on the Compose stack (`bench/faults.py` gains the scenario) before and after, both sinks. Done when RESULTS.md holds the loss-against-skew table before and after with each hypothesis answered (the measured loss against the predicted count at every skew, any difference explained; the first lossy skew against the sample's 143 s maximum lateness; the poison's own batch surviving; 0 of the 50,000 sample events rejected by the new bound), the Compose run's counts in PostgreSQL and Iceberg with the quality check red before the fix and green after, the M5 watermark precondition in the benchmark either removed or kept with the reason, and raw output under `bench/results/m11-skew/`.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.
