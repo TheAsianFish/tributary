@@ -277,6 +277,9 @@ class Harness:
             statement_timeout_ms=TIMEOUT_MS,
             row_cap=ROW_CAP,
             cost_ceiling=None,
+            # Like the cost ceiling, off: BIRD scores the model's SQL, not the agent's
+            # limits, and the recorded executions are of the bare queries.
+            max_result_bytes=None,
             search_path=database if gold else "",
             # Serial plans: a parallel float4 SUM can differ in its last bits from run to
             # run, and BIRD compares values exactly.

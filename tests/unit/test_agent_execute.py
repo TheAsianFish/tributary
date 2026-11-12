@@ -12,11 +12,13 @@ import pytest
 from psycopg import errors, sql
 
 from tributary.agent.execute import (
+    OVER_CAP_MARKER,
     ExecutionError,
     PostgresExecutor,
     _classify,
     jsonable,
     plan_cost,
+    size_capped,
 )
 from tributary.agent.render import MAX_ROWS, MAX_WIDTH, render_answer, table
 from tributary.agent.roles import agent_role_statements
@@ -105,6 +107,10 @@ def test_classify(exc: psycopg.Error, kind: str, sqlstate: str | None) -> None:
             "The warehouse is unreachable: cannot connect",
         ),
         (ExecutionError("permission", "denied"), "The agent's role lacks a privilege: denied"),
+        (
+            ExecutionError("too_large", "the result reached 9 bytes, over the cap of 8"),
+            "The query's result was refused: the result reached 9 bytes, over the cap of 8",
+        ),
     ],
 )
 def test_feedback(error: ExecutionError, feedback: str) -> None:
@@ -245,3 +251,109 @@ def test_serial_plans_are_opt_in() -> None:
     rendered = [_rendered(s) for s in PostgresExecutor("dbname=x", parallel=False)._settings()]
     assert rendered[0] == "SET TRANSACTION READ ONLY"
     assert serial in rendered
+
+
+def test_size_capped_wraps_the_query_behind_fences() -> None:
+    rendered = size_capped("SELECT 1 AS a, 2 AS a -- note", 2, cap=100, limit=6).as_string(None)
+    assert rendered == (
+        'SELECT s."_c1", s."_c2", CASE WHEN sum(s._bytes) OVER w > 100'
+        " THEN ('result_bytes_over_cap:' || sum(s._bytes) OVER w)::bigint END AS _over_cap"
+        " FROM (SELECT r.*, CASE WHEN"
+        ' coalesce(octet_length(r."_c1"::text), 0)::bigint'
+        ' + coalesce(octet_length(r."_c2"::text), 0)::bigint > 100'
+        " THEN ('result_bytes_over_cap:' || "
+        'coalesce(octet_length(r."_c1"::text), 0)::bigint'
+        ' + coalesce(octet_length(r."_c2"::text), 0)::bigint)::bigint'
+        ' ELSE coalesce(octet_length(r."_c1"::text), 0)::bigint'
+        ' + coalesce(octet_length(r."_c2"::text), 0)::bigint END AS _bytes'
+        # the query on lines of its own: a trailing line comment cannot swallow the ")"
+        " FROM (SELECT * FROM (\nSELECT 1 AS a, 2 AS a -- note\n) AS q LIMIT 6)"
+        ' AS r("_c1", "_c2") OFFSET 0) AS s WINDOW w AS (ROWS UNBOUNDED PRECEDING)'
+    )
+
+
+def test_size_capped_needs_a_column() -> None:
+    with pytest.raises(ValueError, match="at least one column"):
+        size_capped("SELECT FROM marts.dim_wiki", 0, cap=1, limit=1)
+
+
+def test_a_result_over_the_cap_is_too_large() -> None:
+    exc = errors.InvalidTextRepresentation(
+        f'invalid input syntax for type bigint: "{OVER_CAP_MARKER}200000000"'
+    )
+    error = _classify(exc, 8_388_608)
+    assert error.kind == "too_large"
+    assert error.repairable
+    assert error.message == (
+        "the result reached 200,000,000 bytes, over the cap of 8,388,608; "
+        "select fewer or shorter columns, or aggregate"
+    )
+    assert error.feedback().startswith("The query's result was refused: the result reached")
+
+
+def test_other_invalid_input_stays_a_database_error() -> None:
+    exc = errors.InvalidTextRepresentation('invalid input syntax for type integer: "abc"')
+    assert _classify(exc, 8_388_608).kind == "database"
+    # without a cap, nothing is classified as over it
+    marker = errors.InvalidTextRepresentation(f'... "{OVER_CAP_MARKER}9"')
+    assert _classify(marker).kind == "database"
+
+
+class _Description:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class _Cursor:
+    """Just enough of a psycopg cursor for ``_fetch``: records statements, replays rows."""
+
+    def __init__(self, names: list[str], rows: list[tuple[object, ...]]) -> None:
+        self.names = names
+        self.rows = rows
+        self.executed: list[str] = []
+        self.description: list[_Description] | None = None
+
+    def execute(self, statement: sql.Composable, *, prepare: bool = False) -> None:
+        text = statement.as_string(None)
+        self.executed.append(text)
+        capped = "_over_cap" in text
+        self.description = [_Description(n) for n in self.names] + (
+            [_Description("_over_cap")] if capped else []
+        )
+        self._rows = [(*r, None) for r in self.rows] if capped else list(self.rows)
+
+    def fetchmany(self, size: int) -> list[tuple[object, ...]]:
+        return self._rows[:size]
+
+
+def test_fetch_takes_names_from_the_bare_query_and_drops_the_size_column() -> None:
+    executor = PostgresExecutor("dbname=x", row_cap=2, max_result_bytes=1000)
+    cur = _Cursor(["a", "a"], [(1, "x"), (2, "y"), (3, "z")])
+    columns, rows = executor._fetch(cur, "SELECT 1 AS a, 'x' AS a")  # type: ignore[arg-type]
+    assert columns == ("a", "a")
+    assert rows == [(1, "x"), (2, "y"), (3, "z")]
+    describe, capped = cur.executed
+    assert describe == "SELECT * FROM (\nSELECT 1 AS a, 'x' AS a\n) AS q LIMIT 0"
+    assert "> 1000 THEN" in capped
+    assert "LIMIT 3)" in capped  # row_cap + 1, so the result can say it was cut
+
+
+def test_no_byte_cap_runs_the_query_bare() -> None:
+    executor = PostgresExecutor("dbname=x", max_result_bytes=None)
+    cur = _Cursor(["a"], [(1,)])
+    columns, rows = executor._fetch(cur, "SELECT 1 AS a")  # type: ignore[arg-type]
+    assert cur.executed == ["SELECT 1 AS a"]
+    assert (columns, rows) == (("a",), [(1,)])
+
+
+def test_a_zero_column_result_runs_bare_after_the_description() -> None:
+    executor = PostgresExecutor("dbname=x")
+    cur = _Cursor([], [(), ()])
+    columns, rows = executor._fetch(cur, "SELECT FROM marts.dim_wiki")  # type: ignore[arg-type]
+    assert columns == ()
+    assert rows == [(), ()]
+    assert cur.executed[-1] == "SELECT FROM marts.dim_wiki"
+
+
+def test_the_byte_cap_defaults_to_8_mib() -> None:
+    assert PostgresExecutor("dbname=x").max_result_bytes == 8 * 1024 * 1024

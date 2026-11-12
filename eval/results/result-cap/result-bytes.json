@@ -1,0 +1,44 @@
+{
+  "cap_bytes": 8388608,
+  "measured": {
+    "bird-gold": "value_bytes() over the recorded values",
+    "bird-predicted": "value_bytes() over the recorded values",
+    "warehouse-gold": "PostgreSQL, the executor's row_bytes() as the agent's role, at most 1001 rows"
+  },
+  "approximation_max_abs_error_bytes": 0,
+  "sources": {
+    "bird-gold": {
+      "results": 94,
+      "over_cap": 0,
+      "largest": {
+        "source": "bird-gold",
+        "id": "gold/california_schools:9b76f4097a95",
+        "rows": 1239,
+        "bytes": 49955
+      },
+      "total_bytes": 239198
+    },
+    "bird-predicted": {
+      "results": 141,
+      "over_cap": 0,
+      "largest": {
+        "source": "bird-predicted",
+        "id": "european_football_2:b7fd213b2ec2",
+        "rows": 42823,
+        "bytes": 580926
+      },
+      "total_bytes": 1122025
+    },
+    "warehouse-gold": {
+      "results": 40,
+      "over_cap": 0,
+      "largest": {
+        "source": "warehouse-gold",
+        "id": "edits-by-project-family",
+        "rows": 14,
+        "bytes": 177
+      },
+      "total_bytes": 995
+    }
+  }
+}

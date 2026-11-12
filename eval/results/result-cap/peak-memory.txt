@@ -1,0 +1,19 @@
+# /usr/bin/time -v uv run tributary sql <query>: before the byte cap (commit 4ae818f) and after
+## before
+== SELECT repeat('x', 200000000) (commit 4ae818f)
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.59
+	Maximum resident set size (kbytes): 1639668
+	Exit status: 0
+== SELECT 1 (commit 4ae818f)
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.34
+	Maximum resident set size (kbytes): 77528
+	Exit status: 0
+## after (TRIBUTARY_AGENT_MAX_RESULT_BYTES=8388608)
+== SELECT repeat('x', 200000000) (commit 4ae818f + working tree)
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.09
+	Maximum resident set size (kbytes): 77904
+	Exit status: 1
+== SELECT 1 (commit 4ae818f + working tree)
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.34
+	Maximum resident set size (kbytes): 77808
+	Exit status: 0

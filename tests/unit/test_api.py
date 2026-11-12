@@ -202,6 +202,18 @@ def test_sql_blocked_is_422() -> None:
     assert executor.ran == []
 
 
+def test_sql_too_large_is_422() -> None:
+    error = ExecutionError("too_large", "the result reached 9 bytes, over the cap of 8", "22P02")
+    executor = FakeExecutor(errors={GOOD_RAN: error})
+    response = client(make_agent(executor=executor)).post(
+        "/sql", json={"sql": GOOD}, headers=auth()
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["status"] == "failed"
+    assert body["answer"] == error.feedback()
+
+
 @pytest.mark.parametrize(
     ("path", "body"), [("/query", {"question": ""}), ("/sql", {"sql": ""}), ("/query", {})]
 )

@@ -281,7 +281,7 @@ def test_a_deployment_failure_is_not_repaired(the_catalog: Catalog, kind: str) -
 
 
 def test_query_errors_are_repairable() -> None:
-    for kind in ("database", "timeout", "too_expensive", "read_only"):
+    for kind in ("database", "timeout", "too_expensive", "too_large", "read_only"):
         assert ExecutionError(kind, "x").repairable
 
 

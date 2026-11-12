@@ -276,6 +276,7 @@ def gold_executors(settings: Settings) -> dict[str, PostgresExecutor]:
             statement_timeout_ms=TIMEOUT_S * 1000,
             row_cap=ROW_CAP,
             cost_ceiling=None,
+            max_result_bytes=None,
             search_path=db,
             parallel=False,
         )

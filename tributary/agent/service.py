@@ -242,6 +242,7 @@ def build_agent(settings: Settings, provider: Provider | None = None) -> Agent:
         statement_timeout_ms=settings.agent_statement_timeout_ms,
         row_cap=settings.agent_row_cap,
         cost_ceiling=settings.agent_cost_ceiling,
+        max_result_bytes=settings.agent_max_result_bytes,
     )
     stale_after = timedelta(minutes=settings.agent_stale_after_minutes)
     return Agent(
