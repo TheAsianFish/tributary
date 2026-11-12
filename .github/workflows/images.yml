@@ -1,0 +1,93 @@
+name: Images
+
+# The API image and the stream image (Spark job and producer) for linux/amd64 and
+# linux/arm64. A `v*` tag pushes both to GitHub Container Registry as
+# ghcr.io/<owner>/tributary-api and ghcr.io/<owner>/tributary-stream, tagged with
+# the version (and `latest` unless it is a pre-release). Run by hand on any branch it
+# is a dry run: both images build for both platforms and nothing is pushed.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: tributary-api
+            dockerfile: docker/api/Dockerfile
+          - image: tributary-stream
+            dockerfile: docker/spark/Dockerfile
+    env:
+      PUSH: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/checkout@v4
+      # The same gate as release.yml's build job: a tag that release.yml would refuse
+      # (wrong version, no changelog section) must not push images either.
+      - name: The tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, package $version"; exit 1; }
+          grep -q "^## \[$version\]" CHANGELOG.md || { echo "CHANGELOG.md has no [$version] section"; exit 1; }
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      # Tags: the short SHA always; on a tag also the version, and for a final release
+      # (X.Y.Z, no pre-release suffix) MAJOR.MINOR and latest.
+      - id: meta
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          repo="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/$IMAGE"
+          tags="$repo:sha-${GITHUB_SHA::7}"
+          version=""
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            tags="$tags,$repo:$version"
+            if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              tags="$tags,$repo:${version%.*},$repo:latest"
+            fi
+          fi
+          {
+            echo "tags=$tags"
+            echo "labels<<EOF"
+            echo "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+            echo "org.opencontainers.image.revision=$GITHUB_SHA"
+            echo "org.opencontainers.image.version=${version:-sha-${GITHUB_SHA::7}}"
+            echo "org.opencontainers.image.licenses=MIT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "tags: $tags"
+      - name: Log in to GitHub Container Registry
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: ${{ env.PUSH == 'true' }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,scope=${{ matrix.image }},mode=max,ignore-error=true

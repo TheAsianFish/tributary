@@ -200,7 +200,7 @@ compose.yaml, Makefile, pyproject.toml, RESULTS.md, RELEASE.md
 |---|---|---|---|---|
 | BIRD Mini-Dev, official (`birdsql/bird_mini_dev`, the 2025-07-04 release's `mini_dev_pg` file; databases from `minidev.zip`: SQLite files, description CSVs and the `BIRD_dev.sql` PostgreSQL dump) | 500 questions, 11 databases; 148 simple, 250 moderate, 102 challenging | PostgreSQL | CC BY-SA 4.0 | Headline execution accuracy. `make bird` downloads and loads the databases (never committed); the two question files and the derived catalogs are committed (under 1 MB) so the replayed eval and `make eval-link` run offline. If the PostgreSQL dump is unavailable, the loader converts the SQLite databases and verifies every gold query executes. |
 | BIRD Mini-Dev, corrected (`uiuc-kang-lab/text_to_sql_benchmarks`, `arcwise_plat_sql_only_with_diff.json`) | 498 questions, same databases; 449 kept after verification | SQLite gold, transpiled to PostgreSQL with sqlglot and verified by running on both engines | CC BY-SA 4.0 | Second track. Items whose transpiled gold fails on either engine or returns different rows are dropped and counted by reason. |
-| Guard suite (`eval/guard/`) | 112 unsafe statements (DML, DDL, `pg_sleep`, `COPY`, `dblink`, stacked statements, comment tricks, `information_schema` probes, field notation) + the warehouse's 40 gold queries and BIRD's 500 official and 449 corrected gold queries as the benign sets | PostgreSQL | repo | Safety: block rate and false-block rate. |
+| Guard suite (`eval/guard/`) | 119 unsafe statements (DML, DDL, `pg_sleep`, `COPY`, `dblink`, stacked statements, comment tricks, `information_schema` probes, field notation) + the warehouse's 40 gold queries and BIRD's 500 official and 449 corrected gold queries as the benign sets | PostgreSQL | repo | Safety: block rate and false-block rate. |
 | Ingest benchmark | 50,000 sample events with known ids | n/a | derived from Wikimedia data (factual fields only) | Exactly-once and latency under fault injection. |
 | Query benchmark (`bench/queries/`) | 10 analytical queries over the raw events, run on the sample scaled to 1M and 20M rows: copy *i* of the 50,000 events is shifted by *i* times the sample's time span and gets ids `uuid5(i, original id)`, so the distributions are real and the volume is synthetic (the sample spans 36 min 19 s of event time, so 1M rows are about 12 event hours and 20M about 10 event days) | PostgreSQL and Trino | derived from Wikimedia data (factual fields only), generated on demand, never committed | Postgres vs Trino-over-Iceberg latency and the partition-pruning effect. |
 | Warehouse question set (`eval/warehouse_questions.yaml`) | 40 questions about the demo marts with hand-checked SQL | PostgreSQL | repo | Sanity check that the product works on its own data; also the demo script. |
@@ -247,29 +247,34 @@ a key.
 ## Release
 
 **How users get it.**
-- `pip install tributary` gives the CLI and the agent; `tributary ask` works
-  against any PostgreSQL URL plus a dbt manifest, and against a running
-  Tributary API.
+- `pip install tributary-platform` gives the CLI and the agent (the name
+  `tributary` is taken on PyPI by an unrelated project, so the distribution
+  is `tributary-platform`; the import name and the command stay `tributary`);
+  `tributary ask` works against any PostgreSQL URL plus a dbt manifest, and
+  against a running Tributary API.
 - `git clone` + `docker compose up` brings up the platform with the sample
   data flowing within two minutes, including MinIO and the Iceberg sink;
   profile `lakehouse` adds Trino (about 2 GB of heap, so it is opt-in),
   profile `airflow` adds the scheduler and web UI, profile `bird` loads the
   benchmark databases.
-- A GitHub Container Registry image for the API and the Spark job, built on
-  tags.
+- GitHub Container Registry images for the API and the Spark job
+  (`tributary-api`, `tributary-stream`; linux/amd64 and arm64), built on
+  tags by `images.yml`.
 
 **What the maintainer must provide.**
-- `ANTHROPIC_API_KEY` as a repository secret: enables the `integration` and
-  `eval-live` CI jobs (both skipped without it).
-- PyPI trusted publishing for the `tributary` project (or a `PYPI_API_TOKEN`
-  secret) before the first tag; the release workflow is guarded by
-  `if: startsWith(github.ref, 'refs/tags/v')` and does nothing otherwise.
+- `ANTHROPIC_API_KEY` as a repository secret: enables the `Live` workflow (run by hand;
+  every step skipped without it).
+- PyPI trusted publishing for the `tributary-platform` project, bound to
+  `release.yml` and the `pypi` environment (or a `PYPI_API_TOKEN` secret in
+  that environment) before the first tag; the publish jobs are guarded by
+  `if: startsWith(github.ref, 'refs/tags/v')`, and a run by hand on a branch
+  is a dry run that builds and checks everything and publishes nothing.
 - GHCR needs no secret beyond the default `GITHUB_TOKEN` with `packages:
   write`.
 - No hosted demo: the platform needs a broker and a JVM, so the README demo
   is a GIF of `docker compose up` followed by `tributary ask`.
 
-RELEASE.md will carry the exact steps.
+RELEASE.md carries the exact steps.
 
 ## Risks
 
@@ -350,6 +355,13 @@ RELEASE.md will carry the exact steps.
       - `full+a`: 25/50 and 22/45, with refusals 11 → 0.
       - `full+v+f+a`: 26/50 and 26/45, challenging 2 → 4 of 10 and 1 → 7 of 9, with 13% more input tokens.
     - **The default.** `full+v+f+a` is `make eval`'s live default: best on both tracks, though not significant at n = 50. The product's agent keeps value hints and examples off by default until the 40 warehouse questions are re-recorded with them (To measure). M7 is done on these local-model cells per the steer.
-- [ ] M8: Release readiness — README with demo GIF, architecture diagram, design decisions, results table and roadmap; RESULTS.md complete with "To measure" for anything unrun; RELEASE.md; PyPI build and guarded publish workflow; GHCR image workflow; Dockerfile hardening (non-root, pinned digests); security pass on the API and the guard; CHANGELOG; version 0.1.0 tag prepared but not pushed. Done when a clean-checkout `pip install .` plus `docker compose up` reproduces the README quickstart, every CI job is green, and the release workflow dry-runs on a branch.
+- [x] M8: Release readiness — README with demo GIF, architecture diagram, design decisions, results table and roadmap; RESULTS.md complete with "To measure" for anything unrun; RELEASE.md; PyPI build and guarded publish workflow; GHCR image workflow; Dockerfile hardening (non-root, pinned digests); security pass on the API and the guard; CHANGELOG; version 0.1.0 tag prepared but not pushed. Done when a clean-checkout `pip install .` plus `docker compose up` reproduces the README quickstart, every CI job is green, and the release workflow dry-runs on a branch.
+  - *Changes made while building M8.*
+    - **The PyPI name is `tributary-platform`.** `tributary` is taken by an unrelated project. The import name and the command are unchanged. The sdist carries only the package. When the package is installed outside a checkout, the data defaults (sample, dbt project, recordings) resolve against the working directory, so `pip install .` followed by the CLI in a clone behaves like `uv run`.
+    - **Release workflows.** `release.yml` runs the build, `twine check --strict` and a clean-venv install (`make dist`). On a `v*` tag it also checks that the tag matches the version and the changelog, publishes by PyPI trusted publishing behind a `pypi` environment, and creates the GitHub release. `images.yml` builds `tributary-api` and `tributary-stream` for amd64 and arm64 and pushes them to GHCR on tags. Run by hand on a branch, both are dry runs. The tags are computed in a shell step rather than with `docker/metadata-action`, which needs a GitHub API token even to compute them. uv is pinned in every workflow, because `setup-uv` asks the GitHub API for the latest release otherwise.
+    - **What "dry-runs on a branch" means here.** There are no GitHub credentials in this environment, so both workflows ran under `act` (RESULTS.md, "Release (M8)"). So did the tag path, with a matching and a mismatched tag. Seeing CI and both dry runs green on GitHub itself is the maintainer's first step in RELEASE.md, and a To measure row.
+    - **The security pass** found a guard bypass. `p.pg_terminate_backend` over a FROM function is the call `pg_terminate_backend(p)` to PostgreSQL, and a column to sqlglot. It found three smaller parser differentials and a quadratic parse too. All are fixed, and the suite has 119 statements. On the API side it added a per-key rate limit, a body cap, security headers, error redaction, docs off by default and `/metrics` (moved here from M3). A result byte cap (`repeat('x', 1e9)` is one row of 1 GB) and a shared rate-limit store are on the roadmap, not in this release.
+    - **`tests/live` and the `Live` workflow.** These were planned since M3 (as an `eval-live` job): a dispatch-only workflow that skips every step without the `ANTHROPIC_API_KEY` secret.
+    - **The 0.1.0 tag is not created.** A squash merge gives `main` a new commit, so the tag has to be made on `main` after the merge. RELEASE.md has the exact commands.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.

@@ -538,3 +538,89 @@ def test_quoted_or_qualified_user_is_a_column(guard: Guard) -> None:
     assert guard.check('SELECT w."user" FROM marts.dim_wiki w').allowed
     assert guard.check('SELECT "user" FROM marts.dim_wiki').allowed
     assert guard.check("SELECT current_date, localtime FROM marts.dim_wiki").allowed
+
+
+# -- calls in column notation on a function in FROM -------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        # p.f is f(p), and the whole row of a scalar function is the scalar
+        "SELECT count(*) FILTER (WHERE p.pg_terminate_backend) FROM generate_series(1, 99999) AS p",
+        "SELECT t.pg_sleep FROM generate_series(1, 10) AS t",
+        "SELECT s.current_setting FROM unnest(ARRAY['data_directory']) AS s",
+        "SELECT n.pg_advisory_lock FROM generate_series(42, 42) AS n",
+        # unaliased: the item is named after the function
+        "SELECT generate_series.pg_sleep FROM generate_series(1, 1)",
+        "SELECT unnest.pg_sleep FROM unnest(ARRAY[1])",
+        # a column list does not stop it, nor does LATERAL, a join or ROWS FROM
+        "SELECT t.pg_sleep FROM generate_series(1, 1) AS t(c)",
+        "SELECT t.pg_sleep FROM marts.dim_wiki, LATERAL generate_series(1, 1) AS t",
+        "SELECT u.pg_sleep FROM marts.dim_wiki JOIN unnest(ARRAY[1]) AS u ON true",
+        "SELECT t.pg_sleep FROM ROWS FROM (generate_series(1, 1)) AS t",
+        # and a name the denylist does not know is not a column either
+        "SELECT t.upper FROM unnest(ARRAY['a']) AS t",
+        # an alias reused in another scope with a column of the call's name does not
+        # vouch for it where the alias has no such column
+        "SELECT p.pg_sleep FROM unnest(ARRAY[0.5]) AS p(x)"
+        " WHERE EXISTS (SELECT 1 FROM generate_series(1, 1) AS p(pg_sleep))",
+        "SELECT p.pg_sleep FROM unnest(ARRAY[0.5]) AS p(x)"
+        " CROSS JOIN LATERAL (SELECT 1 FROM generate_series(1, 1) AS p(pg_sleep)) AS z",
+    ],
+)
+def test_call_in_column_notation_on_a_function_is_blocked(guard: Guard, sql: str) -> None:
+    assert "field_notation" in _blocked(guard, sql).codes
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT t.c FROM generate_series(1, 3) AS t(c)",
+        "SELECT t.t, t.* FROM generate_series(1, 3) AS t",
+        "SELECT generate_series.generate_series FROM generate_series(1, 2)",
+        "SELECT j.key, j.value FROM jsonb_each('{}') AS j",
+        "SELECT t.a, t.ordinality FROM unnest(ARRAY[1]) WITH ORDINALITY AS t(a)",
+        "SELECT d.wiki, g.g FROM marts.dim_wiki AS d, generate_series(1, 2) AS g",
+    ],
+)
+def test_columns_of_a_function_in_from_are_allowed(guard: Guard, sql: str) -> None:
+    assert guard.check(sql).allowed
+
+
+# -- parser differentials and the guard's own cost ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT wiki IS DOCUMENT FROM marts.dim_wiki",
+        "SELECT '<a/>' IS NOT DOCUMENT",
+        "SELECT 'x' IS NORMALIZED",
+    ],
+)
+def test_is_with_an_operand_sqlglot_reads_as_a_column_is_blocked(guard: Guard, sql: str) -> None:
+    """sqlglot reads IS DOCUMENT as a comparison with a column named document."""
+    assert "parse_error" in _blocked(guard, sql).codes
+
+
+def test_is_null_true_and_json_are_allowed(guard: Guard) -> None:
+    sql = "SELECT wiki IS NULL, wiki IS NOT TRUE, '{}' IS JSON OBJECT FROM marts.dim_wiki"
+    assert guard.check(sql).allowed
+
+
+def test_xmltable_is_denied_like_the_xml_functions(guard: Guard) -> None:
+    sql = "SELECT * FROM XMLTABLE('/a' PASSING '<a>1</a>' COLUMNS x int PATH '.')"
+    assert "function_not_allowed" in _blocked(guard, sql).codes
+
+
+@pytest.mark.parametrize("sql", ["SELECT 1 OPERATOR(public.+) 1", "SELECT 1 OPERATOR(+) 1"])
+def test_operator_syntax_is_blocked(guard: Guard, sql: str) -> None:
+    assert "qualified_function" in _blocked(guard, sql).codes
+
+
+def test_long_subscript_chains_are_refused_before_parsing(guard: Guard) -> None:
+    """sqlglot's subscript parse is quadratic: 300 of them took about a second."""
+    result = _blocked(guard, "SELECT x" + "[1]" * 300 + " FROM marts.dim_wiki")
+    assert result.codes == ("too_complex",)
+    assert guard.check("SELECT (ARRAY[1, 2, 3])[2], ARRAY[[1]][1][1]").allowed

@@ -11,25 +11,34 @@ on BIRD Mini-Dev (execution accuracy, PostgreSQL) and guarded against unsafe
 queries. The demo data is the live Wikipedia edit stream; one
 `docker compose up` brings the pipeline up with a committed sample.
 
-**Status: the pipeline, the guarded agent and its benchmark harness work, the
-ingest path is measured under failure and at scale, and the warehouse and the
-lake are timed against each other (milestone 6 of 8).**
-Kafka feeds one Spark application with two streaming queries: one into the
-PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
-MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
-records every quality check in `ops.quality_runs`, publishes the catalog,
-and keeps the lake reconciled with the warehouse hour by hour. On top,
+**The problem.** A team with an event stream wants two things that rarely
+ship together: a pipeline it can trust (no event lost or duplicated, every
+table's freshness and quality checked), and a way for people who don't write
+SQL to ask questions of the result, with an accuracy number and a safety
+story it can check. Tributary is a small, self-hostable version of both, and
+every claim about it is a command that re-runs the measurement.
+
+![Demo: the running Compose stack, the 50,000 sample events in PostgreSQL once each, guarded queries through tributary sql (a DELETE and a disguised pg_terminate_backend both blocked), and a question answered by tributary ask with its SQL and provenance](docs/demo.gif)
+
+**Status: release 0.1.0 (all eight milestones).** Kafka feeds one Spark
+application with two streaming queries: one into the PostgreSQL warehouse,
+modelled with dbt, and one into an Iceberg table on MinIO, queried with Trino.
+Airflow rebuilds the marts when new rows land, records every quality check in
+`ops.quality_runs`, publishes the catalog, and checks the lake against the
+warehouse hour by hour. On top,
 `tributary ask` and a FastAPI service turn a question into SQL with a model
-(Claude by default, a local Ollama model offline), pass it through an AST
-guard and a read-only database role, and answer with the rows, the SQL and
+(Claude by default, a local Ollama model offline). The SQL passes an AST guard
+and a read-only database role, and the answer carries the rows, the SQL and
 each table's freshness and quality status. `make bird` loads BIRD
 Mini-Dev into PostgreSQL and `make eval` grades the agent on it by
 execution accuracy, on the official and the corrected labels, from
 recordings that CI replays without a model or a database. `make bench` kills
 the stream job and the broker mid-batch and checks every event landed once in
-both stores; `make bench-scale` measures throughput at 1, 3 and 6 partitions
-and names what limits it; `make bench-query` times ten queries on PostgreSQL,
-Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured numbers live in [RESULTS.md](RESULTS.md).
+both stores. `make bench-scale` measures throughput at 1, 3 and 6 partitions
+and names what limits it. `make bench-query` times ten queries on PostgreSQL,
+Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured
+numbers are in [RESULTS.md](RESULTS.md), and changes in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Why
 
@@ -40,15 +49,55 @@ question about it is worth answering, so that is where this starts.
 
 ## Quickstart
 
-Requirements: Docker with Compose v2. For the host commands: Python 3.12 and
-[uv](https://docs.astral.sh/uv/); Java 17 only to run Spark on the host.
+Requirements: Docker with Compose v2 and Python 3.12. Java 17 is needed only to
+run Spark on the host. The development commands use [uv](https://docs.astral.sh/uv/).
+
+**1. The platform.** Compose builds the images and starts Kafka, PostgreSQL,
+MinIO and the stream job. A one-shot producer replays the committed sample of
+the Wikipedia edit stream into both sinks; it takes about two minutes:
 
 ```bash
-docker compose up -d --build        # Kafka, PostgreSQL, MinIO, the stream job, a one-shot sample replay
-docker compose logs -f producer stream
+git clone https://github.com/TheAsianFish/tributary && cd tributary
+docker compose up -d --build
+docker compose logs -f producer stream     # Ctrl-C once the producer logs produce_done
 docker compose exec postgres psql -U tributary -c \
   "SELECT wiki, count(*) FROM raw.recentchange GROUP BY 1 ORDER BY 2 DESC LIMIT 5"
 ```
+
+**2. The CLI and the agent.** Install the package from the clone (from PyPI
+it is `pip install 'tributary-platform[warehouse]'`; the command is
+`tributary` either way), build the warehouse, and query it through the guard:
+
+```bash
+python3.12 -m venv .venv && . .venv/bin/activate
+pip install '.[warehouse]'                 # the CLI, the agent and dbt
+tributary warehouse refresh                # dbt build + tests -> ops.quality_runs, publish the catalog
+tributary warehouse grant-agent            # the agent's read-only role
+tributary sql "SELECT wiki, edits FROM marts.dim_wiki ORDER BY edits DESC LIMIT 5"
+tributary sql "DELETE FROM marts.dim_wiki" # blocked by the guard, never sent
+```
+
+To ask in plain English, use a model: Claude (`export ANTHROPIC_API_KEY=...`),
+or a local one through Ollama:
+
+```bash
+docker compose --profile ollama up -d ollama
+docker compose exec ollama ollama pull qwen2.5-coder:7b
+tributary ask --provider ollama \
+  "Which 5 wikis had the most edits (including page creations)? Return the wiki and its number of edits."
+```
+
+With no model at all, `--provider fake` replays what `qwen2.5-coder:7b`
+answered to the 40 evaluation questions in `eval/warehouse_questions.yaml`
+(the replay CI runs). It answers any of them exactly as the model did, and
+refuses any other question, since it has no recording for it:
+
+```bash
+tributary ask --provider fake \
+  "Which 5 wikis had the most edits (including page creations)? Return the wiki and its number of edits."
+```
+
+### More of the platform
 
 The producer replays the 50,000-event sample at 500 events/s into both
 sinks. Add the query engine and the orchestrator with profiles:
@@ -132,11 +181,12 @@ curl -s localhost:8000/query -H "X-API-Key: $TRIBUTARY_API_KEYS" \
 uv run tributary ask --api http://localhost:8000 --api-key "$TRIBUTARY_API_KEYS" "..."
 ```
 
-`/query` (question → answer), `/sql` (guarded SQL), `/catalog` and
-`/freshness` need the key; `/health` does not. `make up-api` starts the
-Airflow profile as well, because the API reads the catalog that
-`warehouse_refresh` publishes: until that DAG has run once (or `uv run
-tributary warehouse refresh` has), `/query` answers 503.
+`/query` (question → answer), `/sql` (guarded SQL), `/catalog`,
+`/freshness` and `/metrics` (Prometheus text) need the key; `/health` does
+not. `make up-api` starts the Airflow profile as well, because the API reads
+the catalog that `warehouse_refresh` publishes: until that DAG has run once
+(or `uv run tributary warehouse refresh` has), `/query` answers 503. The
+API's own defences are in [Security](#security).
 
 Benchmark the ingest path (each run recreates containers and wipes the landing
 table, so use a stack you can throw away; results go to `bench/results/`):
@@ -159,9 +209,9 @@ ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD
 make eval-link                              # schema-linking recall, offline
 ```
 
-Demo: *screenshot placeholder.* To capture one, run the commands above and
-record `docker compose logs -f stream` next to the `psql` query (for example
-with `asciinema rec` and `agg`), saved as `docs/demo.gif`.
+The demo at the top is a real terminal session against the quickstart's
+stack. [`docs/demo.sh`](docs/demo.sh) is the script, and its header has the
+`asciinema` and `agg` commands that re-record it.
 
 ![dbt lineage: raw.recentchange and the namespaces seed feed stg_recentchange, which feeds fct_edits; fct_edits feeds dim_page, agg_edits_hourly, agg_editor_activity and, with stg_recentchange, dim_wiki; the event_types seed backs a relationships test](docs/dbt-docs-lineage.png)
 
@@ -357,8 +407,8 @@ there because the one before it can be wrong:
 | Layer | What it does | What it would miss alone |
 |---|---|---|
 | Planner (`tributary/agent/planner.py`) | The model sees the marts as DDL with dbt's descriptions, keys, lineage and indexed values (the system prefix, cached), and returns a schema-enforced `SQLDraft`. A guard block or PostgreSQL error goes back as the next turn, at most two repairs. | A model can write anything, including `DELETE`. |
-| Guard (`tributary/agent/guard.py`) | Parses with sqlglot and fails closed: one `SELECT`, no write or DDL node anywhere in the tree (a `DELETE` hidden in a CTE included), only the catalog's relations (unqualified names are qualified on the way out), an allowlist for functions sqlglot does not know and a denylist for dangerous ones, `LIMIT` capped. The SQL that runs is regenerated from the checked tree, so comments and anything the parser dropped never reach the database. 112 attack statements, all blocked; 40 gold queries, none blocked. | A parser can disagree with PostgreSQL. |
-| Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap. With the guard switched off it still refuses 90 of the 112 attacks. | Catalog reads, `set_config`, sleeping and signalling its own sessions are open to any role: the 22 the guard alone stops. |
+| Guard (`tributary/agent/guard.py`) | Parses with sqlglot and fails closed: one `SELECT`, no write or DDL node anywhere in the tree (a `DELETE` hidden in a CTE included), only the catalog's relations (unqualified names are qualified on the way out), an allowlist for functions sqlglot does not know and a denylist for dangerous ones, `LIMIT` capped. The SQL that runs is regenerated from the checked tree, so comments and anything the parser dropped never reach the database. 119 attack statements, all blocked; 40 warehouse and 949 BIRD gold queries, none blocked. | A parser can disagree with PostgreSQL. |
+| Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap. With the guard switched off it still refuses 93 of the 119 attacks. | Catalog reads, `set_config`, sleeping and signalling its own sessions are open to any role: the 26 the guard alone stops. |
 | Answer (`answer.py`, `provenance.py`) | The text is composed from the rows (the model never restates a number), and carries the SQL that ran, the tables read and, for each, its last successful rebuild and the latest result of every check on it and on its sources. Stale or failing tables become warnings in the answer text. | A correct query over a stale or broken table is still a wrong answer. |
 
 The model boundary (`tributary/agent/provider.py`) is one request shape and
@@ -435,6 +485,49 @@ documented under each mart's `meta.examples` in dbt
 most draws agree on. Each of these is a variant flag in `make eval`
 (`full+v+f+a+n3`), and RESULTS.md measures what each one buys.
 
+### Security
+
+The agent writes SQL from text a stranger controls, so the safety story is
+the product, not an add-on. It has three layers, each tested on its own and
+each built to fail differently from the others.
+
+- **The guard** (`tributary/agent/guard.py`) is a fail-closed policy on
+  sqlglot's tree, described in the table above. Its adversarial suite has
+  119 statements, every one blocked in CI (`make eval-guard`). The release
+  review found a real bypass. PostgreSQL reads `p.f` as the call `f(p)` when
+  `p` is a function in FROM, so
+  `SELECT p.pg_terminate_backend FROM unnest(...) AS p` looked like a column
+  to the parser, yet killed the agent role's other sessions from a read-only
+  transaction. The review also found three smaller parser differentials and
+  a quadratic parse on long subscript chains. All of them are fixed and in
+  the suite
+  ([RESULTS.md](RESULTS.md#what-the-database-layer-alone-stops)).
+- **The database role** refuses 93 of the 119 statements with the guard
+  switched off (`make eval-guard-db`). The 26 it lets run are listed, and are
+  the guard's alone to stop.
+- **The API** (`tributary/api/`) has no route open without a key except
+  `/health`, and it refuses to start with no key configured. Keys are
+  compared as SHA-256 digests in constant time and never logged. Each key
+  has a token bucket (60 requests a minute, bursts of 10 by default; 429
+  with `Retry-After`). Bodies over 64 KiB are refused before parsing, even
+  when chunked. Every response carries `nosniff`, `no-store` and a deny-all
+  content security policy, and the interactive docs are off unless
+  `TRIBUTARY_API_DOCS=true`. Provider and warehouse errors are redacted
+  (URL credentials, `password=`, Anthropic keys, the API's own keys) before
+  they reach a response or a log. `/metrics` serves request, latency,
+  answer, rate-limit, token and cost counters with bounded labels.
+- **The containers.** Every base image is pinned by digest. Every image
+  built here runs as a non-root user. The API container runs with a
+  read-only root filesystem, no Linux capabilities and `no-new-privileges`,
+  and publishes its port on 127.0.0.1 only.
+
+Known limits, stated rather than hidden:
+- The rate limit is per process, so N replicas admit N times the rate.
+- `SELECT repeat('x', 1e9)` is one cheap-looking row that builds 1 GB, and
+  only the statement timeout bounds it (a result byte cap is on the
+  roadmap).
+- The Airflow UI makes every user an admin; it is for local use only.
+
 ### Design decisions
 
 | Decision | Chosen | Rejected | Why |
@@ -457,7 +550,7 @@ most draws agree on. Each of these is a variant flag in `make eval`
 | Data-quality tests | dbt generic tests plus two custom ones: arrival freshness, and an hourly volume z-score that counts empty hours as zero | Great Expectations, Soda, dbt source freshness | A few SQL statements, versioned with the models; results go to `ops.quality_runs` so answers can carry them. The volume test skips with too little history or zero variance rather than firing on noise; a fixture project proves each test passes and fails where it should. |
 | Triggering the warehouse | A 5-minute DAG that emits the `raw.recentchange` asset only when rows arrived (high-water mark kept in the asset event's `extra`); `warehouse_refresh` is scheduled on the asset | A cron schedule; the stream job calling Airflow's API | No rebuild when nothing changed, no coupling of the stream job to the orchestrator, and the trigger's state lives with the asset it describes. When nothing arrived, the same task runs the freshness tests alone, so a stalled sink turns the run red instead of leaving the last `pass` standing. |
 | Airflow image | `python:3.12-slim` plus this repository's `uv.lock` | `apache/airflow` with pip installs on top | The scheduler runs exactly the dbt, Trino client and Airflow versions the tests ran, with no constraint-file conflicts. |
-| Agent safety | AST policy, then a restricted role with per-query limits | Prompt instructions; a regex deny-list; the database role alone | Regexes miss CTEs, comments and quoting; the role alone lets 22 of the 112 attacks run (measured). Two layers that fail differently, each tested on its own. |
+| Agent safety | AST policy, then a restricted role with per-query limits | Prompt instructions; a regex deny-list; the database role alone | Regexes miss CTEs, comments and quoting; the role alone lets 26 of the 119 attacks run (measured). Two layers that fail differently, each tested on its own. |
 | The agent's role | `tributary_agent`: marts and `ops` only | Reusing `tributary_reader` | The reader serves Trino and can read `raw`, where editor names are; the agent never needs it, so the database refuses it without the guard. |
 | Answer text | Composed from the rows; the model's one-line explanation is written before it sees them | A second model call that summarises the rows | A summary can misquote a number; this cannot, and it costs no extra call. |
 | Repair loop | Feed the guard's reasons or PostgreSQL's error back, at most two repairs | One shot; unbounded retries | Most failed drafts fail on a column PostgreSQL names in its error (all six repairs in the 7B run); a bound keeps the worst case at three calls. |
@@ -468,6 +561,11 @@ most draws agree on. Each of these is a variant flag in `make eval`
 | Replaying the benchmark in CI | Record model calls and database executions | Load BIRD in CI; mock the database | Loading BIRD costs minutes and 800 MB per run; a mock would grade against invented rows. Recorded executions are the rows PostgreSQL returned, keyed by database and SQL. |
 | The no-repair variant | Read off the first attempt of the same run | A second run with repairs off | The first model call is the same request either way, so it is the same result at no extra cost. |
 | Baseline linker | BM25 over each table's name, columns, descriptions and values | Embeddings | Deterministic, offline, no model or index to host, and its failures are explainable (see RESULTS.md: hub tables lose to the tables that reference them). |
+| PyPI name | `tributary-platform`, importing as `tributary` | Renaming the package | `tributary` is taken on PyPI by an unrelated project. Changing the import name would break every path and the CLI for a naming problem only the index has. |
+| API rate limit | An in-process token bucket per key digest | Redis or the database as a shared counter | One process is the deployment the Compose profile ships. A shared store adds a service and a failure mode, so the per-process limit is documented as a known limit. |
+| `/metrics` | Prometheus text written by hand, behind the key | `prometheus_client`; an open endpoint | Six counter families do not justify a dependency, and labels are fixed route templates and statuses, so nothing a caller sends becomes a series. Metrics reveal traffic and spend, so they need the key unless `TRIBUTARY_API_METRICS_PUBLIC=true`. |
+| Base images | Version tag plus index digest, in every `FROM` and Compose `image:` | Floating tags (`postgres:17`, `python:3.12-slim`) | A floating tag changes under a rebuild (`postgres:17` is whichever 17.x and Debian release is newest). The digest makes an image build reproducible, and the tag keeps it readable. |
+| Releases | A `v*` tag publishes by PyPI trusted publishing behind a `pypi` environment; a run by hand on a branch is a dry run | A stored PyPI token; publishing from a laptop | No long-lived secret exists to leak, a human approves each publish, and the dry run exercises the same build and checks. |
 
 ## Results
 
@@ -484,8 +582,8 @@ runs are listed there under "To measure", with their estimated cost.
 | One-hour filter on the lake (sample) | Scan read 2 of 4 files and 19,271 of 50,000 rows, exactly the hour's `$files` |
 | Per-hour reconciliation | Closed hour 19,271 = 19,271 ids with equal fingerprints, 0 duplicates; an injected duplicate fails it, and so does an exchange of ids that keeps every count equal |
 | `dbt build` on the sample | PASS=57 (2 seeds, 5 marts, 1 staging view, 49 tests) |
-| Guard suite (`make eval-guard`) | 112 / 112 unsafe statements blocked; 0 / 40 gold queries blocked |
-| Database layer alone, guard off (`make eval-guard-db`) | 90 / 112 refused; the 22 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, ...) are the guard's alone to stop |
+| Guard suite (`make eval-guard`) | 119 / 119 unsafe statements blocked; 0 / 40 warehouse gold queries and 0 / 949 BIRD gold queries blocked |
+| Database layer alone, guard off (`make eval-guard-db`) | 93 / 119 refused; the 26 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, and `p.pg_terminate_backend` over an `unnest` of the role's own pids, which killed its other sessions from a read-only transaction) are the guard's alone to stop |
 | 40 warehouse questions on local models (CPU, $0) | `qwen2.5-coder:7b` 25 / 40, `:14b` 31 / 40 (execution accuracy); 4 of the 6 questions both miss are the same error, a pre-aggregated mart whose grain does not fit the question |
 | Replay of the recorded runs (what CI tests) | Same 40 verdicts and SQL in 2.1 s, against 31 min live for the 7B run (68 min for 14B) |
 | BIRD gold in PostgreSQL (`make bird`) | 500 / 500 official gold queries execute; 449 / 498 corrected labels transpile from SQLite and return the same rows on both engines |
@@ -506,24 +604,40 @@ runs are listed there under "To measure", with their estimated cost.
 | BIRD dev50, M7 planner features (`make eval`, `qwen2.5-coder:7b`, $0) | Dropping the "unanswerable" exit: 21 → 25 / 50 (refusals 11 → 0, but only 4 of the 11 become right). Adding value hints and three worked examples: 26 / 50 official and 18 → 26 / 45 corrected, challenging questions 2 → 4 of 10 official and 1 → 7 of 9 corrected, for 13% more input tokens; neither pairing against the baseline is significant at n = 50 (McNemar p = 0.23 and 0.10) |
 | Failure taxonomy (30 baseline failures, hand-labelled) | 11 refusals, 5 queries that never ran, 3 questionable gold labels; the rest are wrong literals, misread evidence, joins and shape |
 | Replay of the BIRD run (what CI tests) | All 380 verdicts of four variants in 10 s (mostly loading the value index), no model and no database |
+| Clean-checkout quickstart (M8, this machine, warm Docker build cache) | `docker compose up -d --build` to all 50,000 events in PostgreSQL in under 3 min; `pip install '.[warehouse]'` 78 s; `tributary warehouse refresh` 90 s (8 relations, 49 checks passing); the guarded `sql` queries and both `ask` paths (live `qwen2.5-coder:7b` in 5 min 10 s on CPU, the recorded replay in under 50 ms) gave the README's answers |
+| Release dry runs (M8) | `release.yml` (build, `twine check --strict`, clean-venv install) and `images.yml` (both images for amd64 and arm64, nothing pushed) green under `act` |
 
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). `make check` is the gate (ruff,
 mypy strict, offline unit tests including Spark in local mode);
 `make test-warehouse` runs dbt and the warehouse DAG against a bare
-PostgreSQL; `make test-integration` runs against Compose.
+PostgreSQL; `make test-integration` runs against Compose; `make dist` builds
+and checks the package the way a release does. [RELEASE.md](RELEASE.md) has
+the release steps and [CHANGELOG.md](CHANGELOG.md) what each version holds.
 
 ## Roadmap
 
-M3 the guarded agent and API (done on local-model recordings; the Claude
-run of the 40 questions waits for a key); M4 BIRD harness and schema
-linking (done on local-model recordings; the Claude runs are costed in
-RESULTS.md); M5 fault-injection and scaling benchmarks (done: no loss under 18 kills
-and no Iceberg duplicate, throughput and its bottleneck at 1, 3 and 6 partitions); M6 Postgres vs Trino
-over Iceberg (done: where each engine wins at 1M and 20M rows, pruning and compaction measured); M7 agent quality (done on local-model recordings: value hints, examples from dbt docs and self-consistency voting, two cells of the ablation grid measured, the rest and the Claude grid costed under To measure); M8 release. Beyond that: an Iceberg REST
-catalog in place of the JDBC catalog, and a Trino dialect for the guard.
-Details in PLAN.md.
+All eight milestones in [PLAN.md](PLAN.md) are done, on local-model
+recordings where they named Claude (there was no API key). Next, in order:
+
+1. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
+   Haiku 5.5 and Opus 5.5, recorded so CI replays them. RESULTS.md lists the
+   commands and the estimated cost of each, and the `Live` workflow runs
+   them once the repository has a key.
+2. **The `core` schema linker** (`link_core`: BM25 top-k, value tables and
+   shortest foreign-key paths). Its interface, strict tests and evaluation
+   are in place.
+3. **The rest of the M7 grid** on the local model: the leave-one-out cells,
+   and the vote at a lower temperature. Then the warehouse questions
+   re-recorded with value hints and examples, so the product can turn them on.
+4. **A result byte cap** in the executor, and a shared rate-limit store for
+   multi-replica API deployments. Also, column checks on table aliases:
+   `w.pg_typeof` over a mart still calls a function that takes a whole row.
+   None of those functions has side effects in stock PostgreSQL, but the guard
+   should know each mart's columns and refuse the rest.
+5. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
+   dialect for the guard, so `/sql` can run guarded queries on the lake.
 
 ## Licence
 

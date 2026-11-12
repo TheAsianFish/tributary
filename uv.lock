@@ -3707,8 +3707,8 @@ wheels = [
 ]
 
 [[package]]
-name = "tributary"
-version = "0.1.0.dev0"
+name = "tributary-platform"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "anthropic" },

@@ -48,6 +48,20 @@ knows to typed expression classes and everything else to ``exp.Anonymous``:
 A cast to a type sqlglot does not know runs that type's input function, so
 it is blocked as a function; casts to the ``reg*`` object-identifier types
 look names up in the system catalog and are blocked as catalog access.
+
+PostgreSQL has one more spelling of a call: ``alias.f`` is ``f(alias)`` when
+``f`` is not a column and ``alias`` is a FROM item, and the whole-row value of
+a function returning a scalar is that scalar. So ``SELECT p.pg_terminate_backend
+FROM generate_series(1, 99999) AS p`` signals every backend of the role,
+written as a plain column. A qualified column on a function in FROM must name
+one of that function's columns: those its alias declares, else the alias
+itself (a scalar function's one column). Two parser differentials are closed
+the same way, by refusing what sqlglot reads differently: ``x IS DOCUMENT``
+(sqlglot sees a column named document; PostgreSQL parses ``x`` as xml) and
+``OPERATOR(schema.op)``, an operator, hence a function, from any schema. A
+statement with more than ``MAX_SUBSCRIPTS`` brackets is refused before
+parsing: sqlglot's subscript handling is quadratic, and a few thousand
+``[1]`` would hold the parser for seconds.
 """
 
 from __future__ import annotations
@@ -56,8 +70,9 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-import sqlglot
 from sqlglot import exp
+from sqlglot.dialects.dialect import Dialect
+from sqlglot.tokenizer_core import TokenType
 
 DIALECT = "postgres"
 
@@ -137,6 +152,17 @@ ANONYMOUS_ALLOWED: frozenset[str] = frozenset(
 )
 
 _SYSTEM_SCHEMAS = frozenset({"pg_catalog", "information_schema"})
+
+# Brackets (array literals and subscripts) one statement may hold; sqlglot types every
+# subscript chain again at each step, so the parse is quadratic in the chain's length.
+MAX_SUBSCRIPTS = 64
+
+# Columns of the allowlisted set-returning functions that return a composite row.
+_COMPOSITE_COLUMNS: frozenset[str] = frozenset({"key", "value", "ordinality"})
+
+# What an IS may test: NULL / UNKNOWN, TRUE / FALSE, JSON. Anything else sqlglot parsed
+# as a column (IS DOCUMENT, IS NORMALIZED), and PostgreSQL reads as a function.
+_IS_OPERANDS: tuple[type[exp.Expr], ...] = (exp.Null, exp.Boolean, exp.JSON)
 
 # Statements that change data or schema, wherever they sit in the tree.
 _WRITE_OR_DDL: tuple[type[exp.Expr], ...] = (
@@ -260,7 +286,8 @@ def _function_names(func: exp.Func) -> tuple[tuple[str, ...], bool]:
         this = func.this
         name = this.this if isinstance(this, exp.Identifier) else str(this)
         return (name.lower(),), True
-    return tuple(name.lower() for name in func.sql_names()), False
+    # The class key too: sqlglot's sql_names spell XMLTable as x_m_l_table.
+    return tuple(dict.fromkeys([*(n.lower() for n in func.sql_names()), func.key])), False
 
 
 def _unknown_function_name(func: exp.Func) -> str | None:
@@ -314,7 +341,18 @@ class Guard:
         reasons: list[str] = []
         tables: set[str] = set()
         try:
-            parsed = sqlglot.parse(sql, dialect=DIALECT)
+            dialect = Dialect.get_or_raise(DIALECT)
+            tokens = dialect.tokenize(sql)
+            brackets = sum(token.token_type == TokenType.L_BRACKET for token in tokens)
+            if brackets > MAX_SUBSCRIPTS:
+                return GuardResult(
+                    False,
+                    "",
+                    (f"too_complex: {brackets} brackets; at most {MAX_SUBSCRIPTS} are parsed",),
+                    (),
+                    None,
+                )
+            parsed = dialect.parser().parse(tokens, sql)
         except Exception as error:  # any parser failure means "not understood"
             message = str(error).splitlines()[0] if str(error) else type(error).__name__
             return GuardResult(False, "", (f"parse_error: {message}",), (), None)
@@ -364,6 +402,7 @@ class Guard:
         reasons.append(f"not_select: {kind} is not a SELECT query")
 
     def _check_tree(self, statement: exp.Expr, reasons: list[str], tables: set[str]) -> None:
+        function_columns = _function_from_items(statement)
         for node in statement.walk():
             if isinstance(node, _WRITE_OR_DDL):
                 reasons.append(f"write_or_ddl: {type(node).__name__} statement")
@@ -381,6 +420,17 @@ class Guard:
                 self._check_table(node, reasons, tables)
             elif isinstance(node, exp.Column):
                 self._check_column(node, reasons)
+                _check_function_column(node, function_columns, reasons)
+            elif isinstance(node, exp.Is) and not isinstance(node.expression, _IS_OPERANDS):
+                reasons.append(
+                    f"parse_error: {node.sql(dialect=DIALECT)} is not an IS the guard understands"
+                    " (PostgreSQL reads IS DOCUMENT as an xml parse)"
+                )
+            elif isinstance(node, exp.Operator):
+                reasons.append(
+                    f"qualified_function: OPERATOR({node.args.get('operator')}) can name an"
+                    " operator, and so a function, in any schema"
+                )
             elif isinstance(node, exp.Dot):
                 self._check_dot(node, reasons)
             elif isinstance(node, exp.ObjectIdentifier):
@@ -536,6 +586,82 @@ class Guard:
             .from_(exp.Subquery(this=root, alias=exp.TableAlias(this=exp.to_identifier("q"))))
             .limit(self.max_rows)
         )
+
+
+def _function_from_items(statement: exp.Expr) -> dict[str, set[str]]:
+    """Each function in a FROM clause, by the name it is referenced as -> its columns.
+
+    PostgreSQL names an unaliased function item after the function, and a scalar
+    function's single column after the item. Everything that can put a call in FROM
+    is collected (a function, UNNEST, LATERAL, ROWS FROM), wherever it sits, without
+    resolving scopes. So a name bound twice keeps only the columns both bindings
+    have: a union would let ``p(pg_sleep)`` in a subquery vouch for ``p.pg_sleep``
+    in the outer query, where ``p`` is ``unnest(...) AS p(x)`` and the name is a call.
+    """
+    items: dict[str, set[str]] = {}
+    for node in statement.walk():
+        if isinstance(node, exp.Table):
+            if isinstance(node.this, exp.Identifier) and not node.args.get("rows_from"):
+                continue
+            calls = [node.this] if node.this is not None else []
+            calls += [t.this for t in node.args.get("rows_from") or [] if isinstance(t, exp.Table)]
+        elif isinstance(node, exp.Unnest):
+            calls = [node]
+        elif isinstance(node, exp.Lateral) and not isinstance(node.this, exp.Query | exp.Subquery):
+            calls = [node.this]
+        else:
+            continue
+        alias = node.args.get("alias")
+        if isinstance(alias, exp.TableAlias) and alias.this is not None:
+            names = {_ident(alias.this)}
+        else:
+            names = {_call_name(call) for call in calls}
+        declared = (
+            {_ident(column) for column in alias.columns}
+            if isinstance(alias, exp.TableAlias) and alias.columns
+            else names
+        )
+        columns = {c for c in declared if c is not None}
+        for name in names:
+            if name is None:
+                continue
+            if name in items:
+                items[name] &= columns
+            else:
+                items[name] = set(columns)
+    return items
+
+
+def _call_name(call: exp.Expr | None) -> str | None:
+    """The name PostgreSQL gives an unaliased function in FROM: the function's."""
+    if call is None:
+        return None
+    match = re.match(r'\s*"?([^"(\s]+)', call.sql(dialect=DIALECT))
+    return match.group(1).lower() if match else None
+
+
+def _check_function_column(
+    column: exp.Column, function_columns: dict[str, set[str]], reasons: list[str]
+) -> None:
+    """``item.name`` on a function in FROM must be one of its columns, not a call.
+
+    PostgreSQL resolves ``p.f`` to ``f(p)`` when ``f`` is not a column of ``p``, and
+    the whole row of a scalar function is the scalar: ``p.pg_sleep`` over
+    ``generate_series(1, 1) AS p`` sleeps.
+    """
+    qualifier = _ident(column.args.get("table"))
+    if qualifier is None or column.args.get("db") is not None:
+        return
+    columns = function_columns.get(qualifier)
+    if columns is None or isinstance(column.this, exp.Star):
+        return
+    name = _ident(column.this)
+    if name in columns or name in _COMPOSITE_COLUMNS:
+        return
+    reasons.append(
+        f"field_notation: {column.sql(dialect=DIALECT)} is not a column of the function"
+        f" {qualifier} in FROM, so PostgreSQL calls {name}({qualifier})"
+    )
 
 
 def _literal_int(node: exp.Expr | None) -> int | None:

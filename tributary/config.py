@@ -15,6 +15,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SAMPLE = REPO_ROOT / "data/sample/recentchange.jsonl.gz"
 
 
+def project_dir(package_root: Path = REPO_ROOT, cwd: Path | None = None) -> Path:
+    """The checkout that the sample, dbt project and recordings defaults point into.
+
+    Run from source, it is the repository this package sits in. Installed from a wheel
+    the package is in site-packages, where none of them exist, so the current directory
+    is used instead: ``pip install .`` and then the CLI run from a clone behaves the same
+    as ``uv run`` from it.
+    """
+    if (package_root / "pyproject.toml").is_file() and (package_root / "tributary").is_dir():
+        return package_root
+    return cwd if cwd is not None else Path.cwd()
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="TRIBUTARY_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
@@ -37,7 +50,9 @@ class Settings(BaseSettings):
     pg_password: SecretStr = SecretStr("tributary")
 
     # Producer
-    sample_path: Path = DEFAULT_SAMPLE
+    sample_path: Path = Field(
+        default_factory=lambda: project_dir() / "data/sample/recentchange.jsonl.gz"
+    )
     produce_rate: float = Field(default=500.0, ge=0.0, description="events/s; 0 = unthrottled")
     live_url: str = LIVE_STREAM_URL
     user_agent: str = "tributary/0.1 (https://github.com/TheAsianFish/tributary)"
@@ -99,7 +114,7 @@ class Settings(BaseSettings):
     trino_lake_table: str = "iceberg.raw.recentchange"
 
     # Warehouse: dbt project and the published catalog the agent reads.
-    dbt_project_dir: Path = REPO_ROOT / "warehouse"
+    dbt_project_dir: Path = Field(default_factory=lambda: project_dir() / "warehouse")
     # YAML/JSON mapping passed as --vars to every dbt run, e.g. '{freshness_severity: warn}'.
     dbt_vars: str = ""
     catalog_dir: Path = Path("catalog")
@@ -118,7 +133,9 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5-coder:7b"
     # What the fake provider replays (and `make record` upserts into, by request fingerprint).
-    recordings_path: Path = REPO_ROOT / "tests/recordings/warehouse.jsonl"
+    recordings_path: Path = Field(
+        default_factory=lambda: project_dir() / "tests/recordings/warehouse.jsonl"
+    )
     # Relations the agent may read, as dbt schemas; everything else is blocked.
     agent_schemas: tuple[str, ...] = ("marts",)
     # Schema linking: which tables the planner sees per question (tributary/agent/linker.py).
@@ -151,6 +168,16 @@ class Settings(BaseSettings):
     api_keys: SecretStr = SecretStr("")
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    # Per-key token bucket: `burst` requests at once, refilled at `per_minute`; 0 disables.
+    # Per process: each uvicorn worker or replica keeps its own buckets.
+    api_rate_limit_per_minute: int = Field(default=60, ge=0)
+    api_rate_limit_burst: int = Field(default=10, ge=1)
+    # Request bodies over this are refused with 413 before parsing.
+    api_max_body_bytes: int = Field(default=64 * 1024, ge=1024)
+    # /metrics without the API key (still exempt from the rate limit either way).
+    api_metrics_public: bool = False
+    # Serve /docs, /redoc and /openapi.json.
+    api_docs: bool = False
 
     @property
     def agent_conninfo(self) -> str:

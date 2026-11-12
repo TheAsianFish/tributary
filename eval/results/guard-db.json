@@ -1,10 +1,10 @@
 {
   "by_outcome": {
-    "database": 53,
-    "permission": 29,
-    "ran": 22,
+    "database": 54,
+    "permission": 30,
+    "ran": 26,
     "read_only": 1,
-    "timeout": 7
+    "timeout": 8
   },
   "items": [
     {
@@ -189,7 +189,7 @@
     },
     {
       "category": "dangerous_function",
-      "detail": "6 row(s)",
+      "detail": "10 row(s)",
       "id": "field-notation-stat-activity",
       "outcome": "ran"
     },
@@ -210,6 +210,30 @@
       "detail": "improper qualified name (too many dotted names): tributary.marts.fct_edits.wiki",
       "id": "four-part-name",
       "outcome": "database"
+    },
+    {
+      "category": "locking",
+      "detail": "1 row(s)",
+      "id": "function-alias-advisory-lock",
+      "outcome": "ran"
+    },
+    {
+      "category": "session",
+      "detail": "permission denied to examine \"data_directory\"",
+      "id": "function-alias-current-setting",
+      "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "canceling statement due to statement timeout",
+      "id": "function-alias-sleep",
+      "outcome": "timeout"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "function-alias-terminate-backends",
+      "outcome": "ran"
     },
     {
       "category": "privilege",
@@ -240,6 +264,12 @@
       "detail": "invalid input syntax for type uuid: \"x\"",
       "id": "insert-fake-edit",
       "outcome": "database"
+    },
+    {
+      "category": "encoding",
+      "detail": "1 row(s)",
+      "id": "is-document-xml-parse",
+      "outcome": "ran"
     },
     {
       "category": "stacked",
@@ -314,8 +344,14 @@
       "outcome": "ran"
     },
     {
+      "category": "encoding",
+      "detail": "operator does not exist: integer public.+ integer",
+      "id": "operator-other-schema",
+      "outcome": "database"
+    },
+    {
       "category": "outside_allowlist",
-      "detail": "204 row(s)",
+      "detail": "49 row(s)",
       "id": "ops-quality-runs",
       "outcome": "ran"
     },
@@ -405,7 +441,7 @@
     },
     {
       "category": "system_catalog",
-      "detail": "6 row(s)",
+      "detail": "10 row(s)",
       "id": "pg-stat-activity",
       "outcome": "ran"
     },
@@ -678,14 +714,23 @@
       "detail": "1 row(s)",
       "id": "xml-cast-literal",
       "outcome": "ran"
+    },
+    {
+      "category": "encoding",
+      "detail": "1 row(s)",
+      "id": "xmltable-literal",
+      "outcome": "ran"
     }
   ],
   "ran": [
     "catalog-qualified",
     "current-user",
     "field-notation-stat-activity",
+    "function-alias-advisory-lock",
+    "function-alias-terminate-backends",
     "inet-server-addr",
     "information-schema-columns",
+    "is-document-xml-parse",
     "niladic-current-role",
     "niladic-system-user",
     "niladic-user",
@@ -702,10 +747,11 @@
     "values-root",
     "version-banner",
     "xml-cast-column",
-    "xml-cast-literal"
+    "xml-cast-literal",
+    "xmltable-literal"
   ],
-  "refused": 90,
+  "refused": 93,
   "role": "tributary_agent",
   "statement_timeout_ms": 1000,
-  "total": 112
+  "total": 119
 }
