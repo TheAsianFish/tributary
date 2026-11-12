@@ -495,15 +495,15 @@
   },
   "passed": true,
   "unsafe": {
-    "blocked": 119,
+    "blocked": 127,
     "by_category": {
       "comment_trick": [
         5,
         5
       ],
       "dangerous_function": [
-        21,
-        21
+        26,
+        26
       ],
       "ddl": [
         7,
@@ -550,12 +550,12 @@
         4
       ],
       "system_catalog": [
-        8,
-        8
+        11,
+        11
       ]
     },
     "by_code": {
-      "field_notation": 9,
+      "field_notation": 17,
       "function_not_allowed": 41,
       "locking_clause": 2,
       "multiple_statements": 7,
@@ -2141,8 +2141,118 @@
         "source": "unsafe.yaml",
         "sql": "",
         "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "relation-alias-pg-typeof",
+        "reasons": [
+          "field_notation: w.pg_typeof is not a column of marts.dim_wiki, so PostgreSQL calls pg_typeof(w)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "relation-name-column-size",
+        "reasons": [
+          "field_notation: fct_edits.pg_column_size is not a column of marts.fct_edits, so PostgreSQL calls pg_column_size(fct_edits)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "subquery-alias-quote-literal",
+        "reasons": [
+          "field_notation: s.quote_literal is not a column of the subquery s, so PostgreSQL calls quote_literal(s)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "cte-alias-record-send",
+        "reasons": [
+          "field_notation: c.record_send is not a column of the subquery c, so PostgreSQL calls record_send(c)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "values-alias-toast-chunk",
+        "reasons": [
+          "field_notation: v.pg_column_toast_chunk_id is not a column of the subquery v, so PostgreSQL calls pg_column_toast_chunk_id(v)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": []
+      },
+      {
+        "allowed": false,
+        "category": "system_catalog",
+        "correct": true,
+        "id": "relation-alias-in-filter",
+        "reasons": [
+          "field_notation: w.pg_column_compression is not a column of marts.dim_wiki, so PostgreSQL calls pg_column_compression(w)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "relation-alias-aggregate",
+        "reasons": [
+          "field_notation: w.jsonb_agg_strict is not a column of marts.dim_wiki, so PostgreSQL calls jsonb_agg_strict(w)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "relation-alias-rebound-in-lateral",
+        "reasons": [
+          "field_notation: w.pg_typeof is not a column of marts.dim_wiki, so PostgreSQL calls pg_typeof(w)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
       }
     ],
-    "total": 119
+    "total": 127
   }
 }

@@ -54,7 +54,7 @@ from sqlglot import parse_one as sqlglot_parse_one
 
 from tributary.agent.guard import (
     DIALECT,
-    HISTORICAL_FIXES,
+    SWITCHABLE_FIXES,
     Guard,
     fixes_disabled,
     function_refusal,
@@ -64,6 +64,7 @@ ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES_PATH = ROOT / "eval" / "guard" / "templates.yaml"
 GOLD_PATH = ROOT / "eval" / "warehouse_questions.yaml"
 RESULTS_DIR = ROOT / "eval" / "results" / "guard-diff"
+FUNCTIONS_PATH = ROOT / "tributary" / "agent" / "pg_functions.py"
 VIEW = "tributary_guard_oracle"
 
 # -- the catalog's view of a function ---------------------------------------------------
@@ -759,10 +760,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     go = sub.add_parser("run", help="generate, check with the guard, resolve with PostgreSQL")
     go.add_argument("--label", required=True, help="names the output file")
-    go.add_argument("--disable", action="append", default=[], choices=HISTORICAL_FIXES)
+    go.add_argument("--disable", action="append", default=[], choices=SWITCHABLE_FIXES)
     go.add_argument("--no-gold", action="store_true", help="skip the gold-query rewrites")
     go.add_argument("--limit", type=int, default=0, help="only the first N functions (smoke)")
     go.add_argument("--output-dir", type=Path, default=RESULTS_DIR)
+    names = sub.add_parser("functions", help="write the guard's list of one-argument functions")
+    names.add_argument("--output", type=Path, default=FUNCTIONS_PATH)
     record = sub.add_parser("record", help="record ev_action fixtures for the unit tests")
     record.add_argument("output", type=Path)
     record.add_argument("sql", nargs="+")
@@ -775,11 +778,13 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     logging.getLogger("sqlglot").setLevel(logging.ERROR)
     relations = catalog_relations()
-    guard = _guard(relations)
+    guard = _guard()
     oracle = Oracle(get_settings().pg_conninfo, relations)
     try:
         if args.command == "record":
             return _record(oracle, args.output, args.sql)
+        if args.command == "functions":
+            return _write_functions(oracle, args.output)
         procs = oracle.procs()
         if args.limit:
             procs = procs[: args.limit]
@@ -810,14 +815,40 @@ def main(argv: Sequence[str] | None = None) -> int:
     return 0
 
 
-def _guard(relations: Sequence[str]) -> Guard:
-    """The guard as the agent builds it."""
-    return Guard(relations)
+def _guard() -> Guard:
+    """The guard as the agent builds it, from the committed catalog of the sample."""
+    from eval.guard_eval import CATALOG_PATH
+    from tributary.agent.catalog import load_dbt
+
+    return Guard.for_catalog(load_dbt(CATALOG_PATH))
 
 
 def _chain(*parts: Iterable[Case]) -> Iterator[Case]:
     for part in parts:
         yield from part
+
+
+def _write_functions(oracle: Oracle, output: Path) -> int:
+    """Write the names in pg_catalog that ``alias.name`` can call (the guard's list)."""
+    names = sorted({p.name for p in oracle.procs() if p.schema == "pg_catalog"})
+    body = "".join(f"        {json.dumps(name)},\n" for name in names)
+    output.write_text(
+        '"""Every pg_catalog function callable with one argument: what ``alias.name`` can call.\n'
+        "\n"
+        "PostgreSQL reads ``alias.name`` as the call ``name(alias)`` when ``name`` is not\n"
+        "a column, and with the agent's empty search_path only pg_catalog is searched.\n"
+        f"Generated from PostgreSQL {oracle.server_version} by\n"
+        "``python -m eval.guard.differential functions``; tests/warehouse checks that the\n"
+        'server has no name missing from it.\n"""\n'
+        "\n"
+        "ONE_ARGUMENT_FUNCTIONS: frozenset[str] = frozenset(\n"
+        "    {\n"
+        f"{body}"
+        "    }\n"
+        ")\n"
+    )
+    print(f"wrote {len(names)} names to {output}")
+    return 0
 
 
 def _record(oracle: Oracle, output: Path, statements: Sequence[str]) -> int:

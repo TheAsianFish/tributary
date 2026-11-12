@@ -330,7 +330,7 @@ class Harness:
             catalog = self.catalogs[db_id]
             planner = Planner(
                 self.provider,
-                Guard(catalog.relations(), max_rows=ROW_CAP),
+                Guard.for_catalog(catalog, max_rows=ROW_CAP),
                 self._executor(db_id, gold=False),
                 catalog,
                 max_repairs=MAX_REPAIRS,

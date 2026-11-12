@@ -109,7 +109,7 @@ class Agent:
         return self.catalogs.get()
 
     def guard(self, catalog: Catalog | None = None) -> Guard:
-        return Guard((catalog or self.catalog()).relations(), max_rows=self.limits.row_cap)
+        return Guard.for_catalog(catalog or self.catalog(), max_rows=self.limits.row_cap)
 
     def planner(self) -> Planner | VotingPlanner:
         catalog = self.catalog()

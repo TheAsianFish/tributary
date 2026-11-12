@@ -624,3 +624,115 @@ def test_long_subscript_chains_are_refused_before_parsing(guard: Guard) -> None:
     result = _blocked(guard, "SELECT x" + "[1]" * 300 + " FROM marts.dim_wiki")
     assert result.codes == ("too_complex",)
     assert guard.check("SELECT (ARRAY[1, 2, 3])[2], ARRAY[[1]][1][1]").allowed
+
+
+# -- a qualified name on a relation must be one of its columns ---------------------------
+
+COLUMNS = {
+    "marts.dim_wiki": ("wiki", "domain", "project_family", "edits"),
+    "marts.fct_edits": ("event_id", "wiki", "page_key", "is_bot"),
+}
+
+
+@pytest.fixture
+def column_guard() -> Guard:
+    return Guard(MARTS, max_rows=1000, columns=COLUMNS)
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        # PostgreSQL reads each of these as pg_typeof(<whole row>): a call written as a column.
+        "SELECT w.pg_typeof FROM marts.dim_wiki AS w",
+        "SELECT dim_wiki.pg_typeof FROM marts.dim_wiki",
+        "SELECT marts.dim_wiki.pg_typeof FROM marts.dim_wiki",
+        "SELECT 1 FROM marts.dim_wiki AS w WHERE (w.quote_literal) IS NOT NULL",
+        "SELECT 1 FROM marts.dim_wiki AS w ORDER BY w.pg_column_size",
+        "SELECT count(*) FILTER (WHERE w.pg_typeof IS NOT NULL) FROM marts.dim_wiki AS w",
+        "SELECT s.pg_typeof FROM (SELECT wiki, edits FROM marts.dim_wiki) AS s",
+        "WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT c.record_out FROM c",
+        "SELECT v.pg_typeof FROM (VALUES (1, 'a')) AS v(n, t)",
+        "SELECT s.pg_typeof FROM (SELECT wiki FROM marts.dim_wiki UNION SELECT wiki"
+        " FROM marts.fct_edits) AS s",
+        # Renamed by the alias's column list, so the old name is no longer a column.
+        "SELECT s.lower FROM (SELECT wiki AS lower FROM marts.dim_wiki) AS s(a)",
+        # A nested scope that binds w again with a column named pg_typeof does not vouch
+        # for the outer w, which is the mart.
+        "SELECT 1 FROM marts.dim_wiki AS w CROSS JOIN LATERAL (SELECT 1 AS one FROM"
+        " (SELECT 1 AS pg_typeof) AS w) AS n WHERE w.pg_typeof IS NOT NULL",
+        # Correlated: f is the outer mart inside the subquery.
+        "SELECT f.wiki FROM marts.dim_wiki AS f WHERE EXISTS (SELECT 1 FROM marts.fct_edits"
+        " AS e WHERE e.wiki = f.wiki AND f.pg_typeof IS NOT NULL)",
+    ],
+)
+def test_a_call_written_as_a_column_of_a_relation_is_blocked(column_guard: Guard, sql: str) -> None:
+    result = _blocked(column_guard, sql)
+    assert result.codes == ("field_notation",), result.reasons
+    assert "so PostgreSQL calls" in result.reasons[0]
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT w.wiki, w.domain FROM marts.dim_wiki AS w",
+        "SELECT dim_wiki.wiki FROM marts.dim_wiki",
+        "SELECT marts.dim_wiki.wiki FROM marts.dim_wiki",
+        'SELECT "W".wiki FROM marts.dim_wiki AS "W"',
+        "SELECT w.a, w.domain FROM marts.dim_wiki AS w(a)",
+        "SELECT s.a FROM (SELECT wiki FROM marts.dim_wiki) AS s(a)",
+        "SELECT s.edits FROM (SELECT wiki, edits FROM marts.dim_wiki) AS s",
+        "SELECT s.wiki FROM (SELECT * FROM marts.dim_wiki) AS s",
+        "SELECT s.domain FROM (SELECT d.* FROM marts.dim_wiki AS d) AS s",
+        "SELECT s.count, s.n, s.max FROM (SELECT count(*), sum(edits) AS n, max(edits)"
+        " FROM marts.dim_wiki) AS s",
+        "SELECT s.wiki FROM (SELECT wiki FROM marts.dim_wiki UNION SELECT wiki"
+        " FROM marts.fct_edits) AS s",
+        "WITH a AS (SELECT wiki FROM marts.dim_wiki), b AS (SELECT a.wiki FROM a)"
+        " SELECT b.wiki FROM b",
+        "SELECT v.n, v.column2 FROM (VALUES (1, 2)) AS v(n)",
+        "SELECT e.wiki FROM marts.fct_edits AS e JOIN marts.dim_wiki AS d USING (wiki)"
+        " WHERE d.domain IS NOT NULL",
+        "SELECT f.wiki, (SELECT count(*) FROM marts.fct_edits AS e WHERE e.wiki = f.wiki)"
+        " FROM marts.dim_wiki AS f",
+        "SELECT t.n FROM (SELECT x.n FROM (SELECT 1 AS n) AS x) AS t ORDER BY t.n",
+    ],
+)
+def test_columns_of_relations_and_subqueries_are_allowed(column_guard: Guard, sql: str) -> None:
+    assert column_guard.check(sql).allowed, column_guard.check(sql).reasons
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT w.no_such_column FROM marts.dim_wiki AS w",
+        'SELECT w."Pg_Typeof" FROM marts.dim_wiki AS w',
+        "SELECT s.wiki FROM (SELECT wiki FROM marts.dim_wiki) AS s(a)",
+    ],
+)
+def test_a_name_that_is_neither_column_nor_function_is_left_to_the_database(
+    column_guard: Guard, sql: str
+) -> None:
+    # PostgreSQL refuses it with "column ... does not exist", the better message for the
+    # model to repair from; a quoted name is case-sensitive, and no function is "Pg_Typeof".
+    assert column_guard.check(sql).allowed
+
+
+def test_a_catalog_in_a_different_case_still_matches() -> None:
+    guard = Guard(["s.t"], columns={"s.t": ["CDSCode"]})
+    assert guard.check("SELECT t.cdscode FROM s.t").allowed
+    assert not guard.check("SELECT t.pg_typeof FROM s.t").allowed
+
+
+def test_without_columns_a_relation_alias_is_not_checked(guard: Guard) -> None:
+    # The agent and the evaluations always build the guard with the catalog's columns.
+    assert guard.check("SELECT w.anything FROM marts.dim_wiki AS w").allowed
+
+
+def test_for_catalog_takes_every_tables_columns() -> None:
+    from eval.guard_eval import CATALOG_PATH
+    from tributary.agent.catalog import load_dbt
+
+    guard = Guard.for_catalog(load_dbt(CATALOG_PATH), max_rows=7)
+    assert guard.max_rows == 7
+    assert guard.check("SELECT w.wiki FROM marts.dim_wiki AS w").allowed
+    assert not guard.check("SELECT w.row_to_json FROM marts.dim_wiki AS w").allowed
