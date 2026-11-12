@@ -618,25 +618,41 @@ the release steps and [CHANGELOG.md](CHANGELOG.md) what each version holds.
 
 ## Roadmap
 
-All eight milestones in [PLAN.md](PLAN.md) are done, on local-model
-recordings where they named Claude (there was no API key). Next, in order:
+The first eight milestones in [PLAN.md](PLAN.md) are done, on local-model
+recordings where they named Claude (there was no API key). Three more are
+planned, each a question v1 left open (PLAN.md, "Evolution round 1"):
 
-1. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
+1. **M9: a machine that looks for guard bypasses.** All three real bypasses
+   were found by reading the code, and one more spelling of the same class
+   is admitted today (`w.row_to_json` over a mart calls a function that takes
+   the whole row). A generator plus PostgreSQL's own name resolution
+   replaces "none known" with a count, the guard learns each mart's columns,
+   and the executor gets a result byte cap (`repeat('x', 200000000)` is one
+   admitted row and 1.64 GB in the client).
+2. **M10: the default variant on a held-out sample.** `full+v+f+a` was chosen
+   on the 50 questions it is reported on; 50 fresh ones say whether the gain
+   replicates, under a rule written down before the run.
+3. **M11: a future-stamped event must not cost later events.** The watermark
+   only moves forward, and the parser accepts an event a day ahead. The loss
+   is measured against the skew, the bound is tied to the watermark delay,
+   and dropped rows become a quality check instead of a log line.
+
+After those:
+
+4. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
    Haiku 5.5 and Opus 5.5, recorded so CI replays them. RESULTS.md lists the
    commands and the estimated cost of each, and the `Live` workflow runs
    them once the repository has a key.
-2. **The `core` schema linker** (`link_core`: BM25 top-k, value tables and
+5. **The `core` schema linker** (`link_core`: BM25 top-k, value tables and
    shortest foreign-key paths). Its interface, strict tests and evaluation
-   are in place.
-3. **The rest of the M7 grid** on the local model: the leave-one-out cells,
+   are in place. Then BIRD's eleven schemas pooled into one 75-table
+   warehouse, where the full schema no longer fits the prompt and linking has
+   to carry the answer.
+6. **The rest of the M7 grid** on the local model: the leave-one-out cells,
    and the vote at a lower temperature. Then the warehouse questions
    re-recorded with value hints and examples, so the product can turn them on.
-4. **A result byte cap** in the executor, and a shared rate-limit store for
-   multi-replica API deployments. Also, column checks on table aliases:
-   `w.pg_typeof` over a mart still calls a function that takes a whole row.
-   None of those functions has side effects in stock PostgreSQL, but the guard
-   should know each mart's columns and refuse the rest.
-5. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
+7. **A shared rate-limit store** for multi-replica API deployments.
+8. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
    dialect for the guard, so `/sql` can run guarded queries on the lake.
 
 ## Licence

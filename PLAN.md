@@ -294,6 +294,111 @@ RELEASE.md carries the exact steps.
 | Model cost or key unavailable | Fake provider with recorded responses for CI; live evals sized to under $12 total; cost printed per run. |
 | Provider API drift | Single `provider.py` boundary; integration test pinned to the SDK version in `pyproject.toml`. |
 
+## Evolution round 1
+
+All eight milestones are merged. Before calling the project finished I re-ran
+everything that runs without the full stack, and probed the three places the
+results left a claim weaker than it reads.
+
+**What I ran (4 vCPU, 15 GB, Java 17, PostgreSQL 17 from `compose.yaml`).**
+
+| Command | Result |
+|---|---|
+| `make check` | 1315 passed, 7 expected failures (the `core` linker's contract), 86 s |
+| `make eval-guard` | 119 / 119 blocked; 0 / 40, 0 / 500 and 0 / 449 gold queries blocked |
+| `make eval-link` | bm25 k = 4: recall 0.927, every gold table found for 82.0% |
+| `make eval` (replay) | matches the recorded run verdict for verdict: `full` 21 / 50, `bm25-k4` 21 / 50, `full+a` 25 / 50, `full+v+f+a` 26 / 50 (corrected 18, 17, 22, 26 of 45) |
+| `tributary sample load && make dbt && make test-warehouse` | 32 passed; dbt 57 / 57 |
+| `tributary warehouse refresh && make eval-warehouse` | 25 / 40, as recorded |
+| `tributary sql "SELECT repeat('x', 200000000)"` | admitted; one row; the client peaked at 1.64 GB of memory against 77 MB for an ordinary query |
+| `tributary sql "SELECT w.row_to_json FROM marts.dim_wiki w LIMIT 1"` (also `w.pg_typeof`) | admitted and executed: to the guard `row_to_json` is a column, to PostgreSQL it is the call `row_to_json(w)` |
+
+`make bench`, `make bench-scale` and `make bench-query` (about five hours
+together) were not re-run; their committed raw output still renders
+RESULTS.md's tables (`make check` tests that).
+
+**What the evidence says.**
+
+1. **Every guard bypass so far was found by a person reading the code.** The
+   suite says 119 / 119, but the three real bypasses (field notation `(x).f`
+   in M3, `p.pg_terminate_backend` over a FROM function in M8, the rebound
+   alias in M8's review) are one class: sqlglot and PostgreSQL read the same
+   text differently. A fourth member of the class is admitted today
+   (`w.row_to_json` over a mart). In stock PostgreSQL only 25 one-argument
+   functions accept a whole row and none I know of has side effects, but
+   "none I know of" is the kind of claim this project exists to replace with
+   a count. A probe showed PostgreSQL will name the functions a statement
+   resolves to without running it: create a temporary view over the
+   statement in a transaction that is rolled back and read the function ids
+   out of `pg_rewrite.ev_action`.
+2. **The default variant was chosen on the questions it is reported on.**
+   `full+v+f+a` against `full` is +8 −3 (p = 0.23) on the official track and
+   +13 −5 (p = 0.10) on the corrected one, on the same 50 questions that
+   picked it. Value hints and examples on top of `+a` are a net +1 and +4
+   with 7 losses each. Nothing here separates a real gain from selection.
+3. **The pipeline's one known silent-loss path is still open.** The parser
+   accepts an event stamped up to a day ahead of its Kafka record, the
+   watermark trails the newest event by ten minutes and never moves back, and
+   the only trace of a dropped row is a counter in the stream job's log. M5
+   lost all 50,000 events of a fault run this way and worked around it in
+   the benchmark, not in the job.
+4. **Smaller things.** `test_marts_from_information_schema` fails on a
+   database where `make dbt` has not run, although CONTRIBUTING.md says the
+   sample load is enough (CI runs `make dbt` first, so it is green there).
+
+**The new milestones, each with its question and what I expect.**
+
+- **M9, a machine that looks for guard bypasses.** *Question:* can a
+  generator plus PostgreSQL's own name resolution find the bypasses a
+  reviewer found, and the ones nobody has? *Hypotheses:* with each of the
+  three historical fixes switched off in turn, the oracle flags all three;
+  on today's guard it finds functions outside the policy reachable only
+  through whole-row notation on a relation alias (I expect between 10 and
+  25, none volatile; a second spelling class or a volatile function would be
+  the surprise); after the guard learns each mart's columns, 0 of the same
+  statements, with 0 new false blocks on the 989 gold queries. The byte cap
+  rides along: 1.64 GB for one admitted row should become a refusal within a
+  bounded footprint.
+- **M10, the default variant on questions it has never seen.** *Question:*
+  does `full+v+f+a`'s gain survive on a fresh sample? *Hypothesis:* it
+  shrinks. On a disjoint 50 I expect `+a` to keep a net gain over `full`
+  (refusals are a mechanism, not a fluke) and `+v+f` over `+a` to be within
+  ±2 questions on the official track; pooled to n = 100, at most one of the
+  two pairings against `full` reaches p < 0.05. The rule for the default is
+  written down before the run.
+- **M11, a future-stamped event must not cost later events.** *Question:*
+  how far ahead can one event be before real events are dropped, and what
+  bound on skew costs nothing? *Hypotheses:* loss is a step, not a slope:
+  with the sample's measured lateness (max 143 s) a poison up to about 450 s
+  ahead drops nothing, one 23 h ahead drops every event in every later
+  micro-batch, and events in the poison's own batch survive (the watermark
+  moves between batches); a skew bound well under the watermark delay
+  rejects 0 of the 50,000 sample events. The M5 incident is reproduced and
+  explained first: the sample's own timestamps are in the past, so how a
+  replay put the watermark two hours ahead is not yet understood.
+
+**Considered and not chosen.**
+
+- *BIRD's eleven schemas pooled into one 75-table warehouse* (bm25 at k = 4
+  falls from 82.0% to 68.4% of questions with every gold table, and `full`
+  no longer fits a 16k context). A real question, but nothing in the repo
+  can improve the number until `core` exists, and a pool of unrelated
+  databases invites "route by database first". It is the right benchmark for
+  `core`, so it is on the roadmap behind it.
+- *Catalog descriptions tuned to lift the warehouse questions from 25 / 40.*
+  Tuning a prompt against 40 known questions; ten new ones cannot separate
+  +4 from noise.
+- *Fuzzy value matching measured offline.* A proxy with no execution
+  accuracy behind it, when `+v+f` already gains 8 and loses 7.
+- *The leave-one-out cells and the vote.* More cells at n = 50 would add
+  more differences that cannot be told from noise; M10 fixes the sample
+  first.
+- *All 500 questions on the local model.* About 13 hours of CPU per pair of
+  variants.
+- *The Claude runs.* No key; they stay under To measure.
+- *An Iceberg REST catalog, a Trino dialect for the guard.* New surface, no
+  open question.
+
 ## Milestones
 
 - [x] M1: Scaffold, CI and the ingest spine — `uv` project with ruff, mypy strict, pytest and a GitHub Actions workflow; `compose.yaml` with PostgreSQL 17 and Kafka 4.2 (KRaft); the committed 50,000-event sample; the producer with replay and `--live`; the Spark Structured Streaming job writing `raw.recentchange` with watermark, dedup and the idempotent sink; `tributary produce` and `tributary stream` commands; structured logging and env config. Done when `docker compose up` shows rows landing in `raw.recentchange`, an integration test replays 5,000 events through Kafka and Spark into Postgres in CI and asserts the count, and unit tests pass offline.
@@ -363,5 +468,9 @@ RELEASE.md carries the exact steps.
     - **The security pass** found a guard bypass. `p.pg_terminate_backend` over a FROM function is the call `pg_terminate_backend(p)` to PostgreSQL, and a column to sqlglot. It found three smaller parser differentials and a quadratic parse too. All are fixed, and the suite has 119 statements. On the API side it added a per-key rate limit, a body cap, security headers, error redaction, docs off by default and `/metrics` (moved here from M3). A result byte cap (`repeat('x', 1e9)` is one row of 1 GB) and a shared rate-limit store are on the roadmap, not in this release.
     - **`tests/live` and the `Live` workflow.** These were planned since M3 (as an `eval-live` job): a dispatch-only workflow that skips every step without the `ANTHROPIC_API_KEY` secret.
     - **The 0.1.0 tag is not created.** A squash merge gives `main` a new commit, so the tag has to be made on `main` after the merge. RELEASE.md has the exact commands.
+
+- [ ] M9: A differential oracle for the guard, and a result byte cap — `eval/guard/differential.py` and `make eval-guard-diff` (PostgreSQL only; a manually triggered workflow, never on pull requests): a generator fixed before any guard change (every one-argument function in `pg_proc` crossed with a committed list of spelling templates: `(x).f`, `alias.f` over a mart, a subquery, a CTE, `VALUES` and a FROM function, in the select list, `WHERE`, `ORDER BY` and `FILTER`; plus the same rewrites applied to the 40 warehouse gold queries), and an oracle that never executes a statement: each one the guard admits is wrapped as `SELECT count(*) FROM (...)`, made a temporary view by the owner role in a transaction that is rolled back, and the functions PostgreSQL resolved are read from `pg_rewrite.ev_action` (function, aggregate, window and operator ids) and compared with the guard's policy; the oracle's own unit tests offline against recorded `ev_action` text. Then the guard checks a column reference on a relation alias against that relation's columns (the catalog's, or the subquery's own output), and the executor refuses a result over a byte cap (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`) before the client holds it. `test_marts_from_information_schema` builds what it needs or skips with the reason. Done when RESULTS.md holds: the statements generated, admitted and flagged before the fix with the reachable functions listed by volatility; each of the three historical fixes disabled in turn (a test-only switch) with the oracle flagging every one, or the one it misses named; the same counts after the fix (0 flagged) with `make eval-guard` still 119 / 119 and 0 false blocks on 40 + 500 + 449; what the oracle cannot see (casts folded to constants, I/O conversion casts) counted in the generated set rather than left out; peak memory of `tributary sql "SELECT repeat('x', 200000000)"` before and after, and the number of recorded BIRD and warehouse gold results over the cap (expected 0); raw output under `eval/results/`; the new unsafe statements added to `eval/guard/unsafe.yaml`.
+- [ ] M10: The default variant on a held-out sample — a `holdout50` subset: 50 official questions disjoint from `dev50`, drawn by the same stratified hash rule (15 simple, 25 moderate, 10 challenging), its ids and the decision rule below committed before any model call; `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=holdout50 VARIANTS=full,full+a,full+v+f+a RECORD=1` (about four hours of CPU, resumable with `RESUME=1`; `full+a` and `full+v+f+a` first, since they decide the default), each run's worked examples excluding only its own subset so the committed `dev50` recordings still replay; the report gains a paired comparison between any two variants and a pooled view over both subsets. Decision rule: `full+v+f+a` stays `make eval`'s live default only if, on `holdout50` alone, it is at least level with `full+a` on both tracks; otherwise the default becomes `full+a` and RESULTS.md says the M7 gain did not replicate. Done when RESULTS.md holds the `holdout50` table (both tracks, the Wilson interval, +gained −lost and the exact McNemar p for `full+a` against `full`, and `full+v+f+a` against `full` and against `full+a`), the same pairings pooled at n = 100, each hypothesis answered, and the default restated under the rule; `make eval` in CI replays both subsets verdict for verdict; the model, its version and the wall time are named, at $0.
+- [ ] M11: A future-stamped event must not cost later events — first the M5 incident reproduced in Spark local mode and explained (which records ran ahead of the wall clock, and why); a unit test on the multi-batch harness in `tests/unit/test_stream_spark.py` that fails on today's job: one event stamped 23 hours ahead in an early micro-batch, the later batches' real events dropped, with the exact count; `make bench-skew` (Spark local mode on the committed sample, no Compose; a manual run, not CI): the 50,000 events in stream order in fixed micro-batches with one poison at a fixed position and a skew of 0, 60, 300, 450, 600, 900, 3,600 and 82,800 s, reporting rows dropped by the watermark per skew, before and after the fix; the fix in `tributary/stream/parse.py` and `tributary/events.py`: the future-skew bound tied to the watermark delay (a setting, default justified from the sample's emit delay and lateness), rejected rows counted by reason; and the stream job's `rows_dropped_by_watermark` and rejected counts written with each batch to `ops.stream_progress`, with a quality check in `ops.quality_runs` that fails when either rises above a threshold, so a provenance line can say so. One poisoned run on the Compose stack (`bench/faults.py` gains the scenario) before and after, both sinks. Done when RESULTS.md holds the loss-against-skew table before and after with each hypothesis answered (the step's position against the sample's 143 s maximum lateness; the poison's own batch surviving; 0 of the 50,000 sample events rejected by the new bound), the Compose run's counts in PostgreSQL and Iceberg with the quality check red before the fix and green after, the M5 watermark precondition in the benchmark either removed or kept with the reason, and raw output under `bench/results/m11-skew/`.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.
