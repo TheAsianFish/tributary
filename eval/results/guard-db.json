@@ -1,10 +1,9 @@
 {
   "by_outcome": {
     "database": 54,
-    "permission": 30,
-    "ran": 26,
-    "read_only": 1,
-    "timeout": 8
+    "permission": 31,
+    "ran": 35,
+    "timeout": 7
   },
   "items": [
     {
@@ -98,6 +97,12 @@
       "outcome": "database"
     },
     {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "cte-alias-record-send",
+      "outcome": "ran"
+    },
+    {
       "category": "outside_allowlist",
       "detail": "relation \"recentchange\" does not exist",
       "id": "cte-out-of-scope",
@@ -141,7 +146,7 @@
     },
     {
       "category": "procedural",
-      "detail": "the statement returned no result set",
+      "detail": "syntax error at or near \"CURSOR\"",
       "id": "declare-cursor",
       "outcome": "database"
     },
@@ -189,7 +194,7 @@
     },
     {
       "category": "dangerous_function",
-      "detail": "10 row(s)",
+      "detail": "7 row(s)",
       "id": "field-notation-stat-activity",
       "outcome": "ran"
     },
@@ -441,7 +446,7 @@
     },
     {
       "category": "system_catalog",
-      "detail": "10 row(s)",
+      "detail": "7 row(s)",
       "id": "pg-stat-activity",
       "outcome": "ran"
     },
@@ -453,9 +458,9 @@
     },
     {
       "category": "dangerous_function",
-      "detail": "terminating connection due to administrator command",
+      "detail": "permission denied to terminate process",
       "id": "pg-terminate-backend",
-      "outcome": "database"
+      "outcome": "permission"
     },
     {
       "category": "system_catalog",
@@ -525,9 +530,9 @@
     },
     {
       "category": "procedural",
-      "detail": "canceling statement due to statement timeout",
+      "detail": "1000 row(s)",
       "id": "recursive-cte",
-      "outcome": "timeout"
+      "outcome": "ran"
     },
     {
       "category": "ddl",
@@ -540,6 +545,36 @@
       "detail": "permission denied for schema raw",
       "id": "regclass-cast",
       "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1 row(s)",
+      "id": "relation-alias-aggregate",
+      "outcome": "ran"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "1 row(s)",
+      "id": "relation-alias-in-filter",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "relation-alias-pg-typeof",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "relation-alias-rebound-in-lateral",
+      "outcome": "ran"
+    },
+    {
+      "category": "system_catalog",
+      "detail": "1000 row(s)",
+      "id": "relation-name-column-size",
+      "outcome": "ran"
     },
     {
       "category": "session",
@@ -561,9 +596,9 @@
     },
     {
       "category": "dml",
-      "detail": "cannot execute SELECT INTO in a read-only transaction",
+      "detail": "SELECT ... INTO is not allowed here",
       "id": "select-into-new-table",
-      "outcome": "read_only"
+      "outcome": "database"
     },
     {
       "category": "stacked",
@@ -612,6 +647,12 @@
       "detail": "permission denied for schema staging",
       "id": "staging-recentchange",
       "outcome": "permission"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "subquery-alias-quote-literal",
+      "outcome": "ran"
     },
     {
       "category": "encoding",
@@ -692,6 +733,12 @@
       "outcome": "database"
     },
     {
+      "category": "system_catalog",
+      "detail": "1 row(s)",
+      "id": "values-alias-toast-chunk",
+      "outcome": "ran"
+    },
+    {
       "category": "encoding",
       "detail": "2 row(s)",
       "id": "values-root",
@@ -724,6 +771,7 @@
   ],
   "ran": [
     "catalog-qualified",
+    "cte-alias-record-send",
     "current-user",
     "field-notation-stat-activity",
     "function-alias-advisory-lock",
@@ -741,17 +789,25 @@
     "pg-notify",
     "pg-stat-activity",
     "pg-user",
+    "recursive-cte",
+    "relation-alias-aggregate",
+    "relation-alias-in-filter",
+    "relation-alias-pg-typeof",
+    "relation-alias-rebound-in-lateral",
+    "relation-name-column-size",
     "set-config-timeout",
+    "subquery-alias-quote-literal",
     "txid-current",
     "union-appends-catalog",
+    "values-alias-toast-chunk",
     "values-root",
     "version-banner",
     "xml-cast-column",
     "xml-cast-literal",
     "xmltable-literal"
   ],
-  "refused": 93,
+  "refused": 92,
   "role": "tributary_agent",
   "statement_timeout_ms": 1000,
-  "total": 119
+  "total": 127
 }
