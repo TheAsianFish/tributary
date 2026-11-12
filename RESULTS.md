@@ -1486,6 +1486,47 @@ queries (the 40 gold plus edge cases: `ORDER BY`, duplicate names, `WITH`,
 set operations, `VALUES`, arrays, bytea, NaN) return identical columns, row
 order, values and types with and without the cap.
 
+## The default variant on a held-out sample (M10)
+
+M7 chose `full+v+f+a` as `make eval`'s live default on the same 50 questions
+it is reported on (+8 −3, p = 0.23 and +13 −5, p = 0.10 against `full`).
+This section asks whether that gain survives on 50 questions that did not
+pick it.
+
+### Fixed before any model call
+
+<!-- m10:prereg -->
+**The sample.** `holdout50` is drawn by dev50's rule from what dev50 left:
+per difficulty, the official questions Arcwise-Plat-SQL also covers, minus
+dev50's 50, sorted by `sha256("tributary:holdout50:<id>")`, the smallest 15
+simple, 25 moderate and 10 challenging (`eval/bird/data.py`,
+`subset_ids`). Its ids are committed in `eval/bird/data/subsets.json`, and
+a unit test fails if the rule ever draws anything else. 46 of the 50 are in
+the verified corrected track. Each run's worked examples (`+f`) come from
+the questions outside its own subset, so `holdout50`'s pool holds dev50's
+questions and the committed dev50 recordings replay unchanged.
+
+**The run.** `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b
+SUBSET=holdout50 VARIANTS=full+a,full+v+f+a,full RECORD=1` (resumable with
+`RESUME=1`), both tracks, temperature 0, seed 0, 16k context, one request
+at a time; `full+a` and `full+v+f+a` first, since they decide the default.
+
+**The decision rule.** `full+v+f+a` stays `make eval`'s live default only
+if, on `holdout50` alone, it is at least level with `full+a` on both
+tracks (correct answers with repairs, official and corrected). Otherwise
+the default becomes `full+a`, and this section says the M7 gain did not
+replicate. dev50 does not vote: it is the sample that picked the variant.
+
+**The hypotheses (PLAN.md, M10).**
+
+1. `+a` keeps a net gain over `full` on `holdout50` (gained > lost on
+   both tracks): refusals are a mechanism, not a fluke.
+2. `+v+f` over `+a` is within ±2 questions on the official track.
+3. Pooled to n = 100 (dev50 + `holdout50`), at most one of the two
+   pairings against `full` (`full+a`, `full+v+f+a`) reaches p < 0.05 on
+   the official track.
+<!-- /m10:prereg -->
+
 ## To measure
 
 | What | Command | Milestone | Cost |

@@ -268,9 +268,17 @@ def questions(track: Track) -> list[BirdQuestion]:
 # --- subsets ----------------------------------------------------------------------------------
 
 # dev50: 50 questions in both tracks, in the official release's difficulty mix (30/50/20).
+# holdout50 (M10): 50 more in the same mix, drawn by the same rule from the questions dev50
+# did not take, so a variant chosen on dev50 can be checked on questions that did not pick it.
 SUBSETS: dict[str, dict[str, int]] = {
     "dev50": {"simple": 15, "moderate": 25, "challenging": 10},
+    "holdout50": {"simple": 15, "moderate": 25, "challenging": 10},
 }
+# Subsets a subset is drawn disjoint from (each named one is drawn first).
+DISJOINT_FROM: dict[str, tuple[str, ...]] = {"holdout50": ("dev50",)}
+# The ids of each subset, committed when the subset was drawn (before any model saw it):
+# a test fails if the rule above ever draws anything else.
+SUBSET_IDS = DATA_DIR / "subsets.json"
 
 
 def _rank(subset: str, qid: int) -> str:
@@ -287,13 +295,25 @@ def subset_ids(
     source covers (Arcwise's 498), a fixed input: the subset does not move
     when the transpiler improves. The corrected track then grades the
     subset's questions whose transpiled gold verified (45 of dev50's 50).
+    A subset listed in ``DISJOINT_FROM`` first removes the ids of the subsets
+    it names, drawn by the same rule, and then draws with its own seed.
     """
     quota = SUBSETS[name]
+    pool = list(pool)
     allowed = set(also_in)
+    taken: set[int] = set()
+    for other in DISJOINT_FROM.get(name, ()):
+        taken |= set(subset_ids(other, pool, also_in=allowed))
     chosen: list[int] = []
     for difficulty, count in quota.items():
         ids = sorted(
-            (q.id for q in pool if q.difficulty == difficulty and (not allowed or q.id in allowed)),
+            (
+                q.id
+                for q in pool
+                if q.difficulty == difficulty
+                and (not allowed or q.id in allowed)
+                and q.id not in taken
+            ),
             key=lambda i: _rank(name, i),
         )
         if len(ids) < count:
@@ -302,10 +322,18 @@ def subset_ids(
     return sorted(chosen)
 
 
+def committed_subsets(path: Path | None = None) -> dict[str, list[int]]:
+    """The committed ids of every named subset (``eval/bird/data/subsets.json``)."""
+    document = json.loads((path or SUBSET_IDS).read_text(encoding="utf-8"))
+    return {name: [int(i) for i in ids] for name, ids in document["subsets"].items()}
+
+
 def select(questions_: Sequence[BirdQuestion], subset: str | None) -> list[BirdQuestion]:
     """``questions_`` restricted to a named subset (``None`` or ``all`` keeps every one)."""
     if subset in (None, "all"):
         return list(questions_)
+    if subset not in SUBSETS:
+        raise ValueError(f"unknown subset {subset!r}: one of {', '.join(SUBSETS)} or all")
     official = official_questions()
     corrected = json.loads((DATA_DIR / CORRECTED.name).read_text(encoding="utf-8"))
     ids = set(subset_ids(subset, official, also_in=(int(r["question_id"]) for r in corrected)))
