@@ -132,6 +132,14 @@ def test_the_rule_is_decided_on_holdout50_only() -> None:
         decide(dev)
 
 
+def test_the_live_default_is_what_the_rule_picks_on_the_committed_run() -> None:
+    from eval.bird.run import DEFAULT_LIVE_VARIANTS
+
+    held = [r for _, r in report.run_reports() if r.get("subset") == paired.DECIDING_SUBSET]
+    assert held, "no holdout50 run is committed under eval/results/"
+    assert f"full,{decide(held[0]).default}" == DEFAULT_LIVE_VARIANTS
+
+
 # --- rendering --------------------------------------------------------------------------------
 
 
