@@ -674,6 +674,26 @@ def test_a_call_written_as_a_column_of_a_relation_is_blocked(column_guard: Guard
 @pytest.mark.parametrize(
     "sql",
     [
+        # A CTE referenced under an alias is bound by that alias, not the CTE's name.
+        "WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT m.pg_typeof FROM c AS m",
+        # Sources whose columns the guard does not name, and a qualifier its scopes do
+        # not bind: PostgreSQL still reads each as pg_typeof(<row>), so they fail closed.
+        "SELECT l.pg_typeof FROM marts.dim_wiki AS w, LATERAL (SELECT w.wiki) AS l",
+        "SELECT g.pg_sleep FROM marts.dim_wiki AS w, LATERAL generate_series(1, 3) AS g",
+        "SELECT j.pg_typeof FROM (marts.dim_wiki JOIN marts.fct_edits USING (wiki)) AS j",
+        "SELECT s.pg_typeof FROM (SELECT * FROM unnest(ARRAY[1]) AS u) AS s",
+        "SELECT 1 FROM marts.dim_wiki AS a JOIN marts.dim_wiki AS b"
+        " ON (SELECT b.pg_typeof IS NOT NULL)",
+    ],
+)
+def test_a_call_on_a_source_the_guard_cannot_name_is_blocked(column_guard: Guard, sql: str) -> None:
+    result = _blocked(column_guard, sql)
+    assert "field_notation" in result.codes, result.reasons
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
         "SELECT w.wiki, w.domain FROM marts.dim_wiki AS w",
         "SELECT dim_wiki.wiki FROM marts.dim_wiki",
         "SELECT marts.dim_wiki.wiki FROM marts.dim_wiki",
@@ -695,6 +715,10 @@ def test_a_call_written_as_a_column_of_a_relation_is_blocked(column_guard: Guard
         "SELECT f.wiki, (SELECT count(*) FROM marts.fct_edits AS e WHERE e.wiki = f.wiki)"
         " FROM marts.dim_wiki AS f",
         "SELECT t.n FROM (SELECT x.n FROM (SELECT 1 AS n) AS x) AS t ORDER BY t.n",
+        "WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT m.wiki FROM c AS m",
+        "SELECT l.wiki FROM marts.dim_wiki AS w, LATERAL (SELECT w.wiki) AS l",
+        "SELECT j.wiki FROM (marts.dim_wiki JOIN marts.fct_edits USING (wiki)) AS j",
+        "SELECT 1 FROM marts.dim_wiki AS a JOIN marts.dim_wiki AS b ON (SELECT b.edits > 1)",
     ],
 )
 def test_columns_of_relations_and_subqueries_are_allowed(column_guard: Guard, sql: str) -> None:

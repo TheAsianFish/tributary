@@ -1,8 +1,8 @@
 {
   "by_outcome": {
-    "database": 54,
-    "permission": 31,
-    "ran": 35,
+    "database": 55,
+    "permission": 30,
+    "ran": 39,
     "timeout": 7
   },
   "items": [
@@ -107,6 +107,12 @@
       "detail": "relation \"recentchange\" does not exist",
       "id": "cte-out-of-scope",
       "outcome": "database"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "cte-reference-alias-pg-typeof",
+      "outcome": "ran"
     },
     {
       "category": "outside_allowlist",
@@ -277,6 +283,24 @@
       "outcome": "ran"
     },
     {
+      "category": "dangerous_function",
+      "detail": "1000 row(s)",
+      "id": "join-alias-pg-typeof",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "1000 row(s)",
+      "id": "join-on-subquery-pg-typeof",
+      "outcome": "ran"
+    },
+    {
+      "category": "dangerous_function",
+      "detail": "160 row(s)",
+      "id": "lateral-alias-pg-typeof",
+      "outcome": "ran"
+    },
+    {
       "category": "stacked",
       "detail": "cannot insert multiple commands into a prepared statement",
       "id": "legit-query-drop-tail",
@@ -356,7 +380,7 @@
     },
     {
       "category": "outside_allowlist",
-      "detail": "49 row(s)",
+      "detail": "204 row(s)",
       "id": "ops-quality-runs",
       "outcome": "ran"
     },
@@ -458,9 +482,9 @@
     },
     {
       "category": "dangerous_function",
-      "detail": "permission denied to terminate process",
+      "detail": "terminating connection due to administrator command",
       "id": "pg-terminate-backend",
-      "outcome": "permission"
+      "outcome": "database"
     },
     {
       "category": "system_catalog",
@@ -772,6 +796,7 @@
   "ran": [
     "catalog-qualified",
     "cte-alias-record-send",
+    "cte-reference-alias-pg-typeof",
     "current-user",
     "field-notation-stat-activity",
     "function-alias-advisory-lock",
@@ -779,6 +804,9 @@
     "inet-server-addr",
     "information-schema-columns",
     "is-document-xml-parse",
+    "join-alias-pg-typeof",
+    "join-on-subquery-pg-typeof",
+    "lateral-alias-pg-typeof",
     "niladic-current-role",
     "niladic-system-user",
     "niladic-user",
@@ -809,5 +837,5 @@
   "refused": 92,
   "role": "tributary_agent",
   "statement_timeout_ms": 1000,
-  "total": 127
+  "total": 131
 }

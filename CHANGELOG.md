@@ -28,7 +28,13 @@ All notable changes to this project are recorded here. The format follows
   (`pg_typeof`, `pg_column_size`, `quote_literal`, `record_send` and others,
   none volatile). The guard now knows each relation's columns and refuses a
   qualified name that is not a column but is a function PostgreSQL could
-  call. Eight statements were added to the unsafe suite.
+  call. A source whose columns it cannot name (a `LATERAL` subquery, a
+  parenthesised join's alias, a qualifier no scope binds) fails closed, and a
+  CTE is bound by the alias it is referenced under. Twelve statements were
+  added to the unsafe suite.
+- **A `char(n)` value's padding escaped the byte cap.** Its cast to `text`
+  drops the trailing spaces the server still sends; it is now measured as it
+  is.
 - `test_marts_from_information_schema` skips with the reason when the marts
   are not built.
 

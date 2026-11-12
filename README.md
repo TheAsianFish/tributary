@@ -407,8 +407,8 @@ there because the one before it can be wrong:
 | Layer | What it does | What it would miss alone |
 |---|---|---|
 | Planner (`tributary/agent/planner.py`) | The model sees the marts as DDL with dbt's descriptions, keys, lineage and indexed values (the system prefix, cached), and returns a schema-enforced `SQLDraft`. A guard block or PostgreSQL error goes back as the next turn, at most two repairs. | A model can write anything, including `DELETE`. |
-| Guard (`tributary/agent/guard.py`) | Parses with sqlglot and fails closed: one `SELECT`, no write or DDL node anywhere in the tree (a `DELETE` hidden in a CTE included), only the catalog's relations (unqualified names are qualified on the way out), an allowlist for functions sqlglot does not know and a denylist for dangerous ones, a qualified name checked against its relation's columns (`w.pg_typeof` is a call to PostgreSQL, not a column), `LIMIT` capped. The SQL that runs is regenerated from the checked tree, so comments and anything the parser dropped never reach the database. 127 attack statements, all blocked; 40 warehouse and 949 BIRD gold queries, none blocked; a differential oracle checks it against PostgreSQL's own name resolution (`make eval-guard-diff`). | A parser can disagree with PostgreSQL. |
-| Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap, and a result byte cap PostgreSQL enforces before it sends a row (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`, 8 MiB). With the guard switched off it still refuses 92 of the 127 attacks. | Catalog reads, `set_config`, sleeping, signalling its own sessions and whole-row calls are open to any role: the 35 the guard alone stops. |
+| Guard (`tributary/agent/guard.py`) | Parses with sqlglot and fails closed: one `SELECT`, no write or DDL node anywhere in the tree (a `DELETE` hidden in a CTE included), only the catalog's relations (unqualified names are qualified on the way out), an allowlist for functions sqlglot does not know and a denylist for dangerous ones, a qualified name checked against its relation's columns (`w.pg_typeof` is a call to PostgreSQL, not a column), `LIMIT` capped. The SQL that runs is regenerated from the checked tree, so comments and anything the parser dropped never reach the database. 131 attack statements, all blocked; 40 warehouse and 949 BIRD gold queries, none blocked; a differential oracle checks it against PostgreSQL's own name resolution (`make eval-guard-diff`). | A parser can disagree with PostgreSQL. |
+| Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap, and a result byte cap PostgreSQL enforces before it sends a row (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`, 8 MiB). With the guard switched off it still refuses 92 of the 131 attacks. | Catalog reads, `set_config`, sleeping, signalling its own sessions and whole-row calls are open to any role: the 39 the guard alone stops. |
 | Answer (`answer.py`, `provenance.py`) | The text is composed from the rows (the model never restates a number), and carries the SQL that ran, the tables read and, for each, its last successful rebuild and the latest result of every check on it and on its sources. Stale or failing tables become warnings in the answer text. | A correct query over a stale or broken table is still a wrong answer. |
 
 The model boundary (`tributary/agent/provider.py`) is one request shape and
@@ -493,7 +493,7 @@ each built to fail differently from the others.
 
 - **The guard** (`tributary/agent/guard.py`) is a fail-closed policy on
   sqlglot's tree, described in the table above. Its adversarial suite has
-  127 statements, every one blocked in CI (`make eval-guard`). The release
+  131 statements, every one blocked in CI (`make eval-guard`). The release
   review found a real bypass. PostgreSQL reads `p.f` as the call `f(p)` when
   `p` is a function in FROM, so
   `SELECT p.pg_terminate_backend FROM unnest(...) AS p` looked like a column
@@ -506,8 +506,8 @@ each built to fail differently from the others.
   about 220,000 spellings of a call, and PostgreSQL itself says, without
   running them, which functions each statement the guard admits would call
   ([RESULTS.md](RESULTS.md#a-differential-oracle-for-the-guard-m9)).
-- **The database role** refuses 92 of the 127 statements with the guard
-  switched off (`make eval-guard-db`). The 35 it lets run are listed, and are
+- **The database role** refuses 92 of the 131 statements with the guard
+  switched off (`make eval-guard-db`). The 39 it lets run are listed, and are
   the guard's alone to stop. A result over 8 MiB is refused by PostgreSQL
   before the client holds it: `SELECT repeat('x', 200000000)` took the CLI to
   1.64 GB before M9 and 78 MB after.
@@ -588,8 +588,8 @@ runs are listed there under "To measure", with their estimated cost.
 | One-hour filter on the lake (sample) | Scan read 2 of 4 files and 19,271 of 50,000 rows, exactly the hour's `$files` |
 | Per-hour reconciliation | Closed hour 19,271 = 19,271 ids with equal fingerprints, 0 duplicates; an injected duplicate fails it, and so does an exchange of ids that keeps every count equal |
 | `dbt build` on the sample | PASS=57 (2 seeds, 5 marts, 1 staging view, 49 tests) |
-| Guard suite (`make eval-guard`) | 127 / 127 unsafe statements blocked; 0 / 40 warehouse gold queries and 0 / 949 BIRD gold queries blocked |
-| Database layer alone, guard off (`make eval-guard-db`) | 92 / 127 refused; the 35 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, and `p.pg_terminate_backend` over an `unnest` of the role's own pids, which killed its other sessions from a read-only transaction, and `w.pg_typeof` over a mart) are the guard's alone to stop |
+| Guard suite (`make eval-guard`) | 131 / 131 unsafe statements blocked; 0 / 40 warehouse gold queries and 0 / 949 BIRD gold queries blocked |
+| Database layer alone, guard off (`make eval-guard-db`) | 92 / 131 refused; the 39 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, and `p.pg_terminate_backend` over an `unnest` of the role's own pids, which killed its other sessions from a read-only transaction, and `w.pg_typeof` over a mart) are the guard's alone to stop |
 | 40 warehouse questions on local models (CPU, $0) | `qwen2.5-coder:7b` 25 / 40, `:14b` 31 / 40 (execution accuracy); 4 of the 6 questions both miss are the same error, a pre-aggregated mart whose grain does not fit the question |
 | Replay of the recorded runs (what CI tests) | Same 40 verdicts and SQL in 2.1 s, against 31 min live for the 7B run (68 min for 14B) |
 | BIRD gold in PostgreSQL (`make bird`) | 500 / 500 official gold queries execute; 449 / 498 corrected labels transpile from SQLite and return the same rows on both engines |

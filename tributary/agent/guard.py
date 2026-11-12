@@ -271,6 +271,10 @@ _NOT_QUERY: tuple[type[exp.Expr], ...] = (
     exp.Summarize,
 )
 
+# A derived table's columns the guard cannot name: a placeholder no identifier can match,
+# so every callable name on it is refused (compared by identity, never by value).
+_UNKNOWN: tuple[str, ...] = ("\x00unknown",)
+
 
 @dataclass(frozen=True, slots=True)
 class GuardResult:
@@ -648,6 +652,22 @@ class Guard:
         except Exception as error:  # a scope sqlglot cannot build is not understood
             reasons.append(f"parse_error: cannot resolve the query's scopes ({error})")
             return
+        visited: set[int] = set()
+        for scope in scopes:
+            visited.update(id(column) for column in scope.columns)
+        for column in statement.find_all(exp.Column):
+            # A column no scope lists (sqlglot misses a subquery in JOIN ... ON) is not
+            # bound by the guard; PostgreSQL binds it, so a callable name is refused.
+            qualifier = _ident(column.args.get("table"))
+            name = _ident(column.this)
+            if id(column) in visited or qualifier is None or name is None:
+                continue
+            if _callable(name):
+                reasons.append(
+                    f"field_notation: {column.sql(dialect=DIALECT)} names {qualifier},"
+                    f" which the guard cannot bind, so PostgreSQL may call"
+                    f" {name}({qualifier})"
+                )
         for scope in scopes:
             for column in scope.columns:
                 qualifier = _ident(column.args.get("table"))
@@ -664,6 +684,15 @@ class Guard:
                     candidates = self._bindings(scope, qualifier)
                 if not _callable(name):
                     continue  # no call to hide: PostgreSQL refuses the unknown column itself
+                if not candidates:
+                    # sqlglot's scopes did not bind it (a LATERAL subquery, a parenthesised
+                    # join's alias, a subquery in JOIN ... ON), but PostgreSQL may: fail closed.
+                    reasons.append(
+                        f"field_notation: {column.sql(dialect=DIALECT)} names {qualifier},"
+                        f" which the guard cannot bind, so PostgreSQL may call"
+                        f" {name}({qualifier})"
+                    )
+                    continue
                 for shown, names in candidates:
                     if names is None or _has_column(names, name):
                         continue
@@ -684,12 +713,12 @@ class Guard:
             matches = [
                 source
                 for key, source in current.sources.items()
-                if _source_name(key, source) == qualifier
+                if _reference_name(current, key, source) == qualifier
             ]
             if matches:
                 return [self._source_columns(qualifier, source) for source in matches]
             current = current.parent
-        return []  # unbound: PostgreSQL refuses the reference itself
+        return []  # unbound here; the caller refuses a callable name
 
     def _source_columns(
         self, qualifier: str, source: exp.Expr | Scope
@@ -703,9 +732,14 @@ class Guard:
                 own: tuple[str, ...] | None = tuple(f"column{i + 1}" for i in range(width))
             elif isinstance(node, exp.Query):
                 own = self._output_columns(node, source)
-            else:  # UNNEST and other functions in FROM: the function-alias check's
+            elif isinstance(node, exp.Unnest):  # a function in FROM: the function-alias check's
                 return qualifier, None
-            return f"the subquery {qualifier}", _renamed(own, alias)
+            else:  # LATERAL, a parenthesised join's alias: columns the guard does not name
+                return f"the source {qualifier}", _UNKNOWN
+            renamed = _renamed(own, alias)
+            # Output the guard cannot name (a * over a function in FROM): no name is
+            # vouched for, so a callable one is refused.
+            return f"the subquery {qualifier}", _UNKNOWN if renamed is None else renamed
         if isinstance(source, exp.Table) and isinstance(source.this, exp.Identifier):
             relation = ".".join(
                 p for p in (_ident(source.args.get("db")), _ident(source.this)) if p
@@ -743,7 +777,7 @@ class Guard:
             if qualifier is not None and _source_name(key, source[1]) != qualifier:
                 continue
             _, names = self._source_columns(key, source[1])
-            if names is None:
+            if names is None or names is _UNKNOWN:
                 return None
             out.extend(names)
         return out
@@ -875,6 +909,22 @@ def _check_function_column(
         f"field_notation: {column.sql(dialect=DIALECT)} is not a column of the function"
         f" {qualifier} in FROM, so PostgreSQL calls {name}({qualifier})"
     )
+
+
+def _reference_name(scope: Scope, key: str, source: exp.Expr | Scope) -> str | None:
+    """The name ``source`` is referenced by in ``scope``, folded as PostgreSQL folds it.
+
+    A CTE is referenced by the alias its FROM item gives it (``FROM c AS m`` is ``m``),
+    not by the CTE's own name, so it is named from that table reference.
+    """
+    if isinstance(source, Scope) and source.is_cte:
+        for table in scope.tables:
+            if table.alias_or_name == key:
+                alias = table.args.get("alias")
+                if isinstance(alias, exp.TableAlias) and alias.this is not None:
+                    return _ident(alias.this)
+                return _ident(table.this)
+    return _source_name(key, source)
 
 
 def _source_name(key: str, source: exp.Expr | Scope) -> str | None:

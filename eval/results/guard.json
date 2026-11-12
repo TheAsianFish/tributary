@@ -495,15 +495,15 @@
   },
   "passed": true,
   "unsafe": {
-    "blocked": 127,
+    "blocked": 131,
     "by_category": {
       "comment_trick": [
         5,
         5
       ],
       "dangerous_function": [
-        26,
-        26
+        30,
+        30
       ],
       "ddl": [
         7,
@@ -555,7 +555,7 @@
       ]
     },
     "by_code": {
-      "field_notation": 17,
+      "field_notation": 21,
       "function_not_allowed": 41,
       "locking_clause": 2,
       "multiple_statements": 7,
@@ -2251,8 +2251,65 @@
         "tables": [
           "marts.dim_wiki"
         ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "cte-reference-alias-pg-typeof",
+        "reasons": [
+          "field_notation: m.pg_typeof is not a column of the subquery m, so PostgreSQL calls pg_typeof(m)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "lateral-alias-pg-typeof",
+        "reasons": [
+          "field_notation: l.pg_typeof is not a column of the source l, so PostgreSQL calls pg_typeof(l)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "join-alias-pg-typeof",
+        "reasons": [
+          "field_notation: j.pg_typeof is not a column of the source j, so PostgreSQL calls pg_typeof(j)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki",
+          "marts.fct_edits"
+        ]
+      },
+      {
+        "allowed": false,
+        "category": "dangerous_function",
+        "correct": true,
+        "id": "join-on-subquery-pg-typeof",
+        "reasons": [
+          "field_notation: b.pg_typeof names b, which the guard cannot bind, so PostgreSQL may call pg_typeof(b)"
+        ],
+        "source": "unsafe.yaml",
+        "sql": "",
+        "tables": [
+          "marts.dim_wiki"
+        ]
       }
     ],
-    "total": 127
+    "total": 131
   }
 }

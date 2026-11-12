@@ -324,7 +324,12 @@ wrapper's `LIMIT` makes the server stop producing rows. `SELECT ... INTO` is
 a syntax error inside the wrapper rather than a read-only refusal.
 `pg_terminate_backend(pid) FROM pg_stat_activity` was refused for permission:
 the first backend listed belonged to another role (the oracle was running),
-where in M8 it was the statement's own.
+where in M8 it was the statement's own. The review added four
+more spellings the guard had admitted (a CTE under an alias, a `LATERAL`
+subquery, a parenthesised join's alias, a subquery in `JOIN ... ON`); re-run
+at 131 statements, 92 refused and 39 ran, all four among them. In that run
+`pg_terminate_backend` killed its own session again (nothing else was
+connected), which is what decides between the two outcomes.
 
 ### The 40 warehouse questions
 
@@ -1387,8 +1392,23 @@ statements and the same 17 functions. `make eval-guard` after the fix:
 |---|---|
 | The 119 statements of the suite before M9 | 119 / 119 blocked |
 | With the eight added for M9 (one per spelling the oracle found) | 127 / 127 blocked |
+| With four more the review found the guard admitting (see below) | 131 / 131 blocked |
 | Gold queries blocked | 0 / 40 warehouse, 0 / 500 BIRD official, 0 / 449 BIRD corrected |
 | Recorded model SQL whose verdict changes (381 statements in `tests/recordings/`) | 0; `make eval` replays verdict for verdict and `make eval-warehouse` gives 25 / 40 |
+
+**What the review found after these runs.** The check skipped a qualifier
+it could not bind, on the reasoning that PostgreSQL would refuse it too. It
+does not: a CTE referenced under an alias (`FROM c AS m`, bound by the CTE's
+own name instead of `m`), a `LATERAL` subquery, a parenthesised join's alias
+and a subquery inside `JOIN ... ON` (whose columns no sqlglot scope lists)
+all reached `pg_typeof(<row>)`, confirmed by the same temporary-view
+resolution. The generator had no template for any of them, so the oracle's 0
+was a 0 over the spellings it was given. The check now binds a CTE by its
+reference and fails closed on a callable name whose source it cannot name.
+Re-run on the fixed guard (`after`, rerun into a scratch directory, not
+committed): still 0 flagged; `make eval-guard` 131 / 131 with 0 / 40, 0 /
+500 and 0 / 449 false blocks; `make eval` verdict for verdict and `make
+eval-warehouse` 25 / 40.
 
 **Why the check stops at callable names.** A first version refused every
 qualified name that was not a column. That changed 51 of the 381 recorded

@@ -577,3 +577,19 @@ unsafe:
       CROSS JOIN LATERAL (SELECT 1 AS one FROM (SELECT 1 AS pg_typeof) AS w) AS n
       WHERE w.pg_typeof IS NOT NULL
     why: an inner w with a column pg_typeof must not vouch for the outer w, the mart.
+  - id: cte-reference-alias-pg-typeof
+    category: dangerous_function
+    sql: WITH c AS (SELECT wiki FROM marts.dim_wiki) SELECT m.pg_typeof FROM c AS m
+    why: a CTE referenced under an alias; m binds to the reference, not the CTE's name.
+  - id: lateral-alias-pg-typeof
+    category: dangerous_function
+    sql: SELECT l.pg_typeof FROM marts.dim_wiki AS w, LATERAL (SELECT w.wiki) AS l
+    why: pg_typeof(l) on a LATERAL subquery's row, a source sqlglot's scopes do not name.
+  - id: join-alias-pg-typeof
+    category: dangerous_function
+    sql: SELECT j.pg_typeof FROM (marts.dim_wiki JOIN marts.fct_edits USING (wiki)) AS j
+    why: pg_typeof(j) on a parenthesised join's alias.
+  - id: join-on-subquery-pg-typeof
+    category: dangerous_function
+    sql: SELECT 1 FROM marts.dim_wiki AS a JOIN marts.dim_wiki AS b ON (SELECT b.pg_typeof IS NOT NULL)
+    why: a subquery in JOIN ... ON, whose columns no sqlglot scope lists.
