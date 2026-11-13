@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist bench-skew bench-poison
+.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist bench-skew bench-poison bench-late
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -157,6 +157,11 @@ bench-poison: ## One event 23 h ahead in 50,000 on a fresh Compose stack, both s
 	TRIBUTARY_MAX_FUTURE_SKEW_S=$(if $(filter before,$(ARM)),86400,) $(MAKE) up-lakehouse
 	uv run python -m bench.faults poison --arm $(ARM)
 	uv run python -m bench.report
+
+bench-late: ## The sample replayed twice, then 50,000 events with 100 late, 2 rejected; ARM=after reconciles every 30 s (deletes volumes; ~25 min)
+	$(MAKE) down
+	$(MAKE) up-lakehouse
+	uv run python -m bench.late run --arm $(ARM)
 
 bench-results: ## Re-render RESULTS.md's ingest and query tables from bench/results/
 	uv run python -m bench.report
