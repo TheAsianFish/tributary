@@ -54,18 +54,35 @@ CREATE TABLE IF NOT EXISTS ops.stream_progress (
 -- warehouse sink never sees): rows the watermark dropped as late, and records the
 -- parser rejected, by reason. A row the progress report wrote alone has no
 -- max_event_ts and rows = inserted = 0.
-ALTER TABLE ops.stream_progress ALTER COLUMN max_event_ts DROP NOT NULL;
-ALTER TABLE ops.stream_progress ALTER COLUMN rows SET DEFAULT 0;
-ALTER TABLE ops.stream_progress ALTER COLUMN inserted SET DEFAULT 0;
-ALTER TABLE ops.stream_progress
-    ADD COLUMN IF NOT EXISTS input_rows           bigint,
-    ADD COLUMN IF NOT EXISTS dropped_by_watermark bigint,
-    ADD COLUMN IF NOT EXISTS malformed_rows       bigint,
-    ADD COLUMN IF NOT EXISTS future_rows          bigint,
-    ADD COLUMN IF NOT EXISTS canary_rows          bigint,
-    ADD COLUMN IF NOT EXISTS watermark            timestamptz,
-    ADD COLUMN IF NOT EXISTS reported_at          timestamptz;
-CREATE INDEX IF NOT EXISTS stream_progress_committed ON ops.stream_progress (committed_at);
+--
+-- Gated on the catalog: this script runs every time a check is recorded, and ALTER
+-- TABLE (even a no-op one) and CREATE INDEX lock the table whether or not there is
+-- anything to do. Waiting behind an open reader, that lock would queue every later
+-- stream write behind it. The migration is one transaction, so one column tells.
+DO $migrate$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'ops.stream_progress'::regclass AND attname = 'reported_at'
+            AND NOT attisdropped
+    ) THEN
+        ALTER TABLE ops.stream_progress ALTER COLUMN max_event_ts DROP NOT NULL;
+        ALTER TABLE ops.stream_progress ALTER COLUMN rows SET DEFAULT 0;
+        ALTER TABLE ops.stream_progress ALTER COLUMN inserted SET DEFAULT 0;
+        ALTER TABLE ops.stream_progress
+            ADD COLUMN IF NOT EXISTS input_rows           bigint,
+            ADD COLUMN IF NOT EXISTS dropped_by_watermark bigint,
+            ADD COLUMN IF NOT EXISTS malformed_rows       bigint,
+            ADD COLUMN IF NOT EXISTS future_rows          bigint,
+            ADD COLUMN IF NOT EXISTS canary_rows          bigint,
+            ADD COLUMN IF NOT EXISTS watermark            timestamptz,
+            ADD COLUMN IF NOT EXISTS reported_at          timestamptz;
+    END IF;
+    IF to_regclass('ops.stream_progress_committed') IS NULL THEN
+        CREATE INDEX stream_progress_committed ON ops.stream_progress (committed_at);
+    END IF;
+END
+$migrate$;
 
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS

@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from importlib.resources import files
 
 import psycopg
 import pytest
@@ -102,3 +103,16 @@ def test_the_schema_script_stays_idempotent(conninfo: str) -> None:
             " AND column_name = 'max_event_ts'"
         ).fetchone()
     assert nullable == ("YES",)
+
+
+def test_rerunning_the_schema_script_does_not_wait_behind_a_reader(conninfo: str) -> None:
+    """Every recorded check re-runs ops.sql. On a migrated table it must take no lock
+    that waits behind an open reader: a waiting ALTER queues every later stream write
+    behind it, so the sink would stall for as long as the reader's transaction lasts."""
+    ensure_schema(conninfo, "ops.sql")
+    with psycopg.connect(conninfo) as reader:
+        reader.execute("SELECT count(*) FROM ops.stream_progress")  # holds ACCESS SHARE
+        with psycopg.connect(conninfo) as conn:
+            conn.execute("SET lock_timeout = '1s'")
+            conn.execute(files("tributary").joinpath("sql", "ops.sql").read_bytes())
+        reader.rollback()
