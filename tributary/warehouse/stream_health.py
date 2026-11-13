@@ -69,8 +69,8 @@ WINDOW_SQL = (
 
 
 DROPPED_SQL = (
-    "SELECT query, batch_id, dropped_by_watermark, start_offsets, end_offsets, committed_at"
-    " FROM ops.stream_progress"
+    "SELECT query, batch_id, dropped_by_watermark, start_offsets, end_offsets, committed_at,"
+    " reported_at FROM ops.stream_progress"
     " WHERE input_rows IS NOT NULL AND dropped_by_watermark > 0"
     " AND committed_at >= %s AND committed_at <= %s"
     " ORDER BY query, batch_id"
@@ -102,6 +102,8 @@ class DroppedBatch:
     start_offsets: Offsets | None
     end_offsets: Offsets | None
     committed_at: datetime | None = None
+    reported_at: datetime | None = None
+    """When its progress report (and so its offsets) was recorded, by the database clock."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +114,8 @@ class PassWindow:
     query: str
     start_offsets: Offsets
     end_offsets: Offsets
+    finished_at: datetime | None = None
+    """When the pass was recorded, by the database clock."""
 
 
 def covers(window: PassWindow, batch: DroppedBatch) -> bool:
@@ -121,8 +125,18 @@ def covers(window: PassWindow, batch: DroppedBatch) -> bool:
     with end offsets and no start (Spark reports none for a query's first batch)
     is taken to start at offset 0, the most a pass must have read to cover it.
     A partition the batch read nothing from (start = end) needs nothing.
+
+    A pass vouches only for batches recorded before it finished: its window was
+    bounded by offsets already committed. Offsets alone cannot tell a batch of a
+    recreated topic, whose offsets restart, from one the pass really read.
     """
     if window.query != batch.query or batch.end_offsets is None:
+        return False
+    if (
+        window.finished_at is not None
+        and batch.reported_at is not None
+        and batch.reported_at > window.finished_at
+    ):
         return False
     starts = batch.start_offsets or {}
     for topic, ends in batch.end_offsets.items():
@@ -259,6 +273,7 @@ def dropped_batches(
             start_offsets=_offsets(r[3]),
             end_offsets=_offsets(r[4]),
             committed_at=r[5] if isinstance(r[5], datetime) else None,
+            reported_at=r[6] if isinstance(r[6], datetime) else None,
         )
         for r in rows
     ]
@@ -270,7 +285,8 @@ def pass_windows(conn: psycopg.Connection[TupleRow], since: datetime) -> list[Pa
     for r in conn.execute(PASSES_SQL, (since,)).fetchall():
         start, end = _offsets(r[2]), _offsets(r[3])
         if start is not None and end is not None:
-            windows.append(PassWindow(int(r[0]), str(r[1]), start, end))
+            finished = r[4] if isinstance(r[4], datetime) else None
+            windows.append(PassWindow(int(r[0]), str(r[1]), start, end, finished))
     return windows
 
 

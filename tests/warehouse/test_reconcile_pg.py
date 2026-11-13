@@ -96,9 +96,10 @@ def into_2001(conninfo: str) -> None:
     with psycopg.connect(conninfo, autocommit=True) as conn:
         conn.execute(
             "UPDATE ops.stream_progress"
-            " SET committed_at = %s + (batch_id - %s) * interval '1 minute'"
+            " SET committed_at = %s + (batch_id - %s) * interval '1 minute',"
+            " reported_at = %s + (batch_id - %s) * interval '1 minute'"
             " WHERE query = 'warehouse' AND end_offsets ? %s",
-            (DAY, BASE, TOPIC),
+            (DAY, BASE, DAY, BASE, TOPIC),
         )
         conn.execute(
             "UPDATE ops.reconcile_runs SET finished_at = %s + interval '30 minutes'"

@@ -195,6 +195,17 @@ def test_a_batch_without_offsets_is_never_covered_and_one_without_a_start_starts
     assert not covers(window({"0": 1, "1": 0}, {"0": 10**9, "1": 10**9}), batch(None, {"0": 5}))
 
 
+def test_a_pass_never_covers_a_batch_recorded_after_it_finished() -> None:
+    """A recreated topic restarts its offsets: an old pass's window must not vouch for them."""
+    from dataclasses import replace
+
+    finished = datetime(2026, 11, 13, 12, tzinfo=UTC)
+    old_pass = replace(window({"0": 0, "1": 0}, {"0": 50_000, "1": 50_000}), finished_at=finished)
+    b = batch({"0": 100, "1": 50}, {"0": 300, "1": 80})
+    assert covers(old_pass, replace(b, reported_at=finished - timedelta(seconds=1)))
+    assert not covers(old_pass, replace(b, reported_at=finished + timedelta(seconds=1)))
+
+
 def test_uncovered_keeps_the_batches_no_pass_covers() -> None:
     first = batch({"0": 0}, {"0": 100})
     second = batch({"0": 100}, {"0": 200})
