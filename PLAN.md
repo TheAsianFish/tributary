@@ -437,7 +437,8 @@ measured.
 | `tributary warehouse refresh && make eval-warehouse` | 25 / 40, as recorded |
 | Spark local mode: the sample in 100 micro-batches, then its first 5,000 events sent again (a scratch probe on `parse_events` and `deduplicate`) | 50,000 of 50,000 delivered once, 0 lost, 0 twice; `rows_dropped_by_watermark` 0 in the first pass and **5,000** in the second |
 | The planner's `confidence` field over all 562 recorded BIRD calls | "high" on 526 of 527 answerable drafts, "low" on 28 of 29 refusals |
-| Result rows of `full+v+f+a` against `full` on the same question, from the recorded executions (dev50 + holdout50, official track) | same rows: `full+v+f+a` correct **31 / 40**; different rows, an error or a refusal: **19 / 60** (dev50 18 / 21 against 8 / 29, holdout50 13 / 19 against 11 / 31) |
+| Result rows of `full+v+f+a` against `full` on the same question, from the recorded executions (dev50 + holdout50, official track, BIRD's set rule) | same rows: `full+v+f+a` correct **32 / 41**; different rows, an error or a refusal: **18 / 59** (dev50 18 / 21 against 8 / 29, holdout50 14 / 20 against 10 / 30) |
+| The same split, grading `full` (the plain pass, which is what M13 grades) | same rows: correct **32 / 41**; differed: **6 / 59** (dev50 18 / 21 against 3 / 29, holdout50 14 / 20 against 3 / 30) |
 | Answers that needed a repair, same runs | correct 2 / 18, against 48 / 82 without one |
 
 The Compose benchmarks (`make bench`, `bench-scale`, `bench-query`,
@@ -463,9 +464,11 @@ still renders RESULTS.md's tables (`make check` tests that).
    (50 of 100 on these questions). M10 found that one added sentence
    changes answers the sentence was never about, and treated that as noise.
    Read the other way: when two prompt variants at temperature 0 return the
-   same rows, the answer is right 78% of the time, and 32% when they do
-   not. It holds inside each difficulty band (simple 12 / 14 against 7 /
-   16, moderate 15 / 20 against 10 / 30, challenging 4 / 6 against 2 / 14).
+   same rows, the answer is right 78% of the time, and 31% when they do
+   not; grading the plain pass instead, 78% against 10%. It holds inside
+   each difficulty band (graded on `full+v+f+a`: simple 12 / 14 against
+   7 / 16, moderate 16 / 21 against 9 / 29, challenging 4 / 6 against
+   2 / 14).
    But I found it by looking at both subsets, and it was weaker on
    holdout50 than on dev50, so neither is a test of it.
 
@@ -494,11 +497,14 @@ still renders RESULTS.md's tables (`make check` tests that).
   plain pass's answers are right significantly more often when the two
   agree than when they differ (one-sided Fisher exact test, p < 0.05:
   with 25 right in 40 that takes 12 of 14, 13 of 16, 16 of 20 or 18 of 24
-  agreed answers right). A gap under 15 points means the BIRD finding did
-  not transfer and RESULTS.md says so; a gap of 15 points or more that
-  misses p < 0.05 is reported as inconclusive at n = 40, which the power
-  makes likely about four times in ten even if the BIRD rates are the true
-  ones. The stated `confidence` is "high" on at least 95% of answers.
+  agreed answers right). A gap under 15 points is reported as *not seen at
+  n = 40*, not as proof of absence; a gap of 15 points or more that misses
+  p < 0.05 is reported as inconclusive. With the BIRD rates rescaled to
+  25 right in 40 (78% when agreed, about 52% when not, 41% agreement),
+  a simulation puts p < 0.05 at about 40%, inconclusive at about 37% and
+  a gap under 15 points at about 22% of runs: n = 40 is small, and the
+  pre-registered block states those odds before the run. The stated
+  `confidence` is "high" on at least 95% of answers.
 
 **Considered and not chosen.**
 
@@ -526,6 +532,22 @@ still renders RESULTS.md's tables (`make check` tests that).
   75-table warehouse.* Unchanged from round 1: hours of CPU for
   differences n = 50 cannot resolve, no key, and the pooled benchmark
   waits on `core`.
+
+**Checked again before committing to these.** Every number above was
+re-run: `make check`, the guard, link and BIRD replays, dbt and the
+warehouse replay, and the 35,554 count straight from the sample. The
+BIRD agreement split did not reproduce exactly: recounted from the
+recorded executions under BIRD's set rule, holdout50 is 14 / 20 against
+10 / 30 (one correct answer was on the wrong side), and the table above
+now has that count. Grading the plain pass, which is what M13 grades,
+makes the split sharper (6 / 59 right when the passes differ), so it is
+in the table too. Three changes to the milestones came out of it. M13
+records the warehouse executions, so `make eval-agree` runs offline as
+CI needs. It tests that no worked example leaks a gold query, because a
+leak would bias the result toward the hypothesis. A small gap at n = 40
+is now reported as *not seen*, with the simulated odds, instead of *did
+not transfer*. M12 also follows the recovered events into
+`marts.fct_edits`, so a recovered row is shown to reach an answer.
 
 ## Milestones
 
@@ -610,7 +632,7 @@ still renders RESULTS.md's tables (`make check` tests that).
     - **The check.** `stream_loss` fails on any row dropped by the watermark, or more than 0.1% of the input rejected, over the last 24 h, per query; it runs in the `raw_recentchange` DAG and as `tributary warehouse check-stream`. The Compose runs sent 200 events/s, not 500, so the lake (one batch a minute) had batches after the poison's to lose.
     - **Precondition.** Kept, with its tolerance moved from 60 s to the skew bound, because a stack outlives the code that wrote it (`make bench-poison ARM=before` leaves exactly such a stack).
   *Done (2026-11-13).* Local mode, one-day bound: 0 lost up to 450 s, 2 at 600 s, 6,010 at 900 s, 39,000 of 50,000 at 3,600 s and 82,800 s, each equal to the prediction committed before the run; 300 s bound: 0 lost at every skew, 0 of the 50,000 sample events rejected. Compose, one event 23 h ahead: 44,350 lost in PostgreSQL and 31,551 in Iceberg with the check red, against 0 and 0 with the check green. $0.
-- [ ] M12: A dropped row is a loss only if the event is missing — `tributary stream reconcile` (Spark batch, the job's own `parse_events`): read the topic up to the offsets the warehouse query has committed (each batch's end offsets, added to its row in `ops.stream_progress`; nothing past them is judged), anti-join the parsed ids against `raw.recentchange`, class every record as landed, rejected (`malformed`, `future`) or missing, write the missing ones through the idempotent `PostgresSink`, and record the pass (offset window, counts, seconds) in `ops`; `stream_loss` then fails on dropped rows no pass has covered or on events a pass left missing, not on the drop counter alone, and the `raw_recentchange` DAG runs a pass when the counter is above zero. A unit test on the multi-batch harness that fails on today's check: the sample's first 5,000 events sent twice, 0 lost, check red. `make bench-late ARM=before|after` on a fresh Compose stack (manual, not CI; it runs `make down` first): the sample replayed, settled, and replayed again, then 50,000 bench events at 200 events/s carrying 100 events stamped 15 minutes behind the watermark, one malformed record and one stamped an hour ahead, with a reconciliation pass every 30 s during the load and one after it. The prediction for the second replay (rows dropped, from the sample's timestamps) is committed before the run. Done when RESULTS.md holds, for both arms, rows dropped by the watermark, events missing from PostgreSQL, the check's status and the provenance line of one mart answer, with each hypothesis answered (35,554 dropped and 0 lost on the second replay, red before and green after; 0 in-flight events reported missing over every pass during the load; the two rejected records counted and not landed; the 100 late events missing before and landed after, stated as a demonstration; one pass over the topic under 60 s, or by how much not), the Iceberg gap the per-hour reconciliation reports for the 100 events named as what is left, the limit set by Kafka's retention stated, raw output under `bench/results/m12-late/`, and every earlier number unchanged.
-- [ ] M13: An answer that says when it is probably wrong — the rule, the hypotheses and the two baselines committed before any model call: the graded answer is the recorded plain pass on the 40 warehouse questions (25 / 40); the second pass has value hints and three worked examples, temperature 0; a question is *agreed* when both passes answered and their rows are equal under BIRD's set rule, and *differed* otherwise (an error or a refusal in either pass included). Then `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` on `qwen2.5-coder:7b` (about 35 minutes of CPU), and `make eval-agree` (offline, from the recordings and recorded executions, in CI): the 2 × 2 table of agreement against correctness with the one-sided Fisher exact p, per difficulty, beside two baselines at the same coverage (answered without a repair; the questions labelled simple), the share of answers whose stated `confidence` is "high", and the same table on dev50 and holdout50 marked exploratory. In the product, an opt-in second pass (`TRIBUTARY_AGENT_SECOND_PASS`, `tributary ask --second-pass`): the answer is still the first pass's, and its provenance carries `agreement: agreed` or `differed`; no vote and no choice between answers. Done when RESULTS.md holds the pre-registered block (checked byte for byte against the commit that made it), the warehouse table with the hypothesis answered under the rule in PLAN.md (transfers at p < 0.05; did not transfer under a 15-point gap; otherwise inconclusive at n = 40, with the counts that would have been needed), the second pass's own score reported with the product's defaults left alone, the BIRD tables with the 9 of 40 agreed answers that were wrong stated beside them, the added model time per question, the `fake` provider replaying both passes exactly, the To measure row for that pass removed, and the model, its version and the wall time named, at $0.
+- [ ] M12: A dropped row is a loss only if the event is missing — `tributary stream reconcile` (Spark batch, the job's own `parse_events`): read the topic up to the offsets the warehouse query has committed (each batch's end offsets, added to its row in `ops.stream_progress`; nothing past them is judged), anti-join the parsed ids against `raw.recentchange`, class every record as landed, rejected (`malformed`, `future`) or missing, write the missing ones through the idempotent `PostgresSink`, and record the pass (offset window, counts, seconds) in `ops`; `stream_loss` then fails on dropped rows no pass has covered or on events a pass left missing, not on the drop counter alone, and the `raw_recentchange` DAG runs a pass when the counter is above zero. A unit test on the multi-batch harness that fails on today's check: the sample's first 5,000 events sent twice, 0 lost, check red. `make bench-late ARM=before|after` on a fresh Compose stack (manual, not CI; it runs `make down` first): the sample replayed, settled, and replayed again, then 50,000 bench events at 200 events/s carrying 100 events stamped 15 minutes behind the watermark, one malformed record and one stamped an hour ahead, with a reconciliation pass every 30 s during the load and one after it. The prediction for the second replay (rows dropped, from the sample's timestamps) is committed before the run. Done when RESULTS.md holds, for both arms, rows dropped by the watermark, events missing from PostgreSQL, the check's status and the provenance line of one mart answer, with each hypothesis answered (35,554 dropped and 0 lost on the second replay, red before and green after; 0 in-flight events reported missing over every pass during the load; the two rejected records counted and not landed; the 100 late events missing before and landed after, stated as a demonstration, and counted in `marts.fct_edits` after the next `dbt build` (it is incremental on arrival time, so a recovered row must reach the mart); one pass over the topic under 60 s, or by how much not), the Iceberg gap the per-hour reconciliation reports for the 100 events named as what is left, the limit set by Kafka's retention stated, raw output under `bench/results/m12-late/`, and every earlier number unchanged.
+- [ ] M13: An answer that says when it is probably wrong — the rule, the hypotheses and the two baselines committed before any model call: the graded answer is the recorded plain pass on the 40 warehouse questions (25 / 40); the second pass has value hints and three worked examples, temperature 0; a question is *agreed* when both passes answered and their rows are equal under BIRD's set rule, and *differed* otherwise (an error or a refusal in either pass included). A unit test checks that no worked example in the dbt YAML shares a question or a gold query with the 40 (a leaked gold query would make the second pass agree mainly when the first is right, and favour the hypothesis). Then `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` on `qwen2.5-coder:7b` (about 35 minutes of CPU), with the warehouse executions of both passes recorded as BIRD's are (`tests/recordings/warehouse-executions.jsonl.gz`, values typed), and `make eval-agree` (offline, from the recordings and recorded executions, no PostgreSQL, in CI): the 2 × 2 table of agreement against correctness with the one-sided Fisher exact p, per difficulty, beside two baselines at the same coverage (answered without a repair; the questions labelled simple), the share of answers whose stated `confidence` is "high", and the same table on dev50 and holdout50 marked exploratory. In the product, an opt-in second pass (`TRIBUTARY_AGENT_SECOND_PASS`, `tributary ask --second-pass`): the answer is still the first pass's, and its provenance carries `agreement: agreed` or `differed`; no vote and no choice between answers. Done when RESULTS.md holds the pre-registered block (checked byte for byte against the commit that made it), the warehouse table with the hypothesis answered under the rule in PLAN.md (transfers at p < 0.05; not seen at n = 40 under a 15-point gap; otherwise inconclusive, with the counts that would have been needed and the simulated odds of each outcome), the second pass's own score reported with the product's defaults left alone, the BIRD tables graded on both passes (`full` 32 / 41 agreed against 6 / 59 differed; `full+v+f+a` 32 / 41 against 18 / 59) with the agreed answers that were wrong stated beside them, the added model time per question, the `fake` provider replaying both passes exactly, the To measure row for that pass removed, and the model, its version and the wall time named, at $0.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.

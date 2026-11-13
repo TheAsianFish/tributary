@@ -659,8 +659,8 @@ dropped and rejected rows a quality check. Two more are planned
   landing table tells the two apart and writes the missing events back.
 - **M13, an answer that says when it is probably wrong.** The model calls
   every answer "high" confidence. In the recorded BIRD runs, two prompt
-  variants returning the same rows goes with 31 of 40 right answers against
-  19 of 60 when they differ; M13 tests that on the 40 warehouse questions
+  variants returning the same rows goes with 32 of 41 right answers against
+  6 of 59 when they differ; M13 tests that on the 40 warehouse questions
   under a rule fixed first, and adds an opt-in second pass whose agreement
   is shown with the answer.
 
