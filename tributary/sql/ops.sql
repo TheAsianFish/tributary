@@ -103,6 +103,21 @@ BEGIN
 END
 $migrate_offsets$;
 
+-- The streaming query's id beside its offsets: a reset checkpoint (or a recreated
+-- topic) starts a new query whose offsets restart, and only the current query's
+-- rows say how far the warehouse has committed. Gated like the blocks above.
+DO $migrate_query_id$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'ops.stream_progress'::regclass AND attname = 'query_id'
+            AND NOT attisdropped
+    ) THEN
+        ALTER TABLE ops.stream_progress ADD COLUMN IF NOT EXISTS query_id text;
+    END IF;
+END
+$migrate_query_id$;
+
 -- One row per reconciliation pass (`tributary stream reconcile`): the offset window
 -- it read, what it found there and what it wrote back. A pass that fails records
 -- nothing, so a row means the window was judged in full.

@@ -107,18 +107,23 @@ def raw_recentchange() -> None:
         settings = get_settings()
         now = datetime.now(UTC)
         window = timedelta(hours=settings.stream_check_window_hours)
-        batches = uncovered_batches(settings.pg_conninfo, now - window, now)
-        if not batches:
+        if not uncovered_batches(settings.pg_conninfo, now - window, now):
             raise AirflowSkipException("every dropped row is covered by a reconciliation pass")
-        # Spark only when there is something to judge: a JVM for a pass, not for every poll.
-        from tributary.stream.reconcile import build_session, run_pass
+        # Spark only when there is something a pass could cover: a JVM for a pass, not for
+        # every poll, nor for drops whose offsets retention has already deleted.
+        from tributary.stream.reconcile import build_session, plan_pass, run_pass
 
+        plan = plan_pass(settings, "uncovered", now)
+        if plan is None:
+            raise AirflowSkipException("the topic no longer holds the uncovered batches")
         spark = build_session(settings)
         try:
-            result = run_pass(spark, settings, get_current_context()["run_id"], start="uncovered")
+            result = run_pass(
+                spark, settings, get_current_context()["run_id"], start="uncovered", plan=plan
+            )
         finally:
             spark.stop()
-        return result.summary() if result is not None else {"batches": len(batches)}
+        return result.summary() if result is not None else {"batches": plan.batches}
 
     @task(trigger_rule="all_done")
     def check_stream() -> int:

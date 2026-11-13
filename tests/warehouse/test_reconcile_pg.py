@@ -2,7 +2,9 @@
 what the stream_loss check reads from it.
 
 Rows are written in the 2001 window used by ``test_stream_health_pg.py`` (nothing
-else lives there) under ids minted per test, and deleted after.
+else lives there), for a topic of their own and under batch ids no stream reaches
+(the check reads the ``warehouse`` query, so these rows share its key), and are
+deleted after.
 """
 
 from __future__ import annotations
@@ -29,6 +31,8 @@ pytestmark = pytest.mark.warehouse
 
 DAY = datetime(2001, 1, 1, tzinfo=UTC)
 TOPIC = "test.reconcile"
+BASE = 2_000_000_000
+"""Added to every batch id: the (query, batch_id) key is shared with a real stream."""
 
 
 def row(event_id: str) -> tuple[object, ...]:
@@ -59,7 +63,7 @@ def clean_ops(conninfo: str) -> Iterator[None]:
     ensure_schema(conninfo, "ops.sql")
     yield
     with psycopg.connect(conninfo, autocommit=True) as conn:
-        conn.execute("DELETE FROM ops.stream_progress WHERE committed_at < '2002-01-01'")
+        conn.execute("DELETE FROM ops.stream_progress WHERE end_offsets ? %s", (TOPIC,))
         conn.execute("DELETE FROM ops.reconcile_runs WHERE topic = %s", (TOPIC,))
 
 
@@ -76,7 +80,7 @@ def test_the_store_finds_absent_ids_and_writes_them_once(conninfo: str, ids: lis
 def health(batch_id: int, start: int, end: int, dropped: int) -> BatchHealth:
     return BatchHealth(
         query="warehouse",
-        batch_id=batch_id,
+        batch_id=BASE + batch_id,
         input_rows=end - start,
         dropped_by_watermark=dropped,
         malformed_rows=0,
@@ -91,9 +95,10 @@ def health(batch_id: int, start: int, end: int, dropped: int) -> BatchHealth:
 def into_2001(conninfo: str) -> None:
     with psycopg.connect(conninfo, autocommit=True) as conn:
         conn.execute(
-            "UPDATE ops.stream_progress SET committed_at = %s + batch_id * interval '1 minute'"
+            "UPDATE ops.stream_progress"
+            " SET committed_at = %s + (batch_id - %s) * interval '1 minute'"
             " WHERE query = 'warehouse' AND end_offsets ? %s",
-            (DAY, TOPIC),
+            (DAY, BASE, TOPIC),
         )
         conn.execute(
             "UPDATE ops.reconcile_runs SET finished_at = %s + interval '30 minutes'"
@@ -102,7 +107,9 @@ def into_2001(conninfo: str) -> None:
         )
 
 
-def a_pass(start: int, end: int, missing: list[str], left: set[str]) -> PassResult:
+def a_pass(
+    start: int, end: int, missing: list[str], left: set[str], *, dry_run: bool = False
+) -> PassResult:
     return PassResult(
         topic=TOPIC,
         start_offsets={TOPIC: {"0": start}},
@@ -116,7 +123,7 @@ def a_pass(start: int, end: int, missing: list[str], left: set[str]) -> PassResu
         missing=tuple(MissingEvent(m, DAY, 0, start + i) for i, m in enumerate(missing)),
         recovered=len(missing) - len(left),
         left_missing=frozenset(left),
-        dry_run=False,
+        dry_run=dry_run,
         seconds=1.5,
         started_at=DAY,
     )
@@ -187,3 +194,23 @@ def test_a_recorded_pass_keeps_every_missing_event_and_whether_it_was_left(
         ).fetchall()
     assert run == ("test-run", 10, 7, 3, 2, 1, 1.5)
     assert missing == [(ids[0], 0, False), (ids[1], 1, False), (ids[2], 2, True)]
+
+
+@pytest.mark.usefixtures("clean_ops")
+def test_a_dry_run_covers_nothing_so_the_repairing_pass_still_runs(conninfo: str) -> None:
+    record_health(conninfo, health(1, 0, 100, 3))
+    record_pass(conninfo, "test", a_pass(0, 100, [], set(), dry_run=True))
+    into_2001(conninfo)
+    status, details = warehouse_check(conninfo)
+    assert status == "fail"
+    assert (details["uncovered_dropped"], details["reconcile_passes"]) == (3, 0)
+
+
+@pytest.mark.usefixtures("clean_ops")
+def test_after_a_checkpoint_reset_only_the_new_querys_offsets_count(conninfo: str) -> None:
+    old = health(40, 0, 900, 0)._replace(query_id="old-query")
+    record_health(conninfo, old)
+    assert committed_offsets(conninfo, TOPIC) == {"0": 900}
+    # The reset query restarts at batch 0 and has read 120 records so far.
+    record_health(conninfo, health(0, 0, 120, 0)._replace(query_id="new-query"))
+    assert committed_offsets(conninfo, TOPIC) == {"0": 120}

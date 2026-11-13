@@ -509,3 +509,29 @@ def test_without_a_database_the_logger_only_logs(
     _, progress = run_skew(spark, tmp_path, 300)
     monkeypatch.setattr(job, "record_health", lambda *_: pytest.fail("no database configured"))
     job.ProgressLogger().onQueryProgress(cast("QueryProgressEvent", ProgressEvent(progress[0])))
+
+
+def test_a_discarding_sink_records_its_counters_but_never_its_offsets(
+    spark: SparkSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pass bounded by a benchmark's offsets would write the whole run into the table."""
+    from tributary.stream import job
+    from tributary.stream.sink import BatchHealth
+
+    _, progress = run_skew(spark, tmp_path, 300)
+    written: list[BatchHealth] = []
+    monkeypatch.setattr(job, "record_health", lambda _c, h: written.append(h))
+    offsets = {"t": {"0": 5}}
+    monkeypatch.setattr(job, "kafka_offsets", lambda _raw: offsets)
+    event = cast("QueryProgressEvent", ProgressEvent(progress[0]))
+    job.ProgressLogger("dbname=x").onQueryProgress(event)
+    job.ProgressLogger("dbname=x", warehouse_writes=False).onQueryProgress(event)
+    # The harness query has no name, so name it the warehouse query for the second call.
+    monkeypatch.setattr(job, "QUERY_NAME", written[0].query)
+    job.ProgressLogger("dbname=x", warehouse_writes=False).onQueryProgress(event)
+    assert [(h.end_offsets, h.input_rows) for h in written] == [
+        (offsets, 4),
+        (offsets, 4),
+        (None, 4),
+    ]
+    assert written[0].query_id == str(progress[0].id)

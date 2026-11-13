@@ -75,11 +75,19 @@ CHUNK = 10_000
 """Valid records anti-joined per round trip, so a partition is never held whole."""
 Start = Literal["earliest", "uncovered"]
 
+# Only the current streaming query's batches: a reset checkpoint starts a new query
+# (a new id) whose offsets restart, and its predecessor's would claim records the new
+# one has not processed yet.
 COMMITTED_SQL = (
-    "SELECT t.key, p.key, max(p.value::bigint) FROM ops.stream_progress s"
+    "WITH current AS (SELECT query_id FROM ops.stream_progress"
+    " WHERE query = %(query)s AND end_offsets IS NOT NULL"
+    " ORDER BY reported_at DESC NULLS LAST, batch_id DESC LIMIT 1)"
+    " SELECT t.key, p.key, max(p.value::bigint) FROM ops.stream_progress s"
     " CROSS JOIN LATERAL jsonb_each(s.end_offsets) AS t"
     " CROSS JOIN LATERAL jsonb_each_text(t.value) AS p"
-    " WHERE s.query = %s AND s.end_offsets IS NOT NULL GROUP BY 1, 2"
+    " WHERE s.query = %(query)s AND s.end_offsets IS NOT NULL"
+    " AND s.query_id IS NOT DISTINCT FROM (SELECT query_id FROM current)"
+    " GROUP BY 1, 2"
 )
 IDS = sql.Identifier("reconcile_ids")
 CREATE_IDS = sql.SQL("CREATE TEMP TABLE {ids} (event_id uuid) ON COMMIT DROP").format(ids=IDS)
@@ -189,9 +197,18 @@ class PostgresStore:
         self.conninfo = conninfo
 
     def absent(self, ids: Sequence[str]) -> set[str]:
-        """The ids in ``ids`` that are not in the table (one transaction, a temp table)."""
+        """The ids in ``ids`` that are not in the table (one transaction, a temp table).
+        Retried once on a fresh connection: a worker reused across passes may hold one
+        the server has closed since."""
         if not ids:
             return set()
+        try:
+            return self._absent(ids)
+        except psycopg.OperationalError:
+            _discard(self.conninfo)
+            return self._absent(ids)
+
+    def _absent(self, ids: Sequence[str]) -> set[str]:
         conn = _connection(self.conninfo)
         with conn.transaction(), conn.cursor() as cur:
             cur.execute(CREATE_IDS)
@@ -321,13 +338,13 @@ def committed_offsets(conninfo: str, topic: str, query: str = QUERY) -> dict[str
     """The largest end offset per partition of the query's recorded batches (exclusive)."""
     ensure_schema(conninfo, "ops.sql")
     with psycopg.connect(conninfo, autocommit=True) as conn:
-        rows = conn.execute(COMMITTED_SQL, (query,)).fetchall()
+        rows = conn.execute(COMMITTED_SQL, {"query": query}).fetchall()
     return {str(p): int(o) for t, p, o in rows if t == topic}
 
 
 def earliest_offsets(bootstrap: str, topic: str, partitions: Iterable[str]) -> dict[str, int]:
     """The oldest offset the broker still holds per partition (retention moves it)."""
-    from confluent_kafka import Consumer, TopicPartition
+    from confluent_kafka import Consumer, KafkaException, TopicPartition
 
     consumer = Consumer(
         {
@@ -339,8 +356,21 @@ def earliest_offsets(bootstrap: str, topic: str, partitions: Iterable[str]) -> d
     try:
         out = {}
         for p in partitions:
-            low, _high = consumer.get_watermark_offsets(TopicPartition(topic, int(p)), timeout=10)
-            out[p] = int(low)
+            low: int | None = None
+            for _attempt in range(3):  # librdkafka can drop a fresh handle's first request
+                try:
+                    marks = consumer.get_watermark_offsets(
+                        TopicPartition(topic, int(p)), timeout=10
+                    )
+                except KafkaException:
+                    marks = None
+                if marks is not None:  # None: the request timed out
+                    low = int(marks[0])
+                    break
+                time.sleep(1.0)
+            if low is None:
+                raise RuntimeError(f"no offsets for {topic}[{p}] from {bootstrap}")
+            out[p] = low
         return out
     finally:
         consumer.close()
@@ -416,6 +446,59 @@ class NothingToJudgeError(RuntimeError):
     """The warehouse query has recorded no batch offsets yet."""
 
 
+@dataclass(frozen=True, slots=True)
+class PassPlan:
+    """What a pass will read: ``[begin, committed)`` per partition of the topic."""
+
+    committed: dict[str, int]
+    begin: dict[str, int]
+    batches: int = 0
+    """Uncovered batches it reads (``start='uncovered'``); 0 for ``earliest``."""
+    unreachable: int = 0
+    """Uncovered batches retention has already cut into: no pass can cover them."""
+
+
+def reachable(start_offsets: Offsets | None, earliest: dict[str, int], topic: str) -> bool:
+    """Whether the broker still holds every offset a batch read (a batch with no start
+    offsets is taken to start at 0, as :func:`covers` takes it)."""
+    starts = (start_offsets or {}).get(topic, {})
+    return all(starts.get(p, 0) >= low for p, low in earliest.items())
+
+
+def plan_pass(
+    settings: Settings, start: Start = "earliest", now: datetime | None = None
+) -> PassPlan | None:
+    """The window of a pass, with no Spark: None when ``start='uncovered'`` finds no
+    uncovered batch the broker can still serve (the DAG then starts no JVM). A batch
+    retention has cut into is left out: reading towards it could never cover it."""
+    from tributary.warehouse.stream_health import uncovered_batches
+
+    committed = committed_offsets(settings.pg_conninfo, settings.topic)
+    if not committed:
+        raise NothingToJudgeError(
+            "no committed warehouse batch with offsets in ops.stream_progress"
+        )
+    earliest = earliest_offsets(settings.kafka_bootstrap, settings.topic, committed)
+    if start == "earliest":
+        return PassPlan(committed, pass_window(committed, earliest, start))
+    now = now or datetime.now(UTC)
+    window = timedelta(hours=settings.stream_check_window_hours)
+    batches = uncovered_batches(settings.pg_conninfo, now - window, now)
+    served = [b for b in batches if reachable(b.start_offsets, earliest, settings.topic)]
+    if len(served) < len(batches):
+        log.warning(
+            "reconcile.uncoverable",
+            batches=len(batches) - len(served),
+            hint="topic retention has deleted offsets these batches read",
+        )
+    if not served:
+        return None
+    begin = pass_window(
+        committed, earliest, start, [b.start_offsets for b in served], settings.topic
+    )
+    return PassPlan(committed, begin, len(served), len(batches) - len(served))
+
+
 def run_pass(
     spark: SparkSession,
     settings: Settings,
@@ -425,30 +508,19 @@ def run_pass(
     dry_run: bool = False,
     store: Store | None = None,
     now: datetime | None = None,
+    plan: PassPlan | None = None,
 ) -> PassResult | None:
-    """One pass (see the module docstring); None when ``start='uncovered'`` finds no
-    uncovered batch. Recorded in ``ops.reconcile_runs`` unless it raises."""
-    from tributary.warehouse.stream_health import uncovered_batches
-
+    """One pass (see the module docstring); None when ``start='uncovered'`` finds nothing
+    a pass could cover. ``plan`` is :func:`plan_pass`'s, when the caller has made it.
+    Recorded in ``ops.reconcile_runs`` unless it raises."""
     started_at = now or datetime.now(UTC)
     t0 = time.perf_counter()
     store = store or PostgresStore(settings.pg_conninfo)
-    committed = committed_offsets(settings.pg_conninfo, settings.topic)
-    if not committed:
-        raise NothingToJudgeError(
-            "no committed warehouse batch with offsets in ops.stream_progress"
-        )
-    batches = []
-    if start == "uncovered":
-        window = timedelta(hours=settings.stream_check_window_hours)
-        batches = uncovered_batches(settings.pg_conninfo, started_at - window, started_at)
-        if not batches:
-            log.info("reconcile.nothing_uncovered", run_id=run_id)
-            return None
-    earliest = earliest_offsets(settings.kafka_bootstrap, settings.topic, committed)
-    begin = pass_window(
-        committed, earliest, start, [b.start_offsets for b in batches], settings.topic
-    )
+    plan = plan or plan_pass(settings, start, started_at)
+    if plan is None:
+        log.info("reconcile.nothing_uncovered", run_id=run_id)
+        return None
+    committed, begin = plan.committed, plan.begin
     t_plan = time.perf_counter()
     records = read_topic(spark, settings, begin, committed)
     verdict = judge_records(records, settings.future_skew_s, store, repair=not dry_run)

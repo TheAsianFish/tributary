@@ -22,7 +22,7 @@ from typing import Any
 import psycopg
 import pytest
 
-from tributary.stream.reconcile import PassResult, record_pass
+from tributary.stream.reconcile import PassPlan, PassResult, record_pass
 from tributary.stream.sink import BatchHealth, ensure_schema, record_health
 
 from .test_warehouse_refresh import run, task_states
@@ -94,8 +94,14 @@ def passes(monkeypatch: pytest.MonkeyPatch, conninfo: str) -> list[dict[str, Any
         return replace(result, pass_id=record_pass(settings.pg_conninfo, run_id, result))
 
     monkeypatch.setattr(reconcile, "build_session", lambda _settings: FakeSpark())
+    monkeypatch.setattr(reconcile, "plan_pass", fake_plan)
     monkeypatch.setattr(reconcile, "run_pass", fake_pass)
     return calls
+
+
+def fake_plan(*_args: object) -> PassPlan:
+    """The window a real plan would make here, without asking the broker."""
+    return PassPlan({"0": 1_500}, {"0": 1_000}, batches=1)
 
 
 def stream_check(conninfo: str, run_id: str) -> tuple[str, dict[str, Any]]:
@@ -137,6 +143,7 @@ def test_a_failed_pass_still_records_the_check_red(
         raise RuntimeError("broker unreachable")
 
     monkeypatch.setattr(reconcile, "build_session", lambda _settings: FakeSpark())
+    monkeypatch.setattr(reconcile, "plan_pass", fake_plan)
     monkeypatch.setattr(reconcile, "run_pass", broken)
     dagrun = run("raw_recentchange", "raw_recentchange (pass fails)")
     states = task_states(dagrun)

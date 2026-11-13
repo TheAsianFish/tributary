@@ -140,3 +140,48 @@ def test_an_uncovered_window_starts_at_the_first_uncovered_batch() -> None:
         "2": 0,
     }
     assert pass_window(committed, earliest, "uncovered", [], "t") == committed
+
+
+def test_a_batch_is_reachable_only_while_the_broker_holds_its_first_offset() -> None:
+    from tributary.stream.reconcile import reachable
+
+    earliest = {"0": 100, "1": 0}
+    assert reachable({"t": {"0": 100, "1": 5}}, earliest, "t")
+    assert not reachable({"t": {"0": 99, "1": 5}}, earliest, "t")
+    assert not reachable(None, earliest, "t")  # taken to start at 0, as covers() takes it
+    assert reachable(None, {"0": 0}, "t")
+
+
+def test_an_uncovered_plan_leaves_out_what_retention_cut_and_may_be_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from tributary.config import Settings
+    from tributary.stream import reconcile
+    from tributary.warehouse import stream_health
+    from tributary.warehouse.stream_health import DroppedBatch
+
+    settings = Settings(_env_file=None, topic="t")
+    batches = [
+        DroppedBatch("warehouse", 1, 5, {"t": {"0": 10}}, {"t": {"0": 20}}),  # cut by retention
+        DroppedBatch("warehouse", 2, 5, {"t": {"0": 300}}, {"t": {"0": 320}}),
+    ]
+    monkeypatch.setattr(reconcile, "committed_offsets", lambda *_a, **_k: {"0": 500})
+    monkeypatch.setattr(reconcile, "earliest_offsets", lambda *_a: {"0": 100})
+    monkeypatch.setattr(stream_health, "uncovered_batches", lambda *_a: batches)
+
+    plan = reconcile.plan_pass(settings, "uncovered", TS)
+    assert plan == reconcile.PassPlan({"0": 500}, {"0": 300}, batches=1, unreachable=1)
+    assert reconcile.plan_pass(settings, "earliest", TS) == reconcile.PassPlan(
+        {"0": 500}, {"0": 100}
+    )
+    monkeypatch.setattr(stream_health, "uncovered_batches", lambda *_a: batches[:1])
+    assert reconcile.plan_pass(settings, "uncovered", TS) is None
+
+
+def test_with_nothing_committed_there_is_nothing_to_judge(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tributary.config import Settings
+    from tributary.stream import reconcile
+
+    monkeypatch.setattr(reconcile, "committed_offsets", lambda *_a, **_k: {})
+    with pytest.raises(reconcile.NothingToJudgeError):
+        reconcile.plan_pass(Settings(_env_file=None))

@@ -77,8 +77,10 @@ DROPPED_SQL = (
 )
 PASSES_SQL = (
     "SELECT id, query, start_offsets, end_offsets, finished_at FROM ops.reconcile_runs"
-    " WHERE finished_at >= %s ORDER BY id"
+    " WHERE finished_at >= %s AND NOT dry_run ORDER BY id"
 )
+# A dry run judges but repairs nothing, so it covers nothing either: if it did, the
+# DAG would see no uncovered batch and never run the pass that writes the events back.
 # Events a pass in the window found missing and that are still not in the table,
 # whatever any later pass did (an id written since, by anyone, no longer counts).
 STILL_MISSING_SQL = (

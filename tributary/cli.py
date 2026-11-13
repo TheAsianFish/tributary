@@ -159,6 +159,11 @@ def stream_reconcile(
                 if every is None:
                     raise typer.Exit(1) from None
                 result = None
+            except Exception as exc:  # a failed pass records nothing; the next one retries
+                if every is None:
+                    raise
+                log.error("reconcile.pass_failed", run_id=run_id, error=str(exc)[:500])
+                result = None
             line = result.summary() if result else {"pass_id": None, "records": 0}
             typer.echo(json.dumps({**line, "session_s": round(session_s, 3)}, default=str))
             if every is None or stop.wait(max(0.0, every - (time.monotonic() - began))):
