@@ -102,7 +102,10 @@ def raw_recentchange() -> None:
         return newest
 
     # No retry: the next run, five minutes on, tries again from the same uncovered batch.
-    @task(retries=0)
+    # Its own timeout, well inside the run's four minutes, so a long pass is cut off and
+    # check_stream still records the check (red, the drops left uncovered) rather than
+    # the whole run timing out with no check at all.
+    @task(retries=0, execution_timeout=timedelta(minutes=2, seconds=30))
     def reconcile_drops() -> dict[str, object]:
         settings = get_settings()
         now = datetime.now(UTC)

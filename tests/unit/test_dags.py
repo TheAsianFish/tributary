@@ -80,6 +80,10 @@ def test_raw_recentchange_polls_and_reads_its_own_events(bag: dict[str, Any]) ->
     assert check["trigger_rule"] == "all_done"
     assert check["outlets"] == []
     assert dag["tasks"]["reconcile_drops"]["upstream"] == []
+    # A long pass is cut off with time left for check_stream inside the run's timeout.
+    timeout = dag["tasks"]["reconcile_drops"]["execution_timeout"]
+    assert timeout is not None
+    assert timeout <= dag["dagrun_timeout"] - 60
 
 
 def test_warehouse_refresh_is_scheduled_on_the_raw_asset(bag: dict[str, Any]) -> None:
