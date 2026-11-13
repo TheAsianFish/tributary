@@ -38,10 +38,19 @@ after the kill shows the batch planned but not committed.
 Afterwards every acknowledged id must be in ``raw.recentchange`` and in the
 Iceberg table exactly once, and no Iceberg snapshot may share a streaming
 batch id with another (a batch appended twice).
+
+The ``poison`` scenario (:func:`run_poison`, ``make bench-poison``) is not part
+of ``make bench``: it leaves the stack's watermark a day ahead when the job
+accepts it. One run sends 50,000 events at 200 events/s with event
+:data:`PoisonConfig.seq` stamped 23 hours past its send time, then counts what
+reached each sink, reads the batches' loss counters from
+``ops.stream_progress`` and records the ``stream_loss`` checks.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 import time
 from collections import Counter
 from collections.abc import Sequence
@@ -113,8 +122,10 @@ def wait_in_flight(cid: str, query: str, timeout: float) -> tuple[bool, int | No
 
 KILL_MODES = ("warehouse-written", "lake-committed", "warehouse", "lake")
 
+# rows > 0: the sink's own rows, not the loss counters a progress report adds after commit.
 PROGRESS_SQL = (
-    "SELECT coalesce(max(batch_id), -1) FROM ops.stream_progress WHERE query = 'warehouse'"
+    "SELECT coalesce(max(batch_id), -1) FROM ops.stream_progress"
+    " WHERE query = 'warehouse' AND rows > 0"
 )
 METADATA_SQL = (
     "SELECT metadata_location FROM iceberg_catalog.iceberg_tables"
@@ -144,15 +155,20 @@ FUTURE_EVENTS_SQL = (
 )
 
 
-def refuse_future_watermark(conninfo: str, slack_s: float = 60.0) -> None:
-    """Raise if the landing table holds events stamped in the future.
+def refuse_future_watermark(conninfo: str, slack_s: float = 300.0) -> None:
+    """Raise if the landing table holds events stamped further ahead than the skew bound.
 
-    The job's watermark follows the newest event time it has seen, and the
-    parser accepts event times up to a day ahead. A sample replayed at full speed
-    (``tributary produce``, ``make test-integration``) stamps events hours ahead,
-    so the watermark runs past the wall clock and every benchmark event, timed
-    by the wall clock, is dropped as late: a fault run would report all of them
-    missing. Better to refuse before producing than to record that run.
+    The job's watermark follows the newest event time it has seen. Before M11
+    the parser accepted event times up to a day ahead, and ``make
+    test-integration`` replayed events hours ahead of the clock (it anchored
+    them after the newest landed row), so the watermark ran past the wall clock
+    and every benchmark event, timed by the wall clock, was dropped as late: a
+    fault run reported all 50,000 missing. The job now rejects anything more
+    than the bound (300 s) ahead of its record time, so it cannot get there
+    itself; the check stays because a stack is state that outlives the code: a
+    volume from before the fix, or a job run with the old bound (``make
+    bench-poison ARM=before`` leaves exactly that), would lose a run the same
+    way. Refusing costs one query; recording that run would cost an hour.
     """
     import psycopg
 
@@ -167,6 +183,148 @@ def refuse_future_watermark(conninfo: str, slack_s: float = 60.0) -> None:
         )
 
 
+@dataclass(frozen=True)
+class PoisonConfig:
+    events: int = 50_000
+    rate: float = 200.0
+    """Slow enough that the lake (one batch a minute) sees several batches after the poison's."""
+    seq: int = 5_000
+    ahead_s: int = 82_800
+    """23 h: under the old one-day bound, so the job before the fix accepted it."""
+    land_timeout_s: float = 600.0
+    settle_s: float = 150.0
+    """Longer than two lake triggers: a count that has not moved for this long is final."""
+
+
+STREAM_PROGRESS_SQL = (
+    "SELECT query, count(*), coalesce(sum(input_rows), 0), coalesce(sum(dropped_by_watermark), 0),"
+    " coalesce(sum(malformed_rows), 0), coalesce(sum(future_rows), 0),"
+    " coalesce(sum(canary_rows), 0), max(watermark)"
+    " FROM ops.stream_progress WHERE input_rows IS NOT NULL AND committed_at >= to_timestamp(%s)"
+    " GROUP BY query ORDER BY query"
+)
+LATEST_QUALITY_SQL = (
+    "SELECT check_name, target, status, failures, details->>'message' FROM ops.latest_quality"
+    " WHERE check_type = 'stream_loss' ORDER BY check_name"
+)
+
+
+def stream_progress_since(conninfo: str, since: float) -> dict[str, dict[str, Any]]:
+    """Per query, the loss counters of the batches committed since ``since``."""
+    import psycopg
+
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        rows = conn.execute(STREAM_PROGRESS_SQL, (since,)).fetchall()
+    keys = ("batches", "input_rows", "dropped_by_watermark", "malformed_rows", "future_rows")
+    return {
+        str(r[0]): {
+            **dict(zip((*keys, "canary_rows"), (int(v) for v in r[1:7]), strict=True)),
+            "max_watermark": r[7],
+        }
+        for r in rows
+    }
+
+
+def stream_bound(cid: str) -> str:
+    """The stream container's ``TRIBUTARY_MAX_FUTURE_SKEW_S`` (empty: the default)."""
+    env = stack.subprocess_run(
+        ["docker", "inspect", "-f", "{{range .Config.Env}}{{println .}}{{end}}", cid]
+    )
+    for line in env.splitlines():
+        if line.startswith("TRIBUTARY_MAX_FUTURE_SKEW_S="):
+            return line.partition("=")[2]
+    return ""
+
+
+def run_poison(config: PoisonConfig, settings: Settings, arm: str) -> dict[str, Any]:
+    """One poisoned 50,000-event run on the Compose stack (see the module docstring)."""
+    import psycopg
+
+    from bench.load import bench_id
+    from tributary.warehouse.stream_health import check_stream, summary
+
+    refuse_future_watermark(settings.pg_conninfo, slack_s=settings.future_skew_s)
+    ensure_topic(BOOTSTRAP, settings.topic, settings.topic_partitions)
+    stack.wait_healthy("stream")
+    cid = stack.container_id("stream")
+    prefix = new_prefix()
+    since = time.time()
+    gen = LoadGenerator(
+        LoadPlan(
+            BOOTSTRAP,
+            settings.topic,
+            prefix,
+            (Step(config.rate, config.events / config.rate + 900),),
+            settings.sample_path,
+            limit=config.events,
+            poison=(config.seq, config.ahead_s),
+        )
+    )
+    gen.start()
+    result = gen.join()
+    sent_s = time.time() - gen.started_at
+    pg_rows, pg_wait = verify.wait_until(
+        lambda: verify.pg_count(settings.pg_conninfo, prefix),
+        result.delivered,
+        config.land_timeout_s,
+        settle=config.settle_s,
+    )
+    lake_rows, lake_wait = verify.wait_until(
+        lambda: verify.lake_count(settings, prefix),
+        result.delivered,
+        config.land_timeout_s,
+        settle=config.settle_s,
+        poll=5.0,
+    )
+    poison_id = bench_id(prefix, config.seq)
+    sinks: dict[str, Any] = {}
+    for name, ids in (
+        ("postgres", verify.pg_ids(settings.pg_conninfo, prefix)),
+        ("iceberg", verify.lake_ids(settings, prefix)),
+    ):
+        delivery = verify.compare(prefix, result.delivered, ids)
+        present = {i.lower() for i in ids}
+        poison_landed = poison_id in present
+        sinks[name] = {
+            **delivery.as_dict(),
+            "poison_landed": poison_landed,
+            "lost_real": delivery.missing - (0 if poison_landed else 1),
+            "landed_before_poison": sum(
+                1 for s in range(config.seq) if bench_id(prefix, s) in present
+            ),
+        }
+    sinks["postgres"].update(count=pg_rows, wait_s=round(pg_wait, 1))
+    sinks["iceberg"].update(count=lake_rows, wait_s=round(lake_wait, 1))
+    run_id = f"bench-poison-{arm}-{prefix}"
+    checks = check_stream(settings, run_id, raise_on_fail=False)
+    with psycopg.connect(settings.pg_conninfo, autocommit=True) as conn:
+        latest = conn.execute(LATEST_QUALITY_SQL).fetchall()
+    until = time.time()
+    logs = observe.read_log(cid, since, until)
+    return {
+        "scenario": "poison",
+        "arm": arm,
+        "prefix": prefix,
+        "config": config.__dict__,
+        "stream_max_future_skew_s": stream_bound(cid) or "default",
+        "skew_bound_warning": any(
+            r.get("event") == "stream.skew_bound_unsafe" for r in observe.read_log(cid, 0, until)
+        ),
+        "produced": {
+            "sent": result.sent,
+            "delivered": result.delivered,
+            "failed": result.failed,
+            "seconds": round(sent_s, 1),
+        },
+        "poison": {"seq": config.seq, "id": poison_id, "ahead_s": config.ahead_s},
+        **sinks,
+        "stream_progress": stream_progress_since(settings.pg_conninfo, since),
+        "checks": summary(checks),
+        "latest_quality": [list(r) for r in latest],
+        "stream_log": summarise_log(logs),
+    }
+
+
 def _restart_count(cid: str) -> int:
     out = stack.subprocess_run(["docker", "inspect", "-f", "{{.RestartCount}}", cid])
     return int(out.strip() or 0)
@@ -178,7 +336,7 @@ def run_scenario(
     """One 50,000-event run; returns the result document for ``bench/results/``."""
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario {scenario}")
-    refuse_future_watermark(settings.pg_conninfo)
+    refuse_future_watermark(settings.pg_conninfo, slack_s=settings.future_skew_s)
     ensure_topic(BOOTSTRAP, settings.topic, settings.topic_partitions)
     stack.wait_healthy("stream")
     stream_cid = stack.container_id("stream")
@@ -406,7 +564,24 @@ def summarise_log(records: Sequence[dict[str, Any]]) -> dict[str, Any]:
 
 
 def save(path: Path, doc: dict[str, Any]) -> None:
-    import json
-
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=1, default=str) + "\n")
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """``python -m bench.faults poison --arm before|after``: the poisoned run alone."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("scenario", choices=("poison",))
+    parser.add_argument("--arm", choices=("before", "after"), required=True)
+    parser.add_argument("--out", type=Path, default=Path("bench/results/m11-skew"))
+    args = parser.parse_args(argv)
+    doc = run_poison(PoisonConfig(), Settings(), args.arm)
+    save(args.out / f"compose-{args.arm}.json", doc)
+    print(json.dumps({k: doc[k] for k in ("postgres", "iceberg", "checks")}, indent=1, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

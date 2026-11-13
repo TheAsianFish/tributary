@@ -11,7 +11,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import astuple, dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 # JSON values from the stream are heterogeneous; callers narrow them per field.
 Event = dict[str, Any]
@@ -41,10 +41,21 @@ META_FIELDS = ("id", "dt", "domain", "stream")
 MIN_EVENT_TS = 0
 MAX_EVENT_TS = 253_402_300_799
 
-# An event time more than this far ahead of its Kafka record time is a bug upstream,
-# not a late-arriving edit. The watermark only moves forward, so one such event
-# would make every later real event "late" and drop it; the row is rejected instead.
-MAX_FUTURE_SKEW_S = 24 * 3600
+# How far an event time may run ahead of its Kafka record time before the row is
+# rejected. The watermark is the newest event time seen minus the delay and only
+# moves forward, so one accepted event S seconds ahead of the clock puts it at
+# clock + S - delay: every later real event that trails the clock by more than
+# delay - S is dropped as late. The bound therefore spends part of the lateness
+# budget, and the default is half the watermark delay (300 s of the 10 minutes):
+# no event in the committed sample is ahead of its emit time at all (the largest
+# timestamp - meta.dt is -0.007 s), and the 300 s left for real lateness is twice
+# the sample's largest emit delay (144 s) and lateness (143 s). Configured as
+# TRIBUTARY_MAX_FUTURE_SKEW_S (see Settings.future_skew_s).
+DEFAULT_FUTURE_SKEW_FRACTION = 0.5
+
+RejectReason = Literal["malformed", "future"]
+REJECT_REASONS: tuple[RejectReason, ...] = ("malformed", "future")
+"""Why a record never becomes a row (canaries are counted apart: they are not errors)."""
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
@@ -77,6 +88,23 @@ COLUMNS = (
 
 class InvalidEventError(ValueError):
     """The payload is not a usable recentchange event."""
+
+    reason: RejectReason = "malformed"
+
+
+class FutureEventError(InvalidEventError):
+    """The event time is further ahead of the Kafka record time than the skew bound."""
+
+    reason: RejectReason = "future"
+
+
+def default_future_skew_s(watermark_delay_s: float) -> int:
+    """The skew bound tied to a watermark delay: half of it, in whole seconds."""
+    return int(watermark_delay_s * DEFAULT_FUTURE_SKEW_FRACTION)
+
+
+DEFAULT_FUTURE_SKEW_S = default_future_skew_s(600)
+"""The bound for the default 10-minute watermark delay."""
 
 
 def trim_event(raw: Mapping[str, Any]) -> Event:
@@ -181,17 +209,32 @@ def _parse_dt(value: object) -> datetime | None:
 
 
 def to_row(
-    event: Mapping[str, Any], *, partition: int = 0, offset: int = 0, kafka_ts: datetime
+    event: Mapping[str, Any],
+    *,
+    partition: int = 0,
+    offset: int = 0,
+    kafka_ts: datetime,
+    max_future_skew_s: float = DEFAULT_FUTURE_SKEW_S,
 ) -> RawRow:
-    """Flatten a trimmed event into a warehouse row (raises InvalidEventError)."""
+    """Flatten a trimmed event into a warehouse row.
+
+    Raises :class:`FutureEventError` when the event time is more than
+    ``max_future_skew_s`` ahead of ``kafka_ts``, and :class:`InvalidEventError`
+    for any other unusable event; the exception's ``reason`` is how the stream
+    job counts it.
+    """
     meta = _obj(event.get("meta"))
     wiki, event_type = event.get("wiki"), event.get("type")
     if not isinstance(wiki, str) or not isinstance(event_type, str):
         raise InvalidEventError("wiki and type are required strings")
     length, revision = _obj(event.get("length")), _obj(event.get("revision"))
     event_ts = event_time(event)
-    if (event_ts - kafka_ts).total_seconds() > MAX_FUTURE_SKEW_S:
-        raise InvalidEventError(f"timestamp {event_ts.isoformat()} is ahead of the record time")
+    ahead = (event_ts - kafka_ts).total_seconds()
+    if ahead > max_future_skew_s:
+        raise FutureEventError(
+            f"timestamp {event_ts.isoformat()} is {ahead:.0f} s ahead of the record time"
+            f" (bound {max_future_skew_s:.0f} s)"
+        )
     return RawRow(
         event_id=event_id(event),
         event_ts=event_ts,

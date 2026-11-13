@@ -17,7 +17,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from bench import query_report, rules
+from bench import query_report, rules, skew_report
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_MD = ROOT / "RESULTS.md"
@@ -411,6 +411,7 @@ def render_all() -> dict[str, str]:
             environment=environment_table(),
         )
     tables.update(query_report.render())
+    tables.update(skew_report.render())
     return tables
 
 

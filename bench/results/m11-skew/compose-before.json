@@ -1,0 +1,135 @@
+{
+ "scenario": "poison",
+ "arm": "before",
+ "prefix": "edc789c4-7350-e26e-1430",
+ "config": {
+  "events": 50000,
+  "rate": 200.0,
+  "seq": 5000,
+  "ahead_s": 82800,
+  "land_timeout_s": 600.0,
+  "settle_s": 150.0
+ },
+ "stream_max_future_skew_s": "86400",
+ "skew_bound_warning": true,
+ "produced": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 250.1
+ },
+ "poison": {
+  "seq": 5000,
+  "id": "edc789c4-7350-e26e-1430-766fa098e12b",
+  "ahead_s": 82800
+ },
+ "postgres": {
+  "expected": 50000,
+  "rows": 5650,
+  "distinct": 5650,
+  "missing": 44350,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": false,
+  "poison_landed": true,
+  "lost_real": 44350,
+  "landed_before_poison": 5000,
+  "count": 5650,
+  "wait_s": 150.7
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 18449,
+  "distinct": 18449,
+  "missing": 31551,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": false,
+  "poison_landed": true,
+  "lost_real": 31551,
+  "landed_before_poison": 5000,
+  "count": 18449,
+  "wait_s": 157.0
+ },
+ "stream_progress": {
+  "lake": {
+   "batches": 5,
+   "input_rows": 50000,
+   "dropped_by_watermark": 31551,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "max_watermark": "2026-11-14 03:24:52+00:00"
+  },
+  "warehouse": {
+   "batches": 126,
+   "input_rows": 50000,
+   "dropped_by_watermark": 44350,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "max_watermark": "2026-11-14 03:24:52+00:00"
+  }
+ },
+ "checks": [
+  {
+   "check": "stream_loss_lake",
+   "status": "fail",
+   "target": "lake.raw.recentchange",
+   "message": "31551 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 5,
+   "input_rows": 50000,
+   "dropped_by_watermark": 31551,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "rejected_fraction": 0.0,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  },
+  {
+   "check": "stream_loss_warehouse",
+   "status": "fail",
+   "target": "raw.recentchange",
+   "message": "44350 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 126,
+   "input_rows": 50000,
+   "dropped_by_watermark": 44350,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "rejected_fraction": 0.0,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  }
+ ],
+ "latest_quality": [
+  [
+   "stream_loss_lake",
+   "lake.raw.recentchange",
+   "fail",
+   31551,
+   "31551 rows dropped by the watermark (allowed 0)"
+  ],
+  [
+   "stream_loss_warehouse",
+   "raw.recentchange",
+   "fail",
+   44350,
+   "44350 rows dropped by the watermark (allowed 0)"
+  ]
+ ],
+ "stream_log": {
+  "starts": 0,
+  "terminated_with_error": [],
+  "sink_batches": 15,
+  "sink_rows": 5650,
+  "sink_inserted": 5650,
+  "duplicates_skipped": 0,
+  "batches_written_twice": [],
+  "lake_batches": 5,
+  "dropped_by_watermark": 75901
+ }
+}

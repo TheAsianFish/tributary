@@ -72,6 +72,10 @@ def test_raw_recentchange_polls_and_reads_its_own_events(bag: dict[str, Any]) ->
     assert dag["dagrun_timeout"] < 5 * 60
     task = dag["tasks"]["detect_new_rows"]
     assert task["inlets"] == task["outlets"] == [assets.RAW_RECENTCHANGE]
+    # The stream_loss checks run every five minutes beside it, whether rows arrived or not.
+    check = dag["tasks"]["check_stream"]
+    assert check["upstream"] == []
+    assert check["outlets"] == []
 
 
 def test_warehouse_refresh_is_scheduled_on_the_raw_asset(bag: dict[str, Any]) -> None:

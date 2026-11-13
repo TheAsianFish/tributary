@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from psycopg.conninfo import make_conninfo
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LIVE_STREAM_URL = "https://stream.wikimedia.org/v2/stream/recentchange"
@@ -60,6 +60,17 @@ class Settings(BaseSettings):
     # Spark stream job
     checkpoint_dir: Path = Path("spark-checkpoints/warehouse")
     watermark_delay: str = "10 minutes"
+    # How far an event time may run ahead of its Kafka record time (seconds) before the
+    # row is rejected as `future`. Empty: half the watermark delay (300 s for 10 min),
+    # see tributary.events. A bound at or above the delay lets one bad record put the
+    # watermark past the clock and drop every later real event; the job warns at start.
+    max_future_skew_s: int | None = Field(default=None, ge=0)
+    # The stream_loss check over ops.stream_progress: batches of the last N hours fail it
+    # when more rows were dropped by the watermark than allowed (each one is a real event
+    # lost for good), or when more than the fraction of their input was rejected.
+    stream_check_window_hours: int = Field(default=24, ge=1)
+    stream_max_dropped_rows: int = Field(default=0, ge=0)
+    stream_max_rejected_fraction: float = Field(default=0.001, ge=0.0, le=1.0)
     # Both chosen by `make bench` (RESULTS.md, "Trigger interval and backpressure"): a 2 s
     # trigger halves p95 against 5 s at the replay rate for less CPU than 1 s; the cap bounds
     # a catch-up batch and, divided by the trigger, is the most the job can ever ingest
@@ -193,6 +204,27 @@ class Settings(BaseSettings):
             user=self.agent_user,
             password=self.agent_password.get_secret_value(),
         )
+
+    @field_validator("max_future_skew_s", mode="before")
+    @classmethod
+    def _empty_skew_is_default(cls, value: object) -> object:
+        # Compose passes an unset variable through as an empty string.
+        return None if value == "" else value
+
+    @property
+    def watermark_delay_s(self) -> int:
+        from tributary.lake.hours import parse_interval
+
+        return int(parse_interval(self.watermark_delay).total_seconds())
+
+    @property
+    def future_skew_s(self) -> int:
+        """The skew bound in force: the setting, or half the watermark delay."""
+        from tributary.events import default_future_skew_s
+
+        if self.max_future_skew_s is not None:
+            return self.max_future_skew_s
+        return default_future_skew_s(self.watermark_delay_s)
 
     @property
     def pg_conninfo(self) -> str:

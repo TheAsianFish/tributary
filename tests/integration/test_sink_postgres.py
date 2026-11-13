@@ -15,7 +15,8 @@ from tributary.stream.sink import Connection, ensure_schema, write_partition, wr
 
 pytestmark = pytest.mark.integration
 
-KAFKA_TS = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
+# The record is appended just after the edit (23:34:15), as it would be live.
+KAFKA_TS = datetime(2026, 10, 16, 23, 35, tzinfo=UTC)
 
 
 @pytest.fixture(scope="module")

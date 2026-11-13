@@ -1655,6 +1655,204 @@ reuse the same request. BIRD's `calculate_ex` agrees with the harness on
 245 / 245 pairs. Cost: $0. The replay (`make eval`, what CI runs) checks
 the run verdict for verdict in 9 s, beside dev50's.
 
+## One future-stamped event against the watermark (M11)
+
+The question: how far ahead of the clock can one event be before real events
+are dropped, and what bound on that skew costs nothing? The stream job's
+watermark is the newest event time it has seen minus 10 minutes, and it never
+moves back. Until this milestone the parser accepted an event time up to a day
+ahead of its Kafka record time. So one event stamped hours ahead could put the
+watermark hours past the clock, and every real event after it was then "late".
+
+Everything below ran in Spark 4.1.3 local mode (`local[2]`, RocksDB state, Java
+17) on the committed sample, through the stream job's own `parse_events` and
+`deduplicate`. The only exception is the Compose run at the end. Raw output is
+in `bench/results/m11-skew/`. Cost: $0, no model involved.
+
+### The M5 incident, reproduced and explained
+
+In M5 a fault run on a stack that had just run `make test-integration` lost
+all 50,000 events. The sample's own timestamps are a month in the past, so how
+a replay put the watermark ahead of the clock was not understood.
+`python -m bench.skew incident` replays the sequence as one stream. First comes
+a fault run (bench events stamped at the clock). Then the two integration
+tests, in the order pytest runs them, are sent the way they sent them, at full
+speed, so the Kafka record time is the send time. Last comes the next fault
+run. It runs once with the old one-day bound and once with the new 300 s
+bound. The wall clock is simulated; only the gaps between phases matter.
+
+<!-- bench:incident -->
+| Phase | Sent at | Events | Event times | Ahead of record time (max) | Landed, 1-day bound | Watermark after | Landed, 300 s bound |
+|:--|:-:|---:|:-:|---:|---:|:-:|---:|
+| fault run 1 | 16:00:00 | 50,000 | 15:58:20 to 16:01:39 | 0 (0.00 h) | 50,000 | 15:51:39 | 50,000 |
+| test_lakehouse | 16:03:40 | 5,000 | 16:01:40 to 18:48:18 | 4,939 (2.74 h) | 5,000 | 18:38:18 | 211 |
+| test_pipeline | 16:04:40 | 5,001 | 18:48:19 to 18:52:16 | 5,001 (2.79 h) | 5,001 | 18:42:16 | 0 |
+| fault run 2 | 16:07:40 | 50,000 | 16:06:00 to 16:09:19 | 0 (0.00 h) | 0 | - | 50,000 |
+<!-- /bench:incident -->
+
+The records that ran ahead of the wall clock were the integration tests' own.
+To stay clear of the watermark, both tests placed their events *just after the
+newest row already landed*. They did not anchor to the clock. `test_lakehouse`
+re-timed its 5,000 events 2 s apart from that row, and `test_pipeline` shifted
+its 5,000 past the lakehouse ones. On a stack whose newest row came from a
+fault run (stamped at the clock), that means 2.8 hours of event time starting
+now. The producer sends all of it in a second, so 4,939 of the lakehouse events
+and all 5,001 of the pipeline's were ahead of their record time, by up to
+2.79 h. The one-day bound let them through. The watermark went to 18:42, 2 h 35
+min past the clock that sent the next fault run, and that run landed 0 of
+50,000. This matches the M5 note ("the watermark 2 h ahead"). With the 300 s
+bound the same replays are rejected (4,789 and 5,001 records counted as
+`future`), the watermark stays behind the clock, and the next fault run lands
+all 50,000. The old tests would themselves have failed under the bound, so
+both were changed to time their events behind the clock (`test_pipeline` at
+the clock minus each event's sample lateness; `test_lakehouse` with its 2.8 h
+ending a minute before now, skipped on a stack with no room for it).
+
+### Loss against skew, predicted from the sample before the run
+
+`make bench-skew`: the 50,000 sample events in stream order, 100 micro-batches
+of 500 (one JSON file per trigger). Each record's Kafka time is its
+`meta.dt`, so the bound sees what it would see live. One poison is inserted at
+stream position 10,250 (the middle of batch 20). It is a copy of the event
+there with its own id, stamped X s past that event's `meta.dt`.
+
+`python -m bench.skew predict` wrote `prediction.json` from the sample alone. It
+was committed before any Spark run, in its own commit ("Add make bench-skew and its prediction from the sample"). It replays Spark's rule: batch
+k drops an event when its time is **at or below** the newest accepted event
+time through batch **k − 2**, minus the delay. Late rows are filtered with the
+previous batch's watermark (pinned by
+`test_deduplicate_semantics_across_micro_batches` since M1), so a poison's
+effect starts two batches later. The PLAN estimate is the first version of the
+rule, "every event after the poison's batch stamped below
+t_poison + X − 600". Each sweep (8 skews) took 4 to 5 minutes of wall time on 4
+vCPU.
+
+<!-- bench:skew -->
+| Poison skew X | PLAN estimate | Before: predicted lost | Before: measured lost (dropped by watermark) | Same ids | After: poison | After: lost |
+|---:|---:|---:|---:|:-:|:--|---:|
+| 0 s | 0 | 0 | 0 (0) | yes | accepted | 0 |
+| 60 s | 0 | 0 | 0 (0) | yes | accepted | 0 |
+| 300 s | 0 | 0 | 0 (0) | yes | accepted | 0 |
+| 450 s | 0 | 0 | 0 (0) | yes | rejected (future) | 0 |
+| 600 s | 4 | 2 | 2 (2) | yes | rejected (future) | 0 |
+| 900 s | 6,510 | 6,010 | 6,010 (6,010) | yes | rejected (future) | 0 |
+| 3,600 s | 39,500 | 39,000 | 39,000 (39,000) | yes | rejected (future) | 0 |
+| 82,800 s | 39,500 | 39,000 | 39,000 (39,000) | yes | rejected (future) | 0 |
+<!-- /bench:skew -->
+
+"Same ids": the set of real events missing from the sink is exactly the
+predicted set, at every skew and in both arms. Every run read all 50,001
+records in 100 data batches. The poison's batch delivered all 500 of its real
+events in every run.
+
+### The hypotheses, answered
+
+1. **The loss is predictable to the row from the sample alone: yes**, once
+   the rule accounts for the two-batch lag. The measured loss equals the
+   prediction at all eight skews, the same ids each time. The first estimate
+   was off for one reason. The batch right after the poison's (batch 21, 500
+   events) is filtered against the watermark from *before* the poison, so it
+   always survives. That is the whole gap at 3,600 s (39,500 against 39,000),
+   and most of it at 900 s (6,510 against 6,010). Ties go to Spark's `<=`:
+   at 900 s, 15 events sit exactly on the threshold, and the measured 6,010
+   counts them (with `<` it would be 5,995).
+2. **Nothing is lost up to about 457 s (600 − 143): yes, and further.**
+   Measured: 0 at 450 s, 2 at 600 s. Predicted to the second, the first lossy
+   skew is **575 s**, not 457. The 143 s maximum lateness is measured against
+   the running maximum of event time, which can be any earlier event. The
+   threshold here is set by the poison alone and first applies two batches
+   later, from 36 s of stream after the poison. The oldest event from that
+   point on trails the poison's emit time by only 25.5 s, so the poison has to
+   be 600 − 25 s ahead before anything is dropped.
+3. **The loss is a window that widens with X, not a step: yes.** 2 events at
+   600 s, 6,010 at 900 s, then the whole rest of the stream at 3,600 s, where
+   it saturates (the sample spans 36 minutes).
+4. **At 3,600 s and 82,800 s every event in every later batch is lost: all
+   but one batch.** 39,000 lost is every real event in batches 22 to 99.
+   Batch 21 survives, for the reason in 1.
+5. **The poison's own batch survives: yes**, 500 of 500 in every run, the
+   poison included when accepted. The watermark moves between batches.
+6. **A bound well under the delay rejects 0 of the 50,000 sample events:
+   yes.** With the bound at 300 s the only rejection in any run is the poison
+   (`future_rows` = 1 at skews of 450 s and up), and 0 real events are lost.
+   No sample event is ahead of its emit time at all: the largest
+   `timestamp − meta.dt` is −0.007 s.
+
+### The bound, and why 300 s
+
+An event accepted S seconds ahead of its record time moves the watermark to
+`clock + S − delay`. After that, every real event more than `delay − S` behind
+the clock is dropped. So the bound spends part of the lateness budget, and it
+must stay below the delay. The default is half the delay
+(`TRIBUTARY_MAX_FUTURE_SKEW_S` unset, so 300 s for the 10-minute delay;
+`Settings.future_skew_s`). That is about 300 s more than any sample event
+needs (none is ahead of its emit time). It leaves 300 s for real lateness,
+twice the sample's largest emit delay (144 s) and lateness (143 s). The sweep's
+"after" arm shows the result: a 300 s poison is accepted and costs nothing.
+The cost is that an event with a clock really more than 300 s fast is rejected
+and counted instead of landed. The job logs `stream.skew_bound_unsafe` at start
+when the bound is set at or above the delay.
+
+### What the job now records, and the check that reads it
+
+Each batch's progress report writes its loss counters to
+`ops.stream_progress`, for both queries: rows dropped by the watermark, and
+records rejected as `malformed` or `future` (plus canaries, which are not
+errors). The `stream_loss` check (`tributary warehouse check-stream`, and the
+`check_stream` task of the `raw_recentchange` DAG every five minutes) sums the
+last 24 h per query. It fails when any row was dropped by the watermark, or
+when more than 0.1% of the input was rejected. The warehouse check targets
+`raw.recentchange`, so an answer from any mart built on it carries
+"failing checks: stream_loss_warehouse" in its provenance.
+
+### The poisoned run on the Compose stack
+
+`make bench-poison ARM=before|after`: a fresh stack (`make down`, then
+`make up-lakehouse`, both sinks), 50,000 bench events at 200 events/s, with
+event 5,000 stamped 82,800 s (23 h) past its send time. `before` runs the job
+with `TRIBUTARY_MAX_FUTURE_SKEW_S=86400`, the old bound under the same
+predicate. `after` runs it with the default.
+
+<!-- bench:poison -->
+| Arm | Bound | Sink | Landed of 50,000 | Real events lost | Poison landed | Dropped by watermark | Rejected as future | `stream_loss` check |
+|:--|---:|:--|---:|---:|:-:|---:|---:|:--|
+| before | 86400 | PostgreSQL | 5,650 | 44,350 | yes | 44,350 | 0 | fail |
+| before | 86400 | Iceberg | 18,449 | 31,551 | yes | 31,551 | 0 | fail |
+| after | 300 (default) | PostgreSQL | 49,999 | 0 | no | 0 | 1 | pass |
+| after | 300 (default) | Iceberg | 49,999 | 0 | no | 0 | 1 | pass |
+<!-- /bench:poison -->
+
+Before the fix, the counters the job now writes equal the loss exactly:
+44,350 rows dropped by the watermark is every real event missing from
+PostgreSQL, and 31,551 every one missing from Iceberg. Both `stream_loss`
+checks failed ("44350 rows dropped by the watermark (allowed 0)"), and
+`ops.latest_quality` holds both as `fail`. The job logged
+`stream.skew_bound_unsafe` at start. What survived after the poison fits
+the two-batch lag (the run does not record per-batch ids, so this is the
+mechanism's reading, not a count by batch). PostgreSQL kept the 5,000 events
+before the poison, the poison and 649 after it, about what the poison's own
+2 s batch and the next one hold at 200 events/s. The lake triggers once a
+minute, so the same two batches held 13,448 real events after the poison. The watermark ended at 03:24 the next day, 23 h less 10 min past the
+clock, so this stack is now unusable for any wall-clock run (the
+precondition below refuses it).
+
+After the fix the poison is the only record not landed, in both stores. It
+is counted as `future` (1 of 50,000 input rows, under the 0.1% threshold),
+nothing is dropped, and both checks pass, with the rejected record in their
+details. The watermark stayed 10 minutes behind the newest real event.
+Each run took 250 s of producing plus about 2.5 min for the counts to
+settle, on 4 vCPU with Trino running. Cost: $0.
+
+### The M5 watermark precondition
+
+Kept, with a tolerance tied to the bound. A fault run refuses a stack whose
+landing table holds an event more than the skew bound ahead of the clock
+(before: 60 s). The job can no longer get there on its own. The check stays
+because a stack is state that outlives the code: a volume from before this
+milestone, or a job run with a looser bound (`make bench-poison ARM=before`
+leaves exactly that), would lose a whole run the same way. Refusing costs one
+query, while recording that run would cost an hour.
+
 ## To measure
 
 | What | Command | Milestone | Cost |

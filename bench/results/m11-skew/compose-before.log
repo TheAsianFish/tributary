@@ -1,0 +1,308 @@
+make down
+make[1]: Entering directory '/home/runner/work/job-finder/job-finder/work'
+docker compose --profile lakehouse --profile airflow --profile api --profile ollama down -v
+ Container tributary-postgres-1 Stopping 
+ Container tributary-postgres-1 Stopped 
+ Container tributary-postgres-1 Removing 
+ Container tributary-postgres-1 Removed 
+ Network tributary_default Removing 
+ Volume tributary_pgdata Removing 
+ Network tributary_default Removed 
+ Volume tributary_pgdata Removed 
+make[1]: Leaving directory '/home/runner/work/job-finder/job-finder/work'
+TRIBUTARY_MAX_FUTURE_SKEW_S=86400 make up-lakehouse
+make[1]: Entering directory '/home/runner/work/job-finder/job-finder/work'
+docker compose up -d --build --wait postgres kafka minio lake-init stream
+ Image tributary-minio:dev Building 
+ Image tributary-stream:dev Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.04kB done
+#1 DONE 0.0s
+
+#2 [minio internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.53kB done
+#2 DONE 0.0s
+
+#3 [stream internal] load build definition from Dockerfile
+#3 transferring dockerfile: 3.08kB done
+#3 DONE 0.0s
+
+#4 [stream internal] load metadata for ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336
+#4 DONE 0.3s
+
+#5 [auth] apache/spark:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#6 [auth] library/golang:pull token for registry-1.docker.io
+#6 DONE 0.0s
+
+#7 [auth] library/debian:pull token for registry-1.docker.io
+#7 DONE 0.0s
+
+#8 [stream internal] load metadata for docker.io/apache/spark:4.1.3-python3@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
+#8 ...
+
+#9 [minio internal] load metadata for docker.io/library/debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+#9 DONE 0.5s
+
+#10 [minio internal] load metadata for docker.io/library/golang:1.24.8-bookworm@sha256:4ed690d6649d63c312b99a6120025ec79ce3b542968a37da53d6236c7c61a848
+#10 DONE 0.7s
+
+#8 [stream internal] load metadata for docker.io/apache/spark:4.1.3-python3@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
+#8 DONE 0.7s
+
+#11 [minio internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.0s
+
+#12 [minio stage-1 1/3] FROM docker.io/library/debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+#12 resolve docker.io/library/debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc 0.0s done
+#12 DONE 0.0s
+
+#13 [minio build 1/4] FROM docker.io/library/golang:1.24.8-bookworm@sha256:4ed690d6649d63c312b99a6120025ec79ce3b542968a37da53d6236c7c61a848
+#13 resolve docker.io/library/golang:1.24.8-bookworm@sha256:4ed690d6649d63c312b99a6120025ec79ce3b542968a37da53d6236c7c61a848 0.0s done
+#13 DONE 0.0s
+
+#14 [stream internal] load .dockerignore
+#14 transferring context: 171B done
+#14 DONE 0.0s
+
+#15 [minio build 3/4] RUN set -eux;     git clone --depth 1 --branch "RELEASE.2025-10-15T17-29-55Z" https://github.com/minio/minio.git .;     test "$(git rev-parse HEAD)" = "9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a"
+#15 CACHED
+
+#16 [minio build 2/4] WORKDIR /src
+#16 CACHED
+
+#17 [minio stage-1 2/3] RUN apt-get update     && apt-get install -y --no-install-recommends ca-certificates curl     && rm -rf /var/lib/apt/lists/*     && useradd --system --uid 1000 --home-dir /data minio     && mkdir -p /data && chown minio:minio /data
+#17 CACHED
+
+#18 [minio build 4/4] RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build     set -eux;     CGO_ENABLED=0 go build -tags kqueue -trimpath         -ldflags "$(MINIO_RELEASE=RELEASE go run buildscripts/gen-ldflags.go "2025-10-15T17-29-55Z")"         -o /out/minio .
+#18 CACHED
+
+#19 [minio stage-1 3/3] COPY --from=build /out/minio /usr/local/bin/minio
+#19 CACHED
+
+#20 [stream stage-1  1/11] FROM docker.io/apache/spark:4.1.3-python3@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
+#20 resolve docker.io/apache/spark:4.1.3-python3@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211 0.0s done
+#20 DONE 0.0s
+
+#21 [stream uv 1/1] FROM ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336
+#21 resolve ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336 0.0s done
+#21 DONE 0.0s
+
+#22 [stream internal] load build context
+#22 transferring context: 84.84kB done
+#22 DONE 0.0s
+
+#23 [stream stage-1  6/11] RUN uv sync --locked --no-dev --no-install-project --python 3.12
+#23 CACHED
+
+#24 [stream stage-1  2/11] RUN set -eux; cd /opt/spark/jars;     fetch() { curl -fsSL -o "$(basename "$1")" "https://repo1.maven.org/maven2/$1"; echo "$2  $(basename "$1")" | sha256sum -c -; };     fetch org/apache/spark/spark-sql-kafka-0-10_2.13/4.1.3/spark-sql-kafka-0-10_2.13-4.1.3.jar         cb31ffd9c8f5527dba061db8af671d295562092e4f3f5ff42fc249fab8a8fde6;     fetch org/apache/spark/spark-token-provider-kafka-0-10_2.13/4.1.3/spark-token-provider-kafka-0-10_2.13-4.1.3.jar         0535a111d7d11b2859c0a0548d5c8d172c6925f9b8d041d0f0dd38ddc5a3497c;     fetch org/apache/kafka/kafka-clients/3.9.1/kafka-clients-3.9.1.jar         7568b998572d256f0b7bc0afdc1b7a2588b8b08415c62ce314c864a6851ae9d9;     fetch org/apache/commons/commons-pool2/2.12.1/commons-pool2-2.12.1.jar         5273c8bc8c0dca2211175c0d27efbd7228efae99689aac001a8e1ef8e872e9ef;     fetch org/apache/iceberg/iceberg-spark-runtime-4.1_2.13/1.11.0/iceberg-spark-runtime-4.1_2.13-1.11.0.jar         d6ea6c5d099288daeb7d5a92061bd3d7d8f296492632b42378e5f2f0e3066242;     fetch org/apache/iceberg/iceberg-aws-bundle/1.11.0/iceberg-aws-bundle-1.11.0.jar         38f01da7e96850cdd05e6616d758b77b43314b712a8808e3f9a824d56976162f;     fetch org/postgresql/postgresql/42.7.14/postgresql-42.7.14.jar         73914527305a40cce504b0d3d90b23caf565136912d607ae8ae7c5895512332c
+#24 CACHED
+
+#25 [stream stage-1  3/11] COPY --from=uv /uv /usr/local/bin/uv
+#25 CACHED
+
+#26 [stream stage-1  5/11] COPY pyproject.toml uv.lock ./
+#26 CACHED
+
+#27 [stream stage-1  4/11] WORKDIR /app
+#27 CACHED
+
+#28 [stream stage-1  7/11] COPY README.md LICENSE ./
+#28 CACHED
+
+#29 [minio] exporting to image
+#29 exporting layers done
+#29 exporting manifest sha256:16f2ad3834e177ccbfb97df76359057719287fa4b733c32e0a58d21d53bd9eee done
+#29 exporting config sha256:0cc796b0151682f5fbfbfc17115134cc0d92ccfdfe7363feba656d4f4b1b9725 done
+#29 exporting attestation manifest sha256:12ac71bcb309c275d0956b9b52f4d443853d9d044202e3ae45a44bf43c3048f0 done
+#29 exporting manifest list sha256:dae2723fd867811e75e8bf8e376471d5b4f44144075fe13b51afec28e195f195 done
+#29 naming to docker.io/library/tributary-minio:dev done
+#29 unpacking to docker.io/library/tributary-minio:dev done
+#29 DONE 0.0s
+
+#30 [stream stage-1  8/11] COPY tributary ./tributary
+#30 DONE 0.0s
+
+#31 [minio] resolving provenance for metadata file
+#31 DONE 0.0s
+
+#32 [stream stage-1  9/11] RUN uv sync --locked --no-dev --no-editable --python 3.12
+#32 0.299 Resolved 181 packages in 11ms
+#32 0.325    Building tributary-platform @ file:///app
+#32 1.289       Built tributary-platform @ file:///app
+#32 1.295 Prepared 1 package in 985ms
+#32 1.304 Installed 1 package in 8ms
+#32 1.928 Bytecode compiled 3781 files in 624ms
+#32 1.928  + tributary-platform==0.1.0 (from file:///app)
+#32 DONE 2.2s
+
+#33 [stream stage-1 10/11] COPY data/sample ./data/sample
+#33 DONE 0.0s
+
+#34 [stream stage-1 11/11] RUN mkdir -p /data/checkpoints && chown -R spark:spark /data
+#34 DONE 0.2s
+
+#35 [stream] exporting to image
+#35 exporting layers 0.5s done
+#35 exporting manifest sha256:fa46c13cea65d29ee9d10c466b301fb086282585e31ad5775b4329062e2880df done
+#35 exporting config sha256:c6abd2e448eb77118e18e32ea1620daeafd82d32de6aeadea40395dec131bf13 done
+#35 exporting attestation manifest sha256:ba58431f79b68889363db0950bcbabd5b30e9e56a2fcc122b6961ee546268491 done
+#35 exporting manifest list sha256:74a1641f7590e1d41aa8e2ca74f9d5b74ea1f109eaca97e3b50e2358bbef99c1
+#35 exporting manifest list sha256:74a1641f7590e1d41aa8e2ca74f9d5b74ea1f109eaca97e3b50e2358bbef99c1 0.2s done
+#35 naming to docker.io/library/tributary-stream:dev
+#35 naming to docker.io/library/tributary-stream:dev done
+#35 unpacking to docker.io/library/tributary-stream:dev
+#35 unpacking to docker.io/library/tributary-stream:dev 0.2s done
+#35 DONE 0.9s
+
+#36 [stream] resolving provenance for metadata file
+#36 DONE 0.0s
+ Image tributary-minio:dev Built 
+ Image tributary-stream:dev Built 
+ Network tributary_default Creating 
+ Network tributary_default Created 
+ Volume tributary_kafka-data Creating 
+ Volume tributary_kafka-data Created 
+ Volume tributary_minio-data Creating 
+ Volume tributary_minio-data Created 
+ Volume tributary_checkpoints Creating 
+ Volume tributary_checkpoints Created 
+ Volume tributary_pgdata Creating 
+ Volume tributary_pgdata Created 
+ Container tributary-postgres-1 Creating 
+ Container tributary-minio-1 Creating 
+ Container tributary-kafka-1 Creating 
+ Container tributary-postgres-1 Created 
+ Container tributary-minio-1 Created 
+ Container tributary-lake-init-1 Creating 
+ Container tributary-kafka-1 Created 
+ Container tributary-lake-init-1 Created 
+ Container tributary-stream-1 Creating 
+ Container tributary-stream-1 Created 
+ Container tributary-minio-1 Starting 
+ Container tributary-postgres-1 Starting 
+ Container tributary-kafka-1 Starting 
+ Container tributary-kafka-1 Started 
+ Container tributary-postgres-1 Started 
+ Container tributary-minio-1 Started 
+ Container tributary-minio-1 Waiting 
+ Container tributary-minio-1 Healthy 
+ Container tributary-lake-init-1 Starting 
+ Container tributary-lake-init-1 Started 
+ Container tributary-postgres-1 Waiting 
+ Container tributary-lake-init-1 Waiting 
+ Container tributary-kafka-1 Waiting 
+ Container tributary-lake-init-1 Exited 
+ Container tributary-postgres-1 Healthy 
+ Container tributary-kafka-1 Healthy 
+ Container tributary-stream-1 Starting 
+ Container tributary-stream-1 Started 
+ Container tributary-lake-init-1 Waiting 
+ Container tributary-kafka-1 Waiting 
+ Container tributary-minio-1 Waiting 
+ Container tributary-stream-1 Waiting 
+ Container tributary-postgres-1 Waiting 
+ Container tributary-minio-1 Healthy 
+ Container tributary-lake-init-1 Exited 
+ Container tributary-kafka-1 Healthy 
+ Container tributary-postgres-1 Healthy 
+ Container tributary-stream-1 Healthy 
+docker compose --profile lakehouse up -d --wait trino
+ Container tributary-minio-1 Running 
+ Container tributary-postgres-1 Running 
+ Container tributary-trino-1 Creating 
+ Container tributary-trino-1 Created 
+ Container tributary-minio-1 Waiting 
+ Container tributary-minio-1 Healthy 
+ Container tributary-lake-init-1 Starting 
+ Container tributary-lake-init-1 Started 
+ Container tributary-postgres-1 Waiting 
+ Container tributary-lake-init-1 Waiting 
+ Container tributary-postgres-1 Healthy 
+ Container tributary-lake-init-1 Exited 
+ Container tributary-trino-1 Starting 
+ Container tributary-trino-1 Started 
+ Container tributary-lake-init-1 Waiting 
+ Container tributary-trino-1 Waiting 
+ Container tributary-postgres-1 Waiting 
+ Container tributary-minio-1 Waiting 
+ Container tributary-lake-init-1 Exited 
+ Container tributary-minio-1 Healthy 
+ Container tributary-postgres-1 Healthy 
+ Container tributary-trino-1 Healthy 
+make[1]: Leaving directory '/home/runner/work/job-finder/job-finder/work'
+uv run python -m bench.faults poison --arm before
+%3|1794544464.858|FAIL|tributary-producer#producer-1| [thrd:localhost:9094/bootstrap]: localhost:9094/bootstrap: Connect to ipv6#[::1]:9094 failed: Connection refused (after 0ms in state CONNECT)
+%3|1794544466.717|FAIL|tributary-bench-0#producer-1| [thrd:localhost:9094/bootstrap]: localhost:9094/bootstrap: Connect to ipv6#[::1]:9094 failed: Connection refused (after 0ms in state CONNECT)
+%4|1794544467.721|GETPID|tributary-bench-0#producer-1| [thrd:main]: Failed to acquire idempotence PID from broker localhost:9094/1: Broker: Coordinator load in progress: retrying
+2026-11-13 04:43:45 [info     ] quality.recorded               checks=2 fail=2 source=stream
+2026-11-13 04:43:45 [info     ] stream_loss.done               checks=2 failed=2 run_id=bench-poison-before-edc789c4-7350-e26e-1430
+{
+ "postgres": {
+  "expected": 50000,
+  "rows": 5650,
+  "distinct": 5650,
+  "missing": 44350,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": false,
+  "poison_landed": true,
+  "lost_real": 44350,
+  "landed_before_poison": 5000,
+  "count": 5650,
+  "wait_s": 150.7
+ },
+ "iceberg": {
+  "expected": 50000,
+  "rows": 18449,
+  "distinct": 18449,
+  "missing": 31551,
+  "duplicates": 0,
+  "unexpected": 0,
+  "exactly_once": false,
+  "poison_landed": true,
+  "lost_real": 31551,
+  "landed_before_poison": 5000,
+  "count": 18449,
+  "wait_s": 157.0
+ },
+ "checks": [
+  {
+   "check": "stream_loss_lake",
+   "status": "fail",
+   "target": "lake.raw.recentchange",
+   "message": "31551 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 5,
+   "input_rows": 50000,
+   "dropped_by_watermark": 31551,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "rejected_fraction": 0.0,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  },
+  {
+   "check": "stream_loss_warehouse",
+   "status": "fail",
+   "target": "raw.recentchange",
+   "message": "44350 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 126,
+   "input_rows": 50000,
+   "dropped_by_watermark": 44350,
+   "malformed_rows": 0,
+   "future_rows": 0,
+   "canary_rows": 0,
+   "rejected_fraction": 0.0,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  }
+ ]
+}
+uv run python -m bench.report
+RESULTS.md benchmark tables rendered from bench/results/
+EXIT 0

@@ -61,6 +61,23 @@ def test_upstream_failure_fails_the_mart(status: str) -> None:
     assert p.warnings(STALE_AFTER, NOW) == ["marts.agg_edits_hourly: failing checks: freshness_raw"]
 
 
+def test_a_failing_stream_loss_check_is_named_on_every_mart_built_from_raw() -> None:
+    from tributary.warehouse.stream_health import Thresholds, WindowCounts, evaluate
+
+    window = WindowCounts("warehouse", 25, 50_000, 38_700, 0, 0, 0)
+    stream = evaluate(window, Thresholds(), window=timedelta(hours=24), now=NOW)
+    p = summary(
+        [
+            check("unique_hour", MART.relation, "pass"),
+            CheckResult(stream.check_name, stream.check_type, stream.target, stream.status, NOW),
+        ]
+    )
+    assert p.quality == "fail"
+    assert p.warnings(STALE_AFTER, NOW) == [
+        "marts.agg_edits_hourly: failing checks: stream_loss_warehouse"
+    ]
+
+
 def test_warn() -> None:
     p = summary([check("a", MART.relation, "pass"), check("row_count", "marts.fct_edits", "warn")])
     assert p.quality == "warn"

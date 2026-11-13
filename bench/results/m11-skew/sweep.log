@@ -1,0 +1,45 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/11/13 04:24:08 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+before skew      0 s: lost      0 (predicted 0), dropped 0, future 0, 43.9 s
+before skew     60 s: lost      0 (predicted 0), dropped 0, future 0, 33.8 s
+before skew    300 s: lost      0 (predicted 0), dropped 0, future 0, 32.0 s
+before skew    450 s: lost      0 (predicted 0), dropped 0, future 0, 31.6 s
+before skew    600 s: lost      2 (predicted 2), dropped 2, future 0, 31.0 s
+before skew    900 s: lost   6010 (predicted 6010), dropped 6010, future 0, 27.7 s
+before skew   3600 s: lost  39000 (predicted 39000), dropped 39000, future 0, 26.8 s
+before skew  82800 s: lost  39000 (predicted 39000), dropped 39000, future 0, 27.2 s
+after skew      0 s: lost      0 (predicted 0), dropped 0, future 0, 28.5 s
+after skew     60 s: lost      0 (predicted 0), dropped 0, future 0, 29.3 s
+after skew    300 s: lost      0 (predicted 0), dropped 0, future 0, 30.1 s
+after skew    450 s: lost      0 (predicted 0), dropped 0, future 1, 28.7 s
+after skew    600 s: lost      0 (predicted 0), dropped 0, future 1, 28.8 s
+after skew    900 s: lost      0 (predicted 0), dropped 0, future 1, 28.5 s
+after skew   3600 s: lost      0 (predicted 0), dropped 0, future 1, 28.3 s
+after skew  82800 s: lost      0 (predicted 0), dropped 0, future 1, 28.3 s
+	Command being timed: "uv run python -m bench.skew run"
+	User time (seconds): 9.42
+	System time (seconds): 2.66
+	Percent of CPU this job got: 2%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 8:11.05
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 167852
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 74865
+	Voluntary context switches: 93886
+	Involuntary context switches: 4104
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 866376
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
+DONE

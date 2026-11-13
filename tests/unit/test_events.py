@@ -5,8 +5,12 @@ import pytest
 
 from tributary.events import (
     COLUMNS,
+    DEFAULT_FUTURE_SKEW_S,
+    REJECT_REASONS,
+    FutureEventError,
     InvalidEventError,
     RawRow,
+    default_future_skew_s,
     event_id,
     event_time,
     is_canary,
@@ -14,7 +18,8 @@ from tributary.events import (
     trim_event,
 )
 
-KAFKA_TS = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
+# The record is appended just after the edit (23:34:15), as it would be live.
+KAFKA_TS = datetime(2026, 10, 16, 23, 35, tzinfo=UTC)
 
 
 def raw_edit(**overrides: Any) -> dict[str, Any]:
@@ -114,16 +119,33 @@ def test_row_fields_match_the_sink_columns() -> None:
     assert tuple(RawRow.__dataclass_fields__) == COLUMNS
 
 
-def test_to_row_rejects_an_event_time_far_ahead_of_the_record_time() -> None:
+def test_to_row_rejects_an_event_time_further_ahead_than_the_skew_bound() -> None:
     kafka_ts = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
-    too_far = int(kafka_ts.timestamp()) + 86_400 + 1
+    assert DEFAULT_FUTURE_SKEW_S == 300  # half the default 10-minute watermark delay
+    too_far = int(kafka_ts.timestamp()) + DEFAULT_FUTURE_SKEW_S + 1
     event: dict[str, Any] = {
         "meta": {"id": "00000000-0000-4000-8000-000000000001"},
         "timestamp": too_far,
         "wiki": "enwiki",
         "type": "edit",
     }
-    with pytest.raises(InvalidEventError, match="ahead of the record time"):
+    with pytest.raises(FutureEventError, match="301 s ahead of the record time") as caught:
         to_row(event, kafka_ts=kafka_ts)
-    event["timestamp"] = too_far - 2
-    assert to_row(event, kafka_ts=kafka_ts).event_ts == kafka_ts + timedelta(seconds=86_399)
+    assert caught.value.reason == "future"
+    event["timestamp"] = too_far - 1
+    assert to_row(event, kafka_ts=kafka_ts).event_ts == kafka_ts + timedelta(seconds=300)
+    # The bound is a parameter: the job passes Settings.future_skew_s.
+    event["timestamp"] = int(kafka_ts.timestamp()) + 82_800
+    assert to_row(event, kafka_ts=kafka_ts, max_future_skew_s=86_400).event_ts.hour == 22
+
+
+def test_other_invalid_events_are_counted_as_malformed() -> None:
+    with pytest.raises(InvalidEventError) as caught:
+        to_row({"meta": {}, "timestamp": 1, "wiki": "enwiki", "type": "edit"}, kafka_ts=KAFKA_TS)
+    assert caught.value.reason == "malformed"
+    assert REJECT_REASONS == ("malformed", "future")
+
+
+@pytest.mark.parametrize(("delay_s", "bound"), [(600, 300), (60, 30), (1, 0), (601, 300)])
+def test_the_default_bound_is_half_the_watermark_delay(delay_s: int, bound: int) -> None:
+    assert default_future_skew_s(delay_s) == bound

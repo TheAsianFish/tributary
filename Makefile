@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist
+.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist bench-skew bench-poison
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -145,6 +145,17 @@ bench-query: ## Latency per query, engine and scale (warm and cold), pruning by 
 	$(MAKE) up-lakehouse
 	docker compose build stream
 	uv run python -m bench.query --scales $(SCALE) --runs $(RUNS)
+	uv run python -m bench.report
+
+bench-skew: ## Loss against one future-stamped event's skew, Spark local mode on the sample (no Compose; ~20 min)
+	uv run python -m bench.skew all
+	uv run python -m bench.report
+
+ARM ?= after
+bench-poison: ## One event 23 h ahead in 50,000 on a fresh Compose stack, both sinks; ARM=before runs the old one-day bound (deletes volumes; ~15 min)
+	$(MAKE) down
+	TRIBUTARY_MAX_FUTURE_SKEW_S=$(if $(filter before,$(ARM)),86400,) $(MAKE) up-lakehouse
+	uv run python -m bench.faults poison --arm $(ARM)
 	uv run python -m bench.report
 
 bench-results: ## Re-render RESULTS.md's ingest and query tables from bench/results/

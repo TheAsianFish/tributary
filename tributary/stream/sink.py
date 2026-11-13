@@ -53,7 +53,53 @@ RECORD_PROGRESS = sql.SQL(
     " rows = EXCLUDED.rows, inserted = EXCLUDED.inserted, committed_at = clock_timestamp()"
 )
 
+RECORD_HEALTH = sql.SQL(
+    "INSERT INTO ops.stream_progress (query, batch_id, input_rows, dropped_by_watermark,"
+    " malformed_rows, future_rows, canary_rows, watermark, reported_at)"
+    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, clock_timestamp())"
+    " ON CONFLICT (query, batch_id) DO UPDATE SET input_rows = EXCLUDED.input_rows,"
+    " dropped_by_watermark = EXCLUDED.dropped_by_watermark,"
+    " malformed_rows = EXCLUDED.malformed_rows, future_rows = EXCLUDED.future_rows,"
+    " canary_rows = EXCLUDED.canary_rows, watermark = EXCLUDED.watermark,"
+    " reported_at = EXCLUDED.reported_at"
+)
+
 log = structlog.get_logger("tributary.stream.sink")
+
+
+class BatchHealth(NamedTuple):
+    """What one micro-batch lost before the sink: late rows and rejected records by reason."""
+
+    query: str
+    batch_id: int
+    input_rows: int
+    dropped_by_watermark: int
+    malformed_rows: int
+    future_rows: int
+    canary_rows: int
+    watermark: datetime | None
+
+    @property
+    def rejected_rows(self) -> int:
+        return self.malformed_rows + self.future_rows
+
+
+def record_health(conninfo: str, health: BatchHealth) -> None:
+    """Upsert a batch's loss counters into ``ops.stream_progress`` (beside the sink's row)."""
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        conn.execute(
+            RECORD_HEALTH,
+            (
+                health.query,
+                health.batch_id,
+                health.input_rows,
+                health.dropped_by_watermark,
+                health.malformed_rows,
+                health.future_rows,
+                health.canary_rows,
+                health.watermark,
+            ),
+        )
 
 
 class SinkResult(NamedTuple):

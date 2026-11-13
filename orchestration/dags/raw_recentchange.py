@@ -15,6 +15,12 @@ last `pass` in `ops.latest_quality` forever. If every freshness check passes
 the task is skipped as before; if one fails, the task fails (no retry) and the
 run goes red.
 
+Beside it, `check_stream` records the `stream_loss` checks (rows the stream
+job's watermark dropped and records its parser rejected, over the last
+`TRIBUTARY_STREAM_CHECK_WINDOW_HOURS`) in `ops.quality_runs`. That loss never
+reaches a table, so no dbt test can see it; the check fails the task (no
+retry) when it is over its threshold, and an answer's provenance names it.
+
 The high-water mark lives in the asset events themselves: the task lists
 `raw.recentchange` as an inlet as well as an outlet and reads the newest
 event's `extra`. That keeps the state next to the thing it describes (visible
@@ -34,6 +40,8 @@ from airflow.sdk.exceptions import AirflowFailException, AirflowSkipException
 from tributary.config import get_settings
 from tributary.warehouse import assets
 from tributary.warehouse.refresh import WarehouseError, check_freshness, next_high_water_mark
+from tributary.warehouse.stream_health import StreamLossError
+from tributary.warehouse.stream_health import check_stream as record_stream_checks
 
 RAW = Asset(name=assets.RAW_RECENTCHANGE, group=assets.GROUP)
 # Events created by hand (the UI's "materialize", the REST API) carry no mark; look
@@ -81,7 +89,15 @@ def raw_recentchange() -> None:
         }
         return newest
 
+    @task
+    def check_stream() -> int:
+        try:
+            return len(record_stream_checks(get_settings(), get_current_context()["run_id"]))
+        except StreamLossError as exc:  # recorded in ops.quality_runs before raising
+            raise AirflowFailException(str(exc)) from exc
+
     detect_new_rows()
+    check_stream()
 
 
 raw_recentchange()

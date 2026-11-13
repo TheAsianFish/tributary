@@ -24,7 +24,8 @@ from tributary.stream.sink import (
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame
 
-KAFKA_TS = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
+# The record is appended just after the edit (23:34:15), as it would be live.
+KAFKA_TS = datetime(2026, 10, 16, 23, 35, tzinfo=UTC)
 
 
 def event(n: int) -> dict[str, object]:

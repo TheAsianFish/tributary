@@ -5,11 +5,16 @@ the stream job running both queries, MinIO and Trino. Reached through the host
 ports in ``.env.example``.
 
 The events are the first 5,000 of the sample with fresh ids, re-timed two
-seconds apart in file order starting just after anything either store has
-landed. That spreads them over almost three event-time hours, so the table has
-several ``hours(event_ts)`` partitions of known size, and keeps them in order,
-so the watermark drops none. (The sample's own disorder is covered by
-``test_pipeline.py``.)
+seconds apart in file order, starting just after anything either store has
+landed and ending before the wall clock. That spreads them over almost three
+event-time hours, so the table has several ``hours(event_ts)`` partitions of
+known size, and keeps them in order, so the watermark drops none. (The
+sample's own disorder is covered by ``test_pipeline.py``.) A stack whose
+newest event is less than about three hours old has no room for that span
+behind the clock, and the test is skipped there: starting after that event
+would put the replay hours ahead of the clock, which the stream job rejects
+(and which, before it did, moved the watermark past the clock: the M5
+incident).
 """
 
 from __future__ import annotations
@@ -107,7 +112,14 @@ class Replay:
 def replay(settings: Settings, conn: PgConn, trino: trino_dbapi.Connection) -> Replay:
     """Produce the re-timed events and wait until both stores hold all of them."""
     landed = newest(conn, trino)
+    span = timedelta(seconds=N_EVENTS * SPACING_S)
+    latest_start = datetime.now(UTC) - span - timedelta(minutes=1)
     start = (landed + timedelta(seconds=1)) if landed else datetime.now(UTC) - timedelta(hours=3)
+    if start > latest_start:
+        pytest.skip(
+            f"the newest landed event ({landed}) leaves no {span} of event time behind the"
+            " clock for the replay; run it on a fresh stack (`make down && make up-lakehouse`)"
+        )
     start = start.replace(microsecond=0)
     events: list[Event] = []
     for i, original in enumerate(read_sample(settings.sample_path, limit=N_EVENTS)):

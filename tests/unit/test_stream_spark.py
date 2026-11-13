@@ -28,7 +28,7 @@ from pyspark.sql.types import (
     TimestampType,
 )
 
-from tributary.events import COLUMNS, to_row
+from tributary.events import COLUMNS, DEFAULT_FUTURE_SKEW_S, to_row
 from tributary.stream.job import ROCKSDB_PROVIDER, ProgressLogger
 from tributary.stream.parse import OBSERVATION, deduplicate, parse_events
 from tributary.stream.sink import adapt_row
@@ -38,7 +38,8 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.spark
 
-KAFKA_TS = datetime(2026, 10, 16, 23, 0, tzinfo=UTC)
+# The record is appended just after the edit (23:34:15), as it would be live.
+KAFKA_TS = datetime(2026, 10, 16, 23, 35, tzinfo=UTC)
 KAFKA_SCHEMA = StructType(
     [
         StructField("value", BinaryType()),
@@ -233,7 +234,15 @@ class Collector:
         self.batches.append((batch_id, ids))
 
 
-def run_dedup(spark: SparkSession, src: Path, checkpoint: Path, sink: Collector) -> list[Any]:
+def run_dedup(
+    spark: SparkSession,
+    src: Path,
+    checkpoint: Path,
+    sink: Collector,
+    *,
+    delay: str = "60 seconds",
+    max_future_skew_s: int = DEFAULT_FUTURE_SKEW_S,
+) -> list[Any]:
     file_schema = StructType(
         [
             StructField("value", StringType()),
@@ -249,7 +258,7 @@ def run_dedup(spark: SparkSession, src: Path, checkpoint: Path, sink: Collector)
         .withColumn("value", F.col("value").cast("binary"))
     )
     query = (
-        deduplicate(parse_events(source), "60 seconds")
+        deduplicate(parse_events(source, max_future_skew_s), delay)
         .writeStream.foreachBatch(sink)
         .option("checkpointLocation", str(checkpoint))
         .trigger(availableNow=True)
@@ -283,7 +292,7 @@ def test_deduplicate_semantics_across_micro_batches(spark: SparkSession, tmp_pat
     assert in_state == {0: 2, 1: 3, 2: 1, 3: 3, 4: 3, 5: 4}
     assert progress[2].eventTime["watermark"] == "1970-01-01T00:32:20.000Z"
     observed = progress[0].observedMetrics[OBSERVATION].asDict()
-    assert observed == {"input_rows": 3, "malformed_rows": 0, "canary_rows": 0}
+    assert observed == {"input_rows": 3, "malformed_rows": 0, "future_rows": 0, "canary_rows": 0}
 
     # A crash after the sink wrote batch 5 but before Spark committed it: on restart
     # the same batch id is replayed with the same rows, which only the sink's
@@ -295,6 +304,120 @@ def test_deduplicate_semantics_across_micro_batches(spark: SparkSession, tmp_pat
     replay = Collector()
     run_dedup(spark, src, checkpoint, replay)
     assert replay.batches[0] == (last, EXPECTED_OUTPUT[last])
+
+
+# The poison scenario on the job's own settings (10-minute delay): six micro-batches
+# 30 s of event time apart, four real events each (one of them 100 s late), every
+# record stamped in Kafka 2 s after its event time, as the live producer would. In
+# batch 1 one more record, otherwise valid, claims an event time 23 h past its own
+# record time (a broken clock upstream, or a test that replays into the future).
+T0 = 1_792_194_000  # 2026-10-16T23:40:00Z
+POISON_ID, POISON_AHEAD_S, POISON_BATCH = 999, 82_800, 1
+SKEW_BATCHES = 6
+EVENTS_PER_BATCH = 4
+
+
+def skew_records() -> list[list[tuple[int, int, int]]]:
+    """Per batch, (id, event time, Kafka time) in stream order."""
+    batches = []
+    for b in range(SKEW_BATCHES):
+        base = T0 + 30 * b
+        times = [base, base + 1, base - 100, base + 2]
+        records = [(10 * b + i, ts, ts + 2) for i, ts in enumerate(times)]
+        if b == POISON_BATCH:
+            kafka = base + 3
+            records.insert(2, (POISON_ID, kafka + POISON_AHEAD_S, kafka))
+        batches.append(records)
+    return batches
+
+
+def write_skew_files(src: Path) -> None:
+    src.mkdir()
+    offset = 0
+    for b, batch in enumerate(skew_records()):
+        path = src / f"batch-{b}.json"
+        with path.open("w") as f:
+            for n, ts, kafka in batch:
+                record = {
+                    "value": json.dumps(event(n, ts)),
+                    "partition": 0,
+                    "offset": offset,
+                    "timestamp": datetime.fromtimestamp(kafka, UTC).isoformat(),
+                }
+                f.write(json.dumps(record) + "\n")
+                offset += 1
+        os.utime(path, (1_000_000 + b, 1_000_000 + b))
+
+
+def run_skew(
+    spark: SparkSession, tmp_path: Path, max_future_skew_s: int
+) -> tuple[dict[int, list[int]], dict[int, StreamingQueryProgress]]:
+    src = tmp_path / "src"
+    write_skew_files(src)
+    sink = Collector()
+    progress = by_batch(
+        run_dedup(
+            spark,
+            src,
+            tmp_path / "checkpoint",
+            sink,
+            delay="10 minutes",
+            max_future_skew_s=max_future_skew_s,
+        )
+    )
+    return {b: ids for b, ids in sink.batches if b in progress}, progress
+
+
+def real_ids(batch: int) -> list[int]:
+    return [10 * batch + i for i in range(EVENTS_PER_BATCH)]
+
+
+def test_an_event_23_hours_ahead_is_rejected_and_costs_no_later_event(
+    spark: SparkSession, tmp_path: Path
+) -> None:
+    from tributary.config import Settings
+
+    bound = Settings(_env_file=None).future_skew_s
+    assert bound == 300
+    output, progress = run_skew(spark, tmp_path, bound)
+
+    assert output == {b: real_ids(b) for b in range(SKEW_BATCHES)}
+    dropped = sum(s.numRowsDroppedByWatermark for p in progress.values() for s in p.stateOperators)
+    assert dropped == 0
+    observed = progress[POISON_BATCH].observedMetrics[OBSERVATION].asDict()
+    assert observed == {"input_rows": 5, "malformed_rows": 0, "future_rows": 1, "canary_rows": 0}
+    # The watermark trails the real events: newest event time through batch 4, minus 10 min.
+    assert progress[5].eventTime["watermark"] == "2026-10-16T23:32:02.000Z"
+
+
+def test_with_the_old_one_day_bound_the_same_event_drops_every_later_batch(
+    spark: SparkSession, tmp_path: Path
+) -> None:
+    """What the job did before the bound was tied to the watermark delay.
+
+    The poison is accepted and moves the watermark to its event time minus 10 min,
+    22 h 50 min past the clock. The late filter reads the watermark of two batches
+    back (see DEDUP_BATCHES), so the poison's own batch and the next one survive and
+    every real event from batch 3 on, 3 batches x 4 events, is dropped as late.
+    """
+    output, progress = run_skew(spark, tmp_path, 86_400)
+
+    assert output == {
+        0: real_ids(0),
+        1: sorted([*real_ids(1), POISON_ID]),
+        2: real_ids(2),
+        3: [],
+        4: [],
+        5: [],
+    }
+    dropped = {
+        b: sum(s.numRowsDroppedByWatermark for s in p.stateOperators) for b, p in progress.items()
+    }
+    assert dropped == {0: 0, 1: 0, 2: 0, 3: 4, 4: 4, 5: 4}
+    observed = progress[POISON_BATCH].observedMetrics[OBSERVATION].asDict()
+    assert observed["future_rows"] == 0
+    poison_watermark = datetime.fromtimestamp(T0 + 30 + 3 + POISON_AHEAD_S - 600, UTC)
+    assert progress[3].eventTime["watermark"] == poison_watermark.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 class ProgressEvent:
@@ -321,7 +444,7 @@ def test_progress_logger_reports_state_and_observed_metrics(
     [state] = entry["state"]
     assert state["rows_dropped_by_watermark"] == 2
     assert entry["observed"] == {
-        OBSERVATION: {"input_rows": 2, "malformed_rows": 0, "canary_rows": 0}
+        OBSERVATION: {"input_rows": 2, "malformed_rows": 0, "future_rows": 0, "canary_rows": 0}
     }
     assert entry["sources"][0]["end"] is not None
 
@@ -346,3 +469,64 @@ def test_the_postgres_sink_starts_without_a_warning() -> None:
     with capture_logs() as logs:
         assert not warn_if_discarding(Settings(_env_file=None))
     assert logs == []
+
+
+def test_progress_reports_write_each_batchs_loss_counters(
+    spark: SparkSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tributary.stream import job
+    from tributary.stream.sink import BatchHealth
+
+    _, progress = run_skew(spark, tmp_path, 86_400)
+    written: list[tuple[str, BatchHealth]] = []
+    monkeypatch.setattr(job, "record_health", lambda c, h: written.append((c, h)))
+    listener = job.ProgressLogger("dbname=x")
+    for b in sorted(progress):
+        listener.onQueryProgress(cast("QueryProgressEvent", ProgressEvent(progress[b])))
+
+    assert [h.batch_id for _, h in written] == sorted(progress)
+    assert {c for c, _ in written} == {"dbname=x"}
+    by_id = {h.batch_id: h for _, h in written}
+    assert [by_id[b].dropped_by_watermark for b in sorted(by_id)] == [0, 0, 0, 4, 4, 4]
+    assert by_id[POISON_BATCH].input_rows == 5
+    assert by_id[POISON_BATCH].future_rows == 0  # accepted under the old bound
+    assert by_id[0].watermark is None  # no watermark before the first batch
+    assert by_id[3].watermark == datetime.fromtimestamp(T0 + 33 + POISON_AHEAD_S - 600, UTC)
+
+
+def test_a_rejected_poison_is_counted_as_future(spark: SparkSession, tmp_path: Path) -> None:
+    from tributary.stream.job import batch_health
+
+    _, progress = run_skew(spark, tmp_path, 300)
+    health = batch_health(progress[POISON_BATCH])
+    assert (health.input_rows, health.future_rows, health.malformed_rows) == (5, 1, 0)
+    assert health.rejected_rows == 1
+    assert health.dropped_by_watermark == 0
+
+
+def test_a_failed_counter_write_is_logged_and_never_stops_the_query(
+    spark: SparkSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tributary.stream import job
+
+    _, progress = run_skew(spark, tmp_path, 300)
+
+    def refuse(_conninfo: str, _health: object) -> None:
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(job, "record_health", refuse)
+    with capture_logs() as logs:
+        job.ProgressLogger("dbname=x").onQueryProgress(
+            cast("QueryProgressEvent", ProgressEvent(progress[0]))
+        )
+    assert [e["event"] for e in logs] == ["stream.progress", "stream.health_not_recorded"]
+
+
+def test_without_a_database_the_logger_only_logs(
+    spark: SparkSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tributary.stream import job
+
+    _, progress = run_skew(spark, tmp_path, 300)
+    monkeypatch.setattr(job, "record_health", lambda *_: pytest.fail("no database configured"))
+    job.ProgressLogger().onQueryProgress(cast("QueryProgressEvent", ProgressEvent(progress[0])))
