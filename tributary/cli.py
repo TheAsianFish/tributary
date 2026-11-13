@@ -140,7 +140,9 @@ def sample_load(
     bind_run_id("sample-load")
     settings = get_settings()
     offered, inserted, invalid = load_events(
-        settings.pg_conninfo, read_sample(path or settings.sample_path, limit=limit)
+        settings.pg_conninfo,
+        read_sample(path or settings.sample_path, limit=limit),
+        max_future_skew_s=settings.future_skew_s,
     )
     typer.echo(f"offered {offered}, inserted {inserted}, invalid {invalid}")
 

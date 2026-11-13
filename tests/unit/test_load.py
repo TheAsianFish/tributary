@@ -66,3 +66,33 @@ def test_invalid_events_are_counted_and_chunks_respected(
     )
     assert (offered, invalid) == (3, 1)
     assert [len(b) for b in written] == [1, 2]
+
+
+def test_the_skew_bound_is_the_one_passed_in(written: list[list[Sequence[object]]]) -> None:
+    ahead = event(5)
+    ahead["timestamp"] = int(NOW.timestamp()) + 400
+    assert load.load_events("", [ahead], now=NOW)[2] == 1  # the default 300 s rejects it
+    assert load.load_events("", [ahead], now=NOW, max_future_skew_s=600)[2] == 0
+
+
+def test_sample_load_uses_the_configured_bound(monkeypatch: pytest.MonkeyPatch) -> None:
+    from typer.testing import CliRunner
+
+    from tributary import cli
+    from tributary.config import get_settings
+
+    seen: list[float] = []
+
+    def fake_load(_conninfo: str, events: Iterable[object], **kwargs: Any) -> tuple[int, int, int]:
+        seen.append(kwargs["max_future_skew_s"])
+        return (0, 0, 0)
+
+    monkeypatch.setattr(load, "load_events", fake_load)
+    monkeypatch.setenv("TRIBUTARY_MAX_FUTURE_SKEW_S", "450")
+    get_settings.cache_clear()
+    try:
+        result = CliRunner().invoke(cli.app, ["sample", "load", "--limit", "1"])
+    finally:
+        get_settings.cache_clear()
+    assert result.exit_code == 0, result.output
+    assert seen == [450]

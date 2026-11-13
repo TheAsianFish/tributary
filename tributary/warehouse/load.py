@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 import psycopg
 import structlog
 
-from tributary.events import Event, InvalidEventError, to_row
+from tributary.events import DEFAULT_FUTURE_SKEW_S, Event, InvalidEventError, to_row
 from tributary.stream.sink import ensure_schema, write_rows
 
 DIRECT_PARTITION = -1
@@ -26,9 +26,18 @@ log = structlog.get_logger(__name__)
 
 
 def load_events(
-    conninfo: str, events: Iterable[Event], *, chunk: int = 5_000, now: datetime | None = None
+    conninfo: str,
+    events: Iterable[Event],
+    *,
+    chunk: int = 5_000,
+    now: datetime | None = None,
+    max_future_skew_s: float = DEFAULT_FUTURE_SKEW_S,
 ) -> tuple[int, int, int]:
-    """Insert events in chunks; returns (offered, inserted, invalid)."""
+    """Insert events in chunks; returns (offered, inserted, invalid).
+
+    An event more than ``max_future_skew_s`` ahead of ``now`` is invalid, as the
+    stream job would reject it (pass ``Settings.future_skew_s`` to match its bound).
+    """
     kafka_ts = now or datetime.now(UTC)
     ensure_schema(conninfo)
     offered = inserted = invalid = 0
@@ -39,7 +48,11 @@ def load_events(
             for position, event in batch:
                 try:
                     row = to_row(
-                        event, partition=DIRECT_PARTITION, offset=position, kafka_ts=kafka_ts
+                        event,
+                        partition=DIRECT_PARTITION,
+                        offset=position,
+                        kafka_ts=kafka_ts,
+                        max_future_skew_s=max_future_skew_s,
                     )
                 except InvalidEventError:
                     invalid += 1
