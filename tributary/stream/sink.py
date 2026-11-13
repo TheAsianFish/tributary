@@ -21,6 +21,7 @@ import psycopg
 import structlog
 from psycopg import sql
 from psycopg.rows import TupleRow
+from psycopg.types.json import Jsonb
 
 from tributary.events import COLUMNS
 
@@ -55,14 +56,19 @@ RECORD_PROGRESS = sql.SQL(
 
 RECORD_HEALTH = sql.SQL(
     "INSERT INTO ops.stream_progress (query, batch_id, input_rows, dropped_by_watermark,"
-    " malformed_rows, future_rows, canary_rows, watermark, reported_at)"
-    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, clock_timestamp())"
+    " malformed_rows, future_rows, canary_rows, watermark, start_offsets, end_offsets,"
+    " reported_at)"
+    " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, clock_timestamp())"
     " ON CONFLICT (query, batch_id) DO UPDATE SET input_rows = EXCLUDED.input_rows,"
     " dropped_by_watermark = EXCLUDED.dropped_by_watermark,"
     " malformed_rows = EXCLUDED.malformed_rows, future_rows = EXCLUDED.future_rows,"
     " canary_rows = EXCLUDED.canary_rows, watermark = EXCLUDED.watermark,"
+    " start_offsets = EXCLUDED.start_offsets, end_offsets = EXCLUDED.end_offsets,"
     " reported_at = EXCLUDED.reported_at"
 )
+
+Offsets = dict[str, dict[str, int]]
+"""Kafka offsets as Spark writes them: topic, then partition (a string), then offset."""
 
 log = structlog.get_logger("tributary.stream.sink")
 
@@ -78,6 +84,10 @@ class BatchHealth(NamedTuple):
     future_rows: int
     canary_rows: int
     watermark: datetime | None
+    start_offsets: Offsets | None = None
+    """Where the batch began in the topic; None for a source that is not Kafka."""
+    end_offsets: Offsets | None = None
+    """Where it ended (exclusive): everything below is behind the batch's commit."""
 
     @property
     def rejected_rows(self) -> int:
@@ -98,6 +108,8 @@ def record_health(conninfo: str, health: BatchHealth) -> None:
                 health.future_rows,
                 health.canary_rows,
                 health.watermark,
+                Jsonb(health.start_offsets) if health.start_offsets is not None else None,
+                Jsonb(health.end_offsets) if health.end_offsets is not None else None,
             ),
         )
 

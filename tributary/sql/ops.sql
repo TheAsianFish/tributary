@@ -84,6 +84,25 @@ BEGIN
 END
 $migrate$;
 
+-- Where each batch sat in the topic (M12): the source's start and end offsets from
+-- the progress report, as Spark writes them ({"topic": {"partition": offset}}, end
+-- exclusive). A warehouse batch's progress report is posted after its rows are in
+-- PostgreSQL, so the largest end offset per partition is how far the warehouse has
+-- committed: the reconciliation judges nothing past it. Gated like the block above.
+DO $migrate_offsets$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'ops.stream_progress'::regclass AND attname = 'end_offsets'
+            AND NOT attisdropped
+    ) THEN
+        ALTER TABLE ops.stream_progress
+            ADD COLUMN IF NOT EXISTS start_offsets jsonb,
+            ADD COLUMN IF NOT EXISTS end_offsets   jsonb;
+    END IF;
+END
+$migrate_offsets$;
+
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS
 SELECT DISTINCT ON (check_name) *

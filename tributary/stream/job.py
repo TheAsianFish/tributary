@@ -23,7 +23,13 @@ from pyspark.sql.streaming.query import StreamingQuery
 
 from tributary.stream.lake import catalog_conf, start_lake_query
 from tributary.stream.parse import OBSERVATION, deduplicate, parse_events
-from tributary.stream.sink import BatchHealth, PostgresSink, ensure_schema, record_health
+from tributary.stream.sink import (
+    BatchHealth,
+    Offsets,
+    PostgresSink,
+    ensure_schema,
+    record_health,
+)
 
 if TYPE_CHECKING:
     from pyspark.sql.streaming.listener import (
@@ -182,13 +188,15 @@ def _watermark(raw: str | None) -> datetime | None:
 
 def batch_health(p: StreamingQueryProgress) -> BatchHealth:
     """A progress report's loss counters: late rows dropped by the state operators,
-    rejected records from the parser's observed metric (absent counts are 0)."""
+    rejected records from the parser's observed metric (absent counts are 0), and
+    the batch's Kafka offsets when the query reads one topic."""
     row = p.observedMetrics.get(OBSERVATION)
     observed = row.asDict() if row is not None else {}
 
     def count(name: str) -> int:
         return int(observed.get(name) or 0)
 
+    source = p.sources[0] if len(p.sources) == 1 else None
     return BatchHealth(
         query=p.name or "",
         batch_id=p.batchId,
@@ -198,7 +206,25 @@ def batch_health(p: StreamingQueryProgress) -> BatchHealth:
         future_rows=count("future_rows"),
         canary_rows=count("canary_rows"),
         watermark=_watermark(p.eventTime.get("watermark")),
+        start_offsets=kafka_offsets(source.startOffset) if source else None,
+        end_offsets=kafka_offsets(source.endOffset) if source else None,
     )
+
+
+def kafka_offsets(raw: str | None) -> Offsets | None:
+    """A progress report's Kafka offsets (``{"topic": {"0": 12, ...}}``); None for any other
+    source's offsets (a file source reports ``{"logOffset": n}``) or none at all."""
+    parsed = _offsets(raw)
+    if not isinstance(parsed, dict) or not parsed:
+        return None
+    out: Offsets = {}
+    for topic, partitions in parsed.items():
+        if not isinstance(partitions, dict) or not partitions:
+            return None
+        if not all(isinstance(o, int) and not isinstance(o, bool) for o in partitions.values()):
+            return None
+        out[str(topic)] = {str(k): int(v) for k, v in partitions.items()}
+    return out
 
 
 class ProgressLogger(StreamingQueryListener):

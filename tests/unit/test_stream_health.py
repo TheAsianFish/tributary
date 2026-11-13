@@ -132,3 +132,15 @@ def test_a_bound_not_below_the_watermark_delay_warns_at_start(
     with capture_logs() as logs:
         assert warn_if_skew_unsafe(Settings(_env_file=None, max_future_skew_s=skew)) is warned
     assert [e["event"] for e in logs] == (["stream.skew_bound_unsafe"] if warned else [])
+
+
+def test_kafka_offsets_are_read_from_a_progress_report_and_nothing_else() -> None:
+    pytest.importorskip("pyspark")
+    from tributary.stream.job import kafka_offsets
+
+    raw = '{"wiki.recentchange":{"2":10,"1":7,"0":12}}'
+    assert kafka_offsets(raw) == {"wiki.recentchange": {"0": 12, "1": 7, "2": 10}}
+    assert kafka_offsets('{"logOffset":3}') is None  # a file source
+    assert kafka_offsets(None) is None
+    assert kafka_offsets("{}") is None
+    assert kafka_offsets('{"t":{"0":true}}') is None

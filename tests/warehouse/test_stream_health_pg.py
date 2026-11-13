@@ -10,6 +10,7 @@ import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from importlib.resources import files
+from typing import Any
 
 import psycopg
 import pytest
@@ -31,8 +32,8 @@ def query(conninfo: str) -> Iterator[str]:
         conn.execute("DELETE FROM ops.stream_progress WHERE query = %s", (name,))
 
 
-def health(query: str, batch_id: int, **counts: int) -> BatchHealth:
-    values = {
+def health(query: str, batch_id: int, **counts: Any) -> BatchHealth:
+    values: dict[str, Any] = {
         "input_rows": 100,
         "dropped_by_watermark": 0,
         "malformed_rows": 0,
@@ -70,6 +71,27 @@ def test_the_counters_join_the_sinks_row_for_the_same_batch(conninfo: str, query
     assert rows == [
         (7, newest, 98, 98, 100, 2, DAY),
         (8, None, 0, 0, 100, 100, DAY),
+    ]
+
+
+def test_a_batchs_kafka_offsets_join_its_row(conninfo: str, query: str) -> None:
+    topic = {"wiki.recentchange": {"0": 100, "1": 7}}
+    record_health(
+        conninfo,
+        health(
+            query, 3, start_offsets=topic, end_offsets={"wiki.recentchange": {"0": 150, "1": 9}}
+        ),
+    )
+    record_health(conninfo, health(query, 4))  # a source that is not Kafka: no offsets
+    with psycopg.connect(conninfo) as conn:
+        rows = conn.execute(
+            "SELECT batch_id, start_offsets, end_offsets FROM ops.stream_progress"
+            " WHERE query = %s ORDER BY batch_id",
+            (query,),
+        ).fetchall()
+    assert rows == [
+        (3, topic, {"wiki.recentchange": {"0": 150, "1": 9}}),
+        (4, None, None),
     ]
 
 
