@@ -419,6 +419,114 @@ stamped with the wall clock would never trip it. Third, M9's templates
 include the reused alias and the scalar FROM function, so "flags all three
 historical fixes" does not depend on a template added after the fact.
 
+## Evolution round 2
+
+M9 to M11 are merged. I re-ran what runs without the full stack and looked
+for the places where a number in RESULTS.md reads stronger than what was
+measured.
+
+**What I ran (4 vCPU, 15 GB, Java 17, PostgreSQL 17 from `compose.yaml`).**
+
+| Command | Result |
+|---|---|
+| `make check` | 1501 passed, 7 expected failures (the `core` linker's contract), 86 s. On the runner's default Java 25 eight Spark tests fail (`getSubject is not supported`); Java 17 is the documented requirement |
+| `make eval-guard` | 131 / 131 blocked; 0 / 40, 0 / 500 and 0 / 449 gold queries blocked |
+| `make eval-link` | bm25 k = 4: recall 0.927, every gold table found for 82.0% |
+| `make eval` (replay) | dev50 and holdout50 match the recorded runs verdict for verdict (holdout50: `full` 17, `full+a` 16, `full+v+f+a` 24 of 50), 23 s |
+| `tributary sample load && make dbt && make test-warehouse` | dbt 57 / 57; 55 passed, 100 s |
+| `tributary warehouse refresh && make eval-warehouse` | 25 / 40, as recorded |
+| Spark local mode: the sample in 100 micro-batches, then its first 5,000 events sent again (a scratch probe on `parse_events` and `deduplicate`) | 50,000 of 50,000 delivered once, 0 lost, 0 twice; `rows_dropped_by_watermark` 0 in the first pass and **5,000** in the second |
+| The planner's `confidence` field over all 562 recorded BIRD calls | "high" on 526 of 527 answerable drafts, "low" on 28 of 29 refusals |
+| Result rows of `full+v+f+a` against `full` on the same question, from the recorded executions (dev50 + holdout50, official track) | same rows: `full+v+f+a` correct **31 / 40**; different rows, an error or a refusal: **19 / 60** (dev50 18 / 21 against 8 / 29, holdout50 13 / 19 against 11 / 31) |
+| Answers that needed a repair, same runs | correct 2 / 18, against 48 / 82 without one |
+
+The Compose benchmarks (`make bench`, `bench-scale`, `bench-query`,
+`bench-poison`; about six hours) were not re-run; their committed raw output
+still renders RESULTS.md's tables (`make check` tests that).
+
+**What the evidence says.**
+
+1. **M11's loss check cannot tell a redelivery from a loss.** `stream_loss`
+   fails on any row the watermark dropped in the last 24 hours. Spark counts
+   a late row before the dedup can know it is a copy of a row that already
+   landed, so 5,000 events sent twice cost nothing and still count as 5,000
+   drops. The check would stay red for a day, and every answer from a mart
+   would carry "failing checks: stream_loss_warehouse" with no event
+   missing. A second `tributary produce` of the sample is the same case
+   (by the sample's timestamps, 35,554 of its 50,000 events are at or below
+   the final watermark). The other half is also open: when an event really
+   is more than ten minutes late, it is dropped from both sinks alike,
+   nothing re-reads Kafka, and the hourly PostgreSQL-against-Iceberg
+   reconciliation stays green because both stores miss it.
+2. **The agent's own confidence is a constant, but its instability is a
+   signal.** The model says "high" on every answer it gives, right or wrong
+   (50 of 100 on these questions). M10 found that one added sentence
+   changes answers the sentence was never about, and treated that as noise.
+   Read the other way: when two prompt variants at temperature 0 return the
+   same rows, the answer is right 78% of the time, and 32% when they do
+   not. It holds inside each difficulty band (simple 12 / 14 against 7 /
+   16, moderate 15 / 20 against 10 / 30, challenging 4 / 6 against 2 / 14).
+   But I found it by looking at both subsets, and it was weaker on
+   holdout50 than on dev50, so neither is a test of it.
+
+**The new milestones, each with its question and what I expect.**
+
+- **M12, a dropped row is a loss only if the event is missing.**
+  *Question:* can the pipeline tell a late duplicate from a lost event, and
+  bring a lost one back? *Hypotheses:* a second replay of the sample after
+  the first has settled drops exactly 35,554 rows (predicted from the
+  sample; the other 14,446 are caught by the dedup state), loses none, and
+  turns today's check red; with a reconciliation of the topic against the
+  landing table the same run is green. Run while 50,000 events are
+  streaming, the reconciliation never reports an in-flight event as
+  missing (0 false positives over every pass), because it stops at the
+  offsets the warehouse query has committed. Records the parser rejected
+  (one malformed, one stamped in the future) are counted as rejected and
+  are not brought back. 100 events sent 15 minutes behind the watermark
+  are missing before and present in PostgreSQL after; that part is true by
+  construction of an anti-join, so it is a demonstration, not a hypothesis.
+  One pass over the 50,000-event topic takes under 60 s on this machine.
+- **M13, an answer that says when it is probably wrong.** *Question:* does
+  agreement between two prompt variants predict correctness on questions
+  that did not suggest the idea? *Hypotheses, on the 40 warehouse
+  questions:* the recorded plain pass (25 / 40) and a new pass with value
+  hints and worked examples return the same rows on 14 to 24 questions; the
+  plain pass's answers are right significantly more often when the two
+  agree than when they differ (one-sided Fisher exact test, p < 0.05:
+  with 25 right in 40 that takes 12 of 14, 13 of 16, 16 of 20 or 18 of 24
+  agreed answers right). A gap under 15 points means the BIRD finding did
+  not transfer and RESULTS.md says so; a gap of 15 points or more that
+  misses p < 0.05 is reported as inconclusive at n = 40, which the power
+  makes likely about four times in ten even if the BIRD rates are the true
+  ones. The stated `confidence` is "high" on at least 95% of answers.
+
+**Considered and not chosen.**
+
+- *A noise floor from meaning-free prompt changes* (worked examples in
+  reverse order, a neutral sentence). The answer is already in the
+  recordings: the `+a` sentence leaves the SQL identical on 47 of 100
+  questions and flips 17 verdicts. 2.5 hours of CPU to confirm it, and M13
+  uses the same instability for something.
+- *Re-grading "correct" answers on resampled databases*, to count the ones
+  right by accident of the data. Each flag needs a person to decide whether
+  the prediction or the gold query is fragile, so no single command
+  reproduces the number, and half-sampling breaks foreign keys.
+- *Demonstrating Iceberg's double-commit paths* (expiring a recent
+  snapshot, resetting the lake checkpoint). The first is already prevented
+  by the retention rule and the second is operator error; no open question.
+- *Turning value hints and examples on in the product under a rule on the
+  40 questions.* 25 to 28 with two regressions is +5 −2, p = 0.45: the
+  argument that rejected catalog tuning in round 1. M13 records that pass
+  and reports its count, and the defaults stay as they are.
+- *Recovering late events into Iceberg too.* A batch append beside the
+  streaming lake query is a second writer on the table, which needs its
+  own fault runs. M12 recovers into PostgreSQL and lets the existing
+  per-hour reconciliation report the lake's gap.
+- *The leave-one-out cells, the vote, the Claude runs, the pooled
+  75-table warehouse.* Unchanged from round 1: hours of CPU for
+  differences n = 50 cannot resolve, no key, and the pooled benchmark
+  waits on `core`.
+
 ## Milestones
 
 - [x] M1: Scaffold, CI and the ingest spine — `uv` project with ruff, mypy strict, pytest and a GitHub Actions workflow; `compose.yaml` with PostgreSQL 17 and Kafka 4.2 (KRaft); the committed 50,000-event sample; the producer with replay and `--live`; the Spark Structured Streaming job writing `raw.recentchange` with watermark, dedup and the idempotent sink; `tributary produce` and `tributary stream` commands; structured logging and env config. Done when `docker compose up` shows rows landing in `raw.recentchange`, an integration test replays 5,000 events through Kafka and Spark into Postgres in CI and asserts the count, and unit tests pass offline.
@@ -502,5 +610,7 @@ historical fixes" does not depend on a template added after the fact.
     - **The check.** `stream_loss` fails on any row dropped by the watermark, or more than 0.1% of the input rejected, over the last 24 h, per query; it runs in the `raw_recentchange` DAG and as `tributary warehouse check-stream`. The Compose runs sent 200 events/s, not 500, so the lake (one batch a minute) had batches after the poison's to lose.
     - **Precondition.** Kept, with its tolerance moved from 60 s to the skew bound, because a stack outlives the code that wrote it (`make bench-poison ARM=before` leaves exactly such a stack).
   *Done (2026-11-13).* Local mode, one-day bound: 0 lost up to 450 s, 2 at 600 s, 6,010 at 900 s, 39,000 of 50,000 at 3,600 s and 82,800 s, each equal to the prediction committed before the run; 300 s bound: 0 lost at every skew, 0 of the 50,000 sample events rejected. Compose, one event 23 h ahead: 44,350 lost in PostgreSQL and 31,551 in Iceberg with the check red, against 0 and 0 with the check green. $0.
+- [ ] M12: A dropped row is a loss only if the event is missing — `tributary stream reconcile` (Spark batch, the job's own `parse_events`): read the topic up to the offsets the warehouse query has committed (each batch's end offsets, added to its row in `ops.stream_progress`; nothing past them is judged), anti-join the parsed ids against `raw.recentchange`, class every record as landed, rejected (`malformed`, `future`) or missing, write the missing ones through the idempotent `PostgresSink`, and record the pass (offset window, counts, seconds) in `ops`; `stream_loss` then fails on dropped rows no pass has covered or on events a pass left missing, not on the drop counter alone, and the `raw_recentchange` DAG runs a pass when the counter is above zero. A unit test on the multi-batch harness that fails on today's check: the sample's first 5,000 events sent twice, 0 lost, check red. `make bench-late ARM=before|after` on a fresh Compose stack (manual, not CI; it runs `make down` first): the sample replayed, settled, and replayed again, then 50,000 bench events at 200 events/s carrying 100 events stamped 15 minutes behind the watermark, one malformed record and one stamped an hour ahead, with a reconciliation pass every 30 s during the load and one after it. The prediction for the second replay (rows dropped, from the sample's timestamps) is committed before the run. Done when RESULTS.md holds, for both arms, rows dropped by the watermark, events missing from PostgreSQL, the check's status and the provenance line of one mart answer, with each hypothesis answered (35,554 dropped and 0 lost on the second replay, red before and green after; 0 in-flight events reported missing over every pass during the load; the two rejected records counted and not landed; the 100 late events missing before and landed after, stated as a demonstration; one pass over the topic under 60 s, or by how much not), the Iceberg gap the per-hour reconciliation reports for the 100 events named as what is left, the limit set by Kafka's retention stated, raw output under `bench/results/m12-late/`, and every earlier number unchanged.
+- [ ] M13: An answer that says when it is probably wrong — the rule, the hypotheses and the two baselines committed before any model call: the graded answer is the recorded plain pass on the 40 warehouse questions (25 / 40); the second pass has value hints and three worked examples, temperature 0; a question is *agreed* when both passes answered and their rows are equal under BIRD's set rule, and *differed* otherwise (an error or a refusal in either pass included). Then `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` on `qwen2.5-coder:7b` (about 35 minutes of CPU), and `make eval-agree` (offline, from the recordings and recorded executions, in CI): the 2 × 2 table of agreement against correctness with the one-sided Fisher exact p, per difficulty, beside two baselines at the same coverage (answered without a repair; the questions labelled simple), the share of answers whose stated `confidence` is "high", and the same table on dev50 and holdout50 marked exploratory. In the product, an opt-in second pass (`TRIBUTARY_AGENT_SECOND_PASS`, `tributary ask --second-pass`): the answer is still the first pass's, and its provenance carries `agreement: agreed` or `differed`; no vote and no choice between answers. Done when RESULTS.md holds the pre-registered block (checked byte for byte against the commit that made it), the warehouse table with the hypothesis answered under the rule in PLAN.md (transfers at p < 0.05; did not transfer under a 15-point gap; otherwise inconclusive at n = 40, with the counts that would have been needed), the second pass's own score reported with the product's defaults left alone, the BIRD tables with the 9 of 40 agreed answers that were wrong stated beside them, the added model time per question, the `fake` provider replaying both passes exactly, the To measure row for that pass removed, and the model, its version and the wall time named, at $0.
 
 **Stretch (not required for any milestone):** a Trino dialect for the guard, so `/sql` can run guarded queries against the `iceberg` catalog; an Iceberg REST catalog (Polaris or Lakekeeper) in place of the JDBC catalog.

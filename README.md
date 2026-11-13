@@ -649,7 +649,22 @@ recordings where they named Claude (there was no API key). M10 tested the
 benchmark default on 50 questions that did not pick it, under a rule
 written down first. M11 bounded how far ahead of the clock one event may be,
 measured what the old bound cost against a prediction made first, and made
-dropped and rejected rows a quality check. Next:
+dropped and rejected rows a quality check. Two more are planned
+(PLAN.md, "Evolution round 2"):
+
+- **M12, a dropped row is a loss only if the event is missing.** The
+  `stream_loss` check counts a late duplicate of a landed event as a drop
+  (5,000 events sent twice: 0 lost, 5,000 "dropped"), and a truly late
+  event is never recovered. A reconciliation of the Kafka topic against the
+  landing table tells the two apart and writes the missing events back.
+- **M13, an answer that says when it is probably wrong.** The model calls
+  every answer "high" confidence. In the recorded BIRD runs, two prompt
+  variants returning the same rows goes with 31 of 40 right answers against
+  19 of 60 when they differ; M13 tests that on the 40 warehouse questions
+  under a rule fixed first, and adds an opt-in second pass whose agreement
+  is shown with the answer.
+
+After those:
 
 1. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
    Haiku 5.5 and Opus 5.5, recorded so CI replays them. RESULTS.md lists the
