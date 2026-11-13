@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
@@ -199,6 +200,26 @@ def warehouse_check_freshness() -> None:
         typer.echo(f"run {run_id}: {exc}", err=True)
         raise typer.Exit(2) from None
     typer.echo(f"run {run_id}: {len(checks)} freshness check(s) passed")
+
+
+@warehouse_app.command("check-stream")
+def warehouse_check_stream() -> None:
+    """The stream_loss checks (results to ops.quality_runs); exit 1 if one fails.
+
+    Rows dropped by the watermark and records rejected by the parser, summed over
+    the batches of the last TRIBUTARY_STREAM_CHECK_WINDOW_HOURS.
+    """
+    from tributary.warehouse.stream_health import StreamLossError, check_stream, summary
+
+    run_id = bind_run_id("warehouse-check-stream")
+    try:
+        checks = check_stream(get_settings(), run_id)
+    except StreamLossError as exc:  # recorded, see ops.quality_runs
+        typer.echo(f"run {run_id}: {exc}", err=True)
+        raise typer.Exit(1) from None
+    for line in summary(checks):
+        typer.echo(json.dumps(line, default=str))
+    typer.echo(f"run {run_id}: {len(checks)} stream_loss check(s) passed")
 
 
 @warehouse_app.command("publish-catalog")
