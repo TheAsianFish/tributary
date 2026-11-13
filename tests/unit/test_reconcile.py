@@ -152,6 +152,39 @@ def test_a_batch_is_reachable_only_while_the_broker_holds_its_first_offset() -> 
     assert reachable(None, {"0": 0}, "t")
 
 
+def test_a_partition_the_batch_read_nothing_from_does_not_make_it_unreachable() -> None:
+    from tributary.stream.reconcile import reachable
+
+    # Partition 1 was idle in the batch ([5, 5)); retention since moved its low to 8.
+    starts, ends = {"t": {"0": 10, "1": 5}}, {"t": {"0": 20, "1": 5}}
+    assert reachable(starts, {"0": 0, "1": 8}, "t", ends)
+    assert not reachable(starts, {"0": 11, "1": 8}, "t", ends)
+
+
+def test_a_plan_leaves_out_batches_no_pass_could_ever_cover(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Otherwise the DAG starts a whole-topic pass every five minutes that covers nothing."""
+    from tributary.config import Settings
+    from tributary.stream import reconcile
+    from tributary.warehouse import stream_health
+    from tributary.warehouse.stream_health import DroppedBatch
+
+    settings = Settings(_env_file=None, topic="t")
+    legacy = DroppedBatch("warehouse", 1, 5, None, None)  # recorded before offsets were
+    older_query = DroppedBatch("warehouse", 2, 5, {"t": {"0": 600}}, {"t": {"0": 900}})
+    monkeypatch.setattr(reconcile, "committed_offsets", lambda *_a, **_k: {"0": 500})
+    monkeypatch.setattr(reconcile, "earliest_offsets", lambda *_a: {"0": 0})
+    monkeypatch.setattr(stream_health, "uncovered_batches", lambda *_a: [legacy, older_query])
+    assert reconcile.plan_pass(settings, "uncovered", TS) is None
+
+    fine = DroppedBatch("warehouse", 3, 5, {"t": {"0": 300}}, {"t": {"0": 320}})
+    monkeypatch.setattr(stream_health, "uncovered_batches", lambda *_a: [legacy, fine])
+    assert reconcile.plan_pass(settings, "uncovered", TS) == reconcile.PassPlan(
+        {"0": 500}, {"0": 300}, batches=1, unreachable=1
+    )
+
+
 def test_an_uncovered_plan_leaves_out_what_retention_cut_and_may_be_nothing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

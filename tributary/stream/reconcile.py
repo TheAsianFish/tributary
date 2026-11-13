@@ -67,6 +67,7 @@ if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
 
     from tributary.config import Settings
+    from tributary.warehouse.stream_health import DroppedBatch
 
 log = structlog.get_logger("tributary.stream.reconcile")
 
@@ -458,11 +459,40 @@ class PassPlan:
     """Uncovered batches retention has already cut into: no pass can cover them."""
 
 
-def reachable(start_offsets: Offsets | None, earliest: dict[str, int], topic: str) -> bool:
+def reachable(
+    start_offsets: Offsets | None,
+    earliest: dict[str, int],
+    topic: str,
+    end_offsets: Offsets | None = None,
+) -> bool:
     """Whether the broker still holds every offset a batch read (a batch with no start
-    offsets is taken to start at 0, as :func:`covers` takes it)."""
+    offsets is taken to start at 0, as :func:`covers` takes it). A partition the batch
+    read nothing from (start = end, when its end offsets are given) needs nothing."""
     starts = (start_offsets or {}).get(topic, {})
-    return all(starts.get(p, 0) >= low for p, low in earliest.items())
+    ends = (end_offsets or {}).get(topic, {})
+    for p, low in earliest.items():
+        begin = starts.get(p, 0)
+        if p in ends and begin >= ends[p]:
+            continue
+        if begin < low:
+            return False
+    return True
+
+
+def coverable(batch: DroppedBatch, committed: dict[str, int], topic: str) -> bool:
+    """Whether a pass bounded by ``committed`` could cover the batch at all: it has end
+    offsets (none were recorded before M12, nor for a sink that writes nothing) and
+    every partition it read ends at or below the committed offsets (a batch of an
+    earlier streaming query may sit above what the current one has committed)."""
+    if batch.end_offsets is None:
+        return False
+    starts = (batch.start_offsets or {}).get(topic, {})
+    for p, end in batch.end_offsets.get(topic, {}).items():
+        if starts.get(p, 0) >= end:
+            continue
+        if p not in committed or end > committed[p]:
+            return False
+    return topic in batch.end_offsets
 
 
 def plan_pass(
@@ -484,12 +514,19 @@ def plan_pass(
     now = now or datetime.now(UTC)
     window = timedelta(hours=settings.stream_check_window_hours)
     batches = uncovered_batches(settings.pg_conninfo, now - window, now)
-    served = [b for b in batches if reachable(b.start_offsets, earliest, settings.topic)]
+    topic = settings.topic
+    served = [
+        b
+        for b in batches
+        if coverable(b, committed, topic)
+        and reachable(b.start_offsets, earliest, topic, b.end_offsets)
+    ]
     if len(served) < len(batches):
         log.warning(
             "reconcile.uncoverable",
             batches=len(batches) - len(served),
-            hint="topic retention has deleted offsets these batches read",
+            hint="no offsets recorded, past what the current query has committed,"
+            " or deleted by topic retention",
         )
     if not served:
         return None
