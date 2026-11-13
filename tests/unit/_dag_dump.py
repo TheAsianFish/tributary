@@ -41,6 +41,9 @@ def main(folder: str, out: str) -> None:
                     "upstream": sorted(task.upstream_task_ids),
                     "trigger_rule": str(task.trigger_rule.value),
                     "retries": task.retries,
+                    "execution_timeout": (
+                        task.execution_timeout.total_seconds() if task.execution_timeout else None
+                    ),
                     "inlets": names(task.inlets),
                     "outlets": names(task.outlets),
                 }

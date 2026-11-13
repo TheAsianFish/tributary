@@ -84,6 +84,76 @@ BEGIN
 END
 $migrate$;
 
+-- Where each batch sat in the topic (M12): the source's start and end offsets from
+-- the progress report, as Spark writes them ({"topic": {"partition": offset}}, end
+-- exclusive). A warehouse batch's progress report is posted after its rows are in
+-- PostgreSQL, so the largest end offset per partition is how far the warehouse has
+-- committed: the reconciliation judges nothing past it. Gated like the block above.
+DO $migrate_offsets$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'ops.stream_progress'::regclass AND attname = 'end_offsets'
+            AND NOT attisdropped
+    ) THEN
+        ALTER TABLE ops.stream_progress
+            ADD COLUMN IF NOT EXISTS start_offsets jsonb,
+            ADD COLUMN IF NOT EXISTS end_offsets   jsonb;
+    END IF;
+END
+$migrate_offsets$;
+
+-- The streaming query's id beside its offsets: a reset checkpoint (or a recreated
+-- topic) starts a new query whose offsets restart, and only the current query's
+-- rows say how far the warehouse has committed. Gated like the blocks above.
+DO $migrate_query_id$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = 'ops.stream_progress'::regclass AND attname = 'query_id'
+            AND NOT attisdropped
+    ) THEN
+        ALTER TABLE ops.stream_progress ADD COLUMN IF NOT EXISTS query_id text;
+    END IF;
+END
+$migrate_query_id$;
+
+-- One row per reconciliation pass (`tributary stream reconcile`): the offset window
+-- it read, what it found there and what it wrote back. A pass that fails records
+-- nothing, so a row means the window was judged in full.
+CREATE TABLE IF NOT EXISTS ops.reconcile_runs (
+    id            bigserial   PRIMARY KEY,
+    run_id        text        NOT NULL,
+    query         text        NOT NULL,
+    topic         text        NOT NULL,
+    start_offsets jsonb       NOT NULL,
+    end_offsets   jsonb       NOT NULL,
+    records       bigint      NOT NULL,
+    landed        bigint      NOT NULL,
+    malformed     bigint      NOT NULL,
+    future        bigint      NOT NULL,
+    canary        bigint      NOT NULL,
+    missing       bigint      NOT NULL,
+    recovered     bigint      NOT NULL,
+    left_missing  bigint      NOT NULL,
+    dry_run       boolean     NOT NULL,
+    seconds       double precision NOT NULL,
+    started_at    timestamptz NOT NULL,
+    finished_at   timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Every event a pass found missing (valid, below the committed offsets, its id not in
+-- raw.recentchange), and whether it was still missing when the pass finished.
+CREATE TABLE IF NOT EXISTS ops.reconcile_missing (
+    pass_id         bigint      NOT NULL REFERENCES ops.reconcile_runs (id) ON DELETE CASCADE,
+    event_id        uuid        NOT NULL,
+    event_ts        timestamptz NOT NULL,
+    kafka_partition integer     NOT NULL,
+    kafka_offset    bigint      NOT NULL,
+    left_missing    boolean     NOT NULL,
+    PRIMARY KEY (pass_id, event_id)
+);
+
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS
 SELECT DISTINCT ON (check_name) *
@@ -92,3 +162,4 @@ ORDER BY check_name, finished_at DESC, id DESC;
 
 COMMENT ON TABLE ops.quality_runs IS 'Every data-quality check result, one row per check per run.';
 COMMENT ON TABLE ops.refresh_runs IS 'Every dbt model build, one row per model per run.';
+COMMENT ON TABLE ops.reconcile_runs IS 'Every reconciliation pass of the topic against raw.recentchange.';

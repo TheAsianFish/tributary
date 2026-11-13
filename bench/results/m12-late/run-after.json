@@ -1,0 +1,1100 @@
+{
+ "arm": "after",
+ "started_at": "2026-11-13T17:43:50.241722+00:00",
+ "replay_1": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 100.0,
+  "settle_s": 24.4,
+  "missing_in_postgres": 0
+ },
+ "refresh_after_replay_1": {
+  "exit": 0,
+  "seconds": 18.2,
+  "last_line": "{\"path\": \"catalog/20261113T174612974400Z-b2696040-38e3-48c6-ab2a-3b584dd11458\", \"version\": \"20261113T174612974400Z-b2696040-38e3-48c6-ab2a-3b584dd11458\", \"event\": \"catalog.published\", \"run_id\": \"9051dfaf4f05\", \"command\": \"warehouse-refresh\", \"level\": \"info\", \"timestamp\": \"2026-11-13T17:46:12.979839Z\"}"
+ },
+ "replay_2": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 100.0,
+  "settle_s": 22.3,
+  "progress": {
+   "lake": {
+    "batches": 2,
+    "input_rows": 50000,
+    "dropped_by_watermark": 33635,
+    "malformed_rows": 0,
+    "future_rows": 0
+   },
+   "warehouse": {
+    "batches": 51,
+    "input_rows": 50000,
+    "dropped_by_watermark": 35554,
+    "malformed_rows": 0,
+    "future_rows": 0
+   }
+  },
+  "missing_in_postgres": 0,
+  "checks": [
+   {
+    "check": "stream_loss_lake",
+    "status": "fail",
+    "target": "lake.raw.recentchange",
+    "message": "33635 rows dropped by the watermark (allowed 0)",
+    "window_hours": 24.0,
+    "batches": 5,
+    "input_rows": 100000,
+    "dropped_by_watermark": 33635,
+    "covered_dropped": 0,
+    "uncovered_dropped": 33635,
+    "reconcile_passes": 0,
+    "still_missing": 0,
+    "malformed_rows": 0,
+    "future_rows": 0,
+    "canary_rows": 0,
+    "rejected_fraction": 0.0,
+    "max_dropped_rows": 0,
+    "max_rejected_fraction": 0.001
+   },
+   {
+    "check": "stream_loss_warehouse",
+    "status": "fail",
+    "target": "raw.recentchange",
+    "message": "35554 rows dropped by the watermark (allowed 0)",
+    "window_hours": 24.0,
+    "batches": 102,
+    "input_rows": 100000,
+    "dropped_by_watermark": 35554,
+    "covered_dropped": 0,
+    "uncovered_dropped": 35554,
+    "reconcile_passes": 0,
+    "still_missing": 0,
+    "malformed_rows": 0,
+    "future_rows": 0,
+    "canary_rows": 0,
+    "rejected_fraction": 0.0,
+    "max_dropped_rows": 0,
+    "max_rejected_fraction": 0.001
+   }
+  ]
+ },
+ "load": {
+  "prefix": "1c69d982-e6a8-7237-ed80",
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 250.1,
+  "settle_s": 22.2,
+  "late_ids": [
+   "1c69d982-e6a8-7237-ed80-01e5b9975733",
+   "1c69d982-e6a8-7237-ed80-036a70562fd3",
+   "1c69d982-e6a8-7237-ed80-047cffd4de93",
+   "1c69d982-e6a8-7237-ed80-096759da3ba3",
+   "1c69d982-e6a8-7237-ed80-0aec139ab043",
+   "1c69d982-e6a8-7237-ed80-0ffe9f1ba303",
+   "1c69d982-e6a8-7237-ed80-10f30a9855c3",
+   "1c69d982-e6a8-7237-ed80-1279c55b2a63",
+   "1c69d982-e6a8-7237-ed80-15c5f6194483",
+   "1c69d982-e6a8-7237-ed80-174ab0d9dd23",
+   "1c69d982-e6a8-7237-ed80-185f3c26cfe3",
+   "1c69d982-e6a8-7237-ed80-1d47962c28f3",
+   "1c69d982-e6a8-7237-ed80-1ecc50eca193",
+   "1c69d982-e6a8-7237-ed80-218eea71d2b3",
+   "1c69d982-e6a8-7237-ed80-2337a430ab53",
+   "1c69d982-e6a8-7237-ed80-243e1e078463",
+   "1c69d982-e6a8-7237-ed80-29308d84b723",
+   "1c69d982-e6a8-7237-ed80-2ab944470fc3",
+   "1c69d982-e6a8-7237-ed80-2f8a33c43e83",
+   "1c69d982-e6a8-7237-ed80-309cbf42d143",
+   "1c69d982-e6a8-7237-ed80-32057905a9e3",
+   "1c69d982-e6a8-7237-ed80-358719480a53",
+   "1c69d982-e6a8-7237-ed80-3717e48258a3",
+   "1c69d982-e6a8-7237-ed80-381e5e89b5b3",
+   "1c69d982-e6a8-7237-ed80-3d10ca16a473",
+   "1c69d982-e6a8-7237-ed80-3e9984c93d13",
+   "1c69d982-e6a8-7237-ed80-4035ab80d4d3",
+   "1c69d982-e6a8-7237-ed80-45061701c793",
+   "1c69d982-e6a8-7237-ed80-468cd1c05c33",
+   "1c69d982-e6a8-7237-ed80-4b815d414ef3",
+   "1c69d982-e6a8-7237-ed80-4c93c8ce61b3",
+   "1c69d982-e6a8-7237-ed80-4e18828ef653",
+   "1c69d982-e6a8-7237-ed80-519aa2d55ac3",
+   "1c69d982-e6a8-7237-ed80-52ed0e0fe913",
+   "1c69d982-e6a8-7237-ed80-5415e812c223",
+   "1c69d982-e6a8-7237-ed80-58e65793f4e3",
+   "1c69d982-e6a8-7237-ed80-5a6f2e524d83",
+   "1c69d982-e6a8-7237-ed80-5df8c310e7a3",
+   "1c69d982-e6a8-7237-ed80-5f619dd37c43",
+   "1c69d982-e6a8-7237-ed80-63dedc6d5053",
+   "1c69d982-e6a8-7237-ed80-64d34bea4313",
+   "1c69d982-e6a8-7237-ed80-665805aadbb3",
+   "1c69d982-e6a8-7237-ed80-69a4376b75d3",
+   "1c69d982-e6a8-7237-ed80-6b2af12bca73",
+   "1c69d982-e6a8-7237-ed80-6c556b312783",
+   "1c69d982-e6a8-7237-ed80-7127d6bfd643",
+   "1c69d982-e6a8-7237-ed80-72ac917eaee3",
+   "1c69d982-e6a8-7237-ed80-77a11cff41a3",
+   "1c69d982-e6a8-7237-ed80-78b3887c7063",
+   "1c69d982-e6a8-7237-ed80-7a38423cc903",
+   "1c69d982-e6a8-7237-ed80-7f0d31bdfbc3",
+   "1c69d982-e6a8-7237-ed80-80a6d5779383",
+   "1c69d982-e6a8-7237-ed80-822faf366823",
+   "1c69d982-e6a8-7237-ed80-85bb40f48243",
+   "1c69d982-e6a8-7237-ed80-87201ab71ae3",
+   "1c69d982-e6a8-7237-ed80-8828f4ba77f3",
+   "1c69d982-e6a8-7237-ed80-8d3d603b66b3",
+   "1c69d982-e6a8-7237-ed80-8ea23afbff53",
+   "1c69d982-e6a8-7237-ed80-93b4a678ee13",
+   "1c69d982-e6a8-7237-ed80-948915f980d3",
+   "1c69d982-e6a8-7237-ed80-960fefb81973",
+   "1c69d982-e6a8-7237-ed80-99b18fccfde3",
+   "1c69d982-e6a8-7237-ed80-9b005b390833",
+   "1c69d982-e6a8-7237-ed80-9c0b350c6543",
+   "1c69d982-e6a8-7237-ed80-a07209506f03",
+   "1c69d982-e6a8-7237-ed80-a57ae3274813",
+   "1c69d982-e6a8-7237-ed80-a6e3bde7c0b3",
+   "1c69d982-e6a8-7237-ed80-abf42964f373",
+   "1c69d982-e6a8-7237-ed80-acc694e5e233",
+   "1c69d982-e6a8-7237-ed80-ae4f6ea47ad3",
+   "1c69d982-e6a8-7237-ed80-b1db006294f3",
+   "1c69d982-e6a8-7237-ed80-b341da256d93",
+   "1c69d982-e6a8-7237-ed80-b95d23a97963",
+   "1c69d982-e6a8-7237-ed80-bac3fa69ce03",
+   "1c69d982-e6a8-7237-ed80-bfd469f6e0c3",
+   "1c69d982-e6a8-7237-ed80-c1700ca09883",
+   "1c69d982-e6a8-7237-ed80-c2f6c7631123",
+   "1c69d982-e6a8-7237-ed80-c7cbb2e003e3",
+   "1c69d982-e6a8-7237-ed80-c8dc3e6132a3",
+   "1c69d982-e6a8-7237-ed80-ca42f8218b43",
+   "1c69d982-e6a8-7237-ed80-cdaeadee2563",
+   "1c69d982-e6a8-7237-ed80-cf5767aeba03",
+   "1c69d982-e6a8-7237-ed80-d05fc1b59713",
+   "1c69d982-e6a8-7237-ed80-d5504d3289d3",
+   "1c69d982-e6a8-7237-ed80-d6d907f51e73",
+   "1c69d982-e6a8-7237-ed80-dbabf3723133",
+   "1c69d982-e6a8-7237-ed80-dcbc7ef323f3",
+   "1c69d982-e6a8-7237-ed80-de2538b3b893",
+   "1c69d982-e6a8-7237-ed80-e11da08d1403",
+   "1c69d982-e6a8-7237-ed80-e2827b4deca3",
+   "1c69d982-e6a8-7237-ed80-e5ee2c0a06c3",
+   "1c69d982-e6a8-7237-ed80-e794e6ca9f63",
+   "1c69d982-e6a8-7237-ed80-e869524b8e23",
+   "1c69d982-e6a8-7237-ed80-ed91cc5eeb33",
+   "1c69d982-e6a8-7237-ed80-f3eb759e1293",
+   "1c69d982-e6a8-7237-ed80-f4fde11f0553",
+   "1c69d982-e6a8-7237-ed80-f662bbdf9df3",
+   "1c69d982-e6a8-7237-ed80-f9ce6c9c3413",
+   "1c69d982-e6a8-7237-ed80-fb77275c8cb3",
+   "1c69d982-e6a8-7237-ed80-fc4992ddbf73"
+  ],
+  "rejected_ids": {
+   "malformed": "1c69d982-e6a8-7237-ed80-14b21a82e40b",
+   "future": "1c69d982-e6a8-7237-ed80-fdb17c86465b"
+  },
+  "progress": {
+   "lake": {
+    "batches": 4,
+    "input_rows": 44240,
+    "dropped_by_watermark": 60,
+    "malformed_rows": 1,
+    "future_rows": 1
+   },
+   "warehouse": {
+    "batches": 126,
+    "input_rows": 50000,
+    "dropped_by_watermark": 100,
+    "malformed_rows": 1,
+    "future_rows": 1
+   }
+  },
+  "missing_late_before_final_pass": 4
+ },
+ "passes_during_load": [
+  {
+   "pass_id": 1,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 33769,
+     "0": 33146,
+     "2": 33326
+    }
+   },
+   "records": 100241,
+   "landed": 100241,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 0,
+   "missing_records": 0,
+   "recovered": 0,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 9.952,
+   "timings": {
+    "plan": 0.05,
+    "judge": 9.901
+   },
+   "started_at": "2026-11-13T17:48:21.122285+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 2,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 35800,
+     "0": 35143,
+     "2": 35301
+    }
+   },
+   "records": 106244,
+   "landed": 106244,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 0,
+   "missing_records": 0,
+   "recovered": 0,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 3.227,
+   "timings": {
+    "plan": 0.022,
+    "judge": 3.205
+   },
+   "started_at": "2026-11-13T17:48:51.122387+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 3,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 37771,
+     "0": 37164,
+     "2": 37306
+    }
+   },
+   "records": 112241,
+   "landed": 112235,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 6,
+   "missing_records": 6,
+   "recovered": 6,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 3.197,
+   "timings": {
+    "plan": 0.03,
+    "judge": 3.148
+   },
+   "started_at": "2026-11-13T17:49:21.122498+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 4,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 39742,
+     "0": 39165,
+     "2": 39333
+    }
+   },
+   "records": 118240,
+   "landed": 118225,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 2.279,
+   "timings": {
+    "plan": 0.022,
+    "judge": 2.254
+   },
+   "started_at": "2026-11-13T17:49:51.122600+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 5,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 41765,
+     "0": 41171,
+     "2": 41306
+    }
+   },
+   "records": 124242,
+   "landed": 124226,
+   "malformed": 1,
+   "future": 0,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 3.382,
+   "timings": {
+    "plan": 0.022,
+    "judge": 3.357
+   },
+   "started_at": "2026-11-13T17:50:21.122707+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 6,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 43757,
+     "0": 43240,
+     "2": 43244
+    }
+   },
+   "records": 130241,
+   "landed": 130224,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 3.185,
+   "timings": {
+    "plan": 0.038,
+    "judge": 3.142
+   },
+   "started_at": "2026-11-13T17:50:51.122809+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 7,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 45754,
+     "0": 45198,
+     "2": 45292
+    }
+   },
+   "records": 136244,
+   "landed": 136227,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 2.739,
+   "timings": {
+    "plan": 0.022,
+    "judge": 2.715
+   },
+   "started_at": "2026-11-13T17:51:21.122919+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 8,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 47775,
+     "0": 47150,
+     "2": 47315
+    }
+   },
+   "records": 142240,
+   "landed": 142223,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 3.264,
+   "timings": {
+    "plan": 0.032,
+    "judge": 3.228
+   },
+   "started_at": "2026-11-13T17:51:51.123016+00:00",
+   "session_s": 4.96
+  },
+  {
+   "pass_id": 9,
+   "topic": "wiki.recentchange",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "1": 0,
+     "0": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "1": 49798,
+     "0": 49147,
+     "2": 49296
+    }
+   },
+   "records": 148241,
+   "landed": 148224,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "missing_records": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "dry_run": false,
+   "seconds": 2.439,
+   "timings": {
+    "plan": 0.023,
+    "judge": 2.415
+   },
+   "started_at": "2026-11-13T17:52:21.123118+00:00",
+   "session_s": 4.96
+  }
+ ],
+ "final_pass": {
+  "exit": 0,
+  "wall_s": 16.1,
+  "pass": [
+   {
+    "pass_id": 10,
+    "topic": "wiki.recentchange",
+    "start_offsets": {
+     "wiki.recentchange": {
+      "1": 0,
+      "0": 0,
+      "2": 0
+     }
+    },
+    "end_offsets": {
+     "wiki.recentchange": {
+      "1": 50353,
+      "0": 49760,
+      "2": 49887
+     }
+    },
+    "records": 150000,
+    "landed": 149994,
+    "malformed": 1,
+    "future": 1,
+    "canary": 0,
+    "missing": 4,
+    "missing_records": 4,
+    "recovered": 4,
+    "left_missing": 0,
+    "dry_run": false,
+    "seconds": 9.949,
+    "timings": {
+     "plan": 0.049,
+     "judge": 9.887
+    },
+    "started_at": "2026-11-13T17:52:57.078338+00:00",
+    "session_s": 4.04
+   }
+  ]
+ },
+ "stores": {
+  "postgres": {
+   "expected": 50000,
+   "rows": 49998,
+   "distinct": 49998,
+   "missing": 2,
+   "duplicates": 0,
+   "unexpected": 0,
+   "exactly_once": false,
+   "late_present": 100,
+   "malformed_present": false,
+   "future_present": false,
+   "missing_other_than_late_and_rejected": [],
+   "sample_missing": 0
+  },
+  "iceberg": {
+   "expected": 50000,
+   "rows": 49924,
+   "distinct": 49924,
+   "missing": 76,
+   "duplicates": 0,
+   "unexpected": 0,
+   "exactly_once": false,
+   "late_present": 26,
+   "malformed_present": false,
+   "future_present": false,
+   "missing_other_than_late_and_rejected": [],
+   "count": 49924,
+   "wait_s": 157.0
+  }
+ },
+ "progress_total": {
+  "lake": {
+   "batches": 10,
+   "input_rows": 150000,
+   "dropped_by_watermark": 33709,
+   "malformed_rows": 1,
+   "future_rows": 1
+  },
+  "warehouse": {
+   "batches": 228,
+   "input_rows": 150000,
+   "dropped_by_watermark": 35654,
+   "malformed_rows": 1,
+   "future_rows": 1
+  }
+ },
+ "passes": [
+  {
+   "id": 1,
+   "run_id": "cfac104064e2",
+   "records": 100241,
+   "landed": 100241,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 0,
+   "recovered": 0,
+   "left_missing": 0,
+   "seconds": 9.951645066999845,
+   "started_at": "2026-11-13 17:48:21.122285+00:00",
+   "finished_at": "2026-11-13 17:48:31.093221+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 33146,
+     "1": 33769,
+     "2": 33326
+    }
+   },
+   "missing_late": 0,
+   "missing_other": []
+  },
+  {
+   "id": 2,
+   "run_id": "cfac104064e2",
+   "records": 106244,
+   "landed": 106244,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 0,
+   "recovered": 0,
+   "left_missing": 0,
+   "seconds": 3.2272499109999444,
+   "started_at": "2026-11-13 17:48:51.122387+00:00",
+   "finished_at": "2026-11-13 17:48:54.401537+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 35143,
+     "1": 35800,
+     "2": 35301
+    }
+   },
+   "missing_late": 0,
+   "missing_other": []
+  },
+  {
+   "id": 3,
+   "run_id": "cfac104064e2",
+   "records": 112241,
+   "landed": 112235,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 6,
+   "recovered": 6,
+   "left_missing": 0,
+   "seconds": 3.1967570570000134,
+   "started_at": "2026-11-13 17:49:21.122498+00:00",
+   "finished_at": "2026-11-13 17:49:24.344448+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 37164,
+     "1": 37771,
+     "2": 37306
+    }
+   },
+   "missing_late": 6,
+   "missing_other": []
+  },
+  {
+   "id": 4,
+   "run_id": "cfac104064e2",
+   "records": 118240,
+   "landed": 118225,
+   "malformed": 0,
+   "future": 0,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 2.2792037889998937,
+   "started_at": "2026-11-13 17:49:51.122600+00:00",
+   "finished_at": "2026-11-13 17:49:53.417890+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 39165,
+     "1": 39742,
+     "2": 39333
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 5,
+   "run_id": "cfac104064e2",
+   "records": 124242,
+   "landed": 124226,
+   "malformed": 1,
+   "future": 0,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 3.381637065999712,
+   "started_at": "2026-11-13 17:50:21.122707+00:00",
+   "finished_at": "2026-11-13 17:50:24.531808+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 41171,
+     "1": 41765,
+     "2": 41306
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 6,
+   "run_id": "cfac104064e2",
+   "records": 130241,
+   "landed": 130224,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 3.1848049619998164,
+   "started_at": "2026-11-13 17:50:51.122809+00:00",
+   "finished_at": "2026-11-13 17:50:54.341640+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 43240,
+     "1": 43757,
+     "2": 43244
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 7,
+   "run_id": "cfac104064e2",
+   "records": 136244,
+   "landed": 136227,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 2.7386225209997974,
+   "started_at": "2026-11-13 17:51:21.122919+00:00",
+   "finished_at": "2026-11-13 17:51:23.876779+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 45198,
+     "1": 45754,
+     "2": 45292
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 8,
+   "run_id": "cfac104064e2",
+   "records": 142240,
+   "landed": 142223,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 3.263902005000091,
+   "started_at": "2026-11-13 17:51:51.123016+00:00",
+   "finished_at": "2026-11-13 17:51:54.414351+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 47150,
+     "1": 47775,
+     "2": 47315
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 9,
+   "run_id": "cfac104064e2",
+   "records": 148241,
+   "landed": 148224,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 15,
+   "recovered": 15,
+   "left_missing": 0,
+   "seconds": 2.439185422999799,
+   "started_at": "2026-11-13 17:52:21.123118+00:00",
+   "finished_at": "2026-11-13 17:52:23.578394+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 49147,
+     "1": 49798,
+     "2": 49296
+    }
+   },
+   "missing_late": 15,
+   "missing_other": []
+  },
+  {
+   "id": 10,
+   "run_id": "a72d5895c0f7",
+   "records": 150000,
+   "landed": 149994,
+   "malformed": 1,
+   "future": 1,
+   "canary": 0,
+   "missing": 4,
+   "recovered": 4,
+   "left_missing": 0,
+   "seconds": 9.949009793000187,
+   "started_at": "2026-11-13 17:52:57.078338+00:00",
+   "finished_at": "2026-11-13 17:53:07.047657+00:00",
+   "start_offsets": {
+    "wiki.recentchange": {
+     "0": 0,
+     "1": 0,
+     "2": 0
+    }
+   },
+   "end_offsets": {
+    "wiki.recentchange": {
+     "0": 49760,
+     "1": 50353,
+     "2": 49887
+    }
+   },
+   "missing_late": 4,
+   "missing_other": []
+  }
+ ],
+ "checks_final": [
+  {
+   "check": "stream_loss_lake",
+   "status": "fail",
+   "target": "lake.raw.recentchange",
+   "message": "33709 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 10,
+   "input_rows": 150000,
+   "dropped_by_watermark": 33709,
+   "covered_dropped": 0,
+   "uncovered_dropped": 33709,
+   "reconcile_passes": 0,
+   "still_missing": 0,
+   "malformed_rows": 1,
+   "future_rows": 1,
+   "canary_rows": 0,
+   "rejected_fraction": 1.3e-05,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  },
+  {
+   "check": "stream_loss_warehouse",
+   "status": "pass",
+   "target": "raw.recentchange",
+   "message": null,
+   "window_hours": 24.0,
+   "batches": 228,
+   "input_rows": 150000,
+   "dropped_by_watermark": 35654,
+   "covered_dropped": 35654,
+   "uncovered_dropped": 0,
+   "reconcile_passes": 10,
+   "still_missing": 0,
+   "malformed_rows": 1,
+   "future_rows": 1,
+   "canary_rows": 0,
+   "rejected_fraction": 1.3e-05,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  }
+ ],
+ "refresh_final": {
+  "exit": 0,
+  "seconds": 18.8,
+  "last_line": "{\"path\": \"catalog/20261113T175604562135Z-4210c46d-25a8-439e-a514-019a0264bf2d\", \"version\": \"20261113T175604562135Z-4210c46d-25a8-439e-a514-019a0264bf2d\", \"event\": \"catalog.published\", \"command\": \"warehouse-refresh\", \"run_id\": \"36d3e8dd4485\", \"level\": \"info\", \"timestamp\": \"2026-11-13T17:56:04.569597Z\"}"
+ },
+ "fct_edits_late": {
+  "in_raw": 100,
+  "edits_in_raw": 51,
+  "in_fct_edits": 51
+ },
+ "mart_answer": {
+  "sql": "SELECT count(*) AS edits FROM marts.fct_edits",
+  "exit": 0,
+  "text": "edits: 51,802.\n\nSQL:\n  SELECT COUNT(*) AS edits FROM marts.fct_edits LIMIT 1000\n\nedits\n-----\n51802\n\nProvenance:\n  marts.fct_edits: rebuilt 2026-11-13T17:55:54.045462+00:00, quality pass (37 checks)",
+  "provenance": [
+   {
+    "relation": "marts.fct_edits",
+    "last_refreshed_at": "2026-11-13T17:55:54.045462+00:00",
+    "stale": false,
+    "quality": "pass",
+    "checks": 37,
+    "failing": [],
+    "warning": [],
+    "covers": [
+     "marts.fct_edits",
+     "raw.recentchange",
+     "staging.namespaces",
+     "staging.stg_recentchange"
+    ]
+   }
+  ],
+  "rows": [
+   [
+    51802
+   ]
+  ]
+ },
+ "lake_hours": [
+  {
+   "check": "reconcile_hour:2026-10-16T23",
+   "status": "pass",
+   "failures": 0,
+   "late_events_hour": false,
+   "warehouse_distinct": 19271,
+   "lake_distinct": 19271,
+   "missing_in_lake": 0,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  },
+  {
+   "check": "reconcile_hour:2026-10-17T00",
+   "status": "pass",
+   "failures": 0,
+   "late_events_hour": false,
+   "warehouse_distinct": 30729,
+   "lake_distinct": 30729,
+   "missing_in_lake": 0,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  },
+  {
+   "check": "reconcile_hour:2026-11-13T17",
+   "status": "fail",
+   "failures": 74,
+   "late_events_hour": true,
+   "warehouse_distinct": 49998,
+   "lake_distinct": 49924,
+   "missing_in_lake": 74,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  }
+ ],
+ "marks": {
+  "start": 1794591830.2417383,
+  "replay_2": 1794591973.0281503,
+  "load": 1794592095.2952878,
+  "load_end": 1794592348.8430016,
+  "passes_end": 1794592349.89558,
+  "settled": 1794592372.1450422,
+  "final_pass_end": 1794592388.243305
+ },
+ "environment": {
+  "nproc": 4,
+  "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+  "mem_total_kb": 16366644,
+  "kernel": "7.0.0-1019-azure",
+  "docker": "29.4.2",
+  "compose": "5.1.3",
+  "containers": {
+   "kafka": {
+    "image": "apache/kafka:4.2.2@sha256:1213eb3943d551e5ed1fca7a4e109001cee35770b66a02a0c37a8964efe09b69",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "minio": {
+    "image": "tributary-minio:dev",
+    "mem_limit_bytes": 536870912,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "postgres": {
+    "image": "postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "stream": {
+    "image": "tributary-stream:dev",
+    "mem_limit_bytes": 3221225472,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "trino": {
+    "image": "trinodb/trino:484@sha256:2704eb53935af5e582d63d6033e9bf99d20c325e9b0e30b1016ef59a4773979f",
+    "mem_limit_bytes": 2147483648,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   }
+  }
+ },
+ "finished_at": "2026-11-13T17:56:06.989777+00:00"
+}

@@ -1,0 +1,445 @@
+{
+ "arm": "before",
+ "started_at": "2026-11-13T17:57:04.818973+00:00",
+ "replay_1": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 100.0,
+  "settle_s": 22.5,
+  "missing_in_postgres": 0
+ },
+ "refresh_after_replay_1": {
+  "exit": 0,
+  "seconds": 17.8,
+  "last_line": "{\"path\": \"catalog/20261113T175925090063Z-2d211f6b-790e-4d48-8ed6-4484f14ebab2\", \"version\": \"20261113T175925090063Z-2d211f6b-790e-4d48-8ed6-4484f14ebab2\", \"event\": \"catalog.published\", \"run_id\": \"9ef850d3dd45\", \"command\": \"warehouse-refresh\", \"level\": \"info\", \"timestamp\": \"2026-11-13T17:59:25.104482Z\"}"
+ },
+ "replay_2": {
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 100.0,
+  "settle_s": 22.3,
+  "progress": {
+   "lake": {
+    "batches": 2,
+    "input_rows": 47397,
+    "dropped_by_watermark": 33224,
+    "malformed_rows": 0,
+    "future_rows": 0
+   },
+   "warehouse": {
+    "batches": 47,
+    "input_rows": 50000,
+    "dropped_by_watermark": 35554,
+    "malformed_rows": 0,
+    "future_rows": 0
+   }
+  },
+  "missing_in_postgres": 0,
+  "checks": [
+   {
+    "check": "stream_loss_lake",
+    "status": "fail",
+    "target": "lake.raw.recentchange",
+    "message": "33224 rows dropped by the watermark (allowed 0)",
+    "window_hours": 24.0,
+    "batches": 4,
+    "input_rows": 97397,
+    "dropped_by_watermark": 33224,
+    "covered_dropped": 0,
+    "uncovered_dropped": 33224,
+    "reconcile_passes": 0,
+    "still_missing": 0,
+    "malformed_rows": 0,
+    "future_rows": 0,
+    "canary_rows": 0,
+    "rejected_fraction": 0.0,
+    "max_dropped_rows": 0,
+    "max_rejected_fraction": 0.001
+   },
+   {
+    "check": "stream_loss_warehouse",
+    "status": "fail",
+    "target": "raw.recentchange",
+    "message": "35554 rows dropped by the watermark (allowed 0)",
+    "window_hours": 24.0,
+    "batches": 94,
+    "input_rows": 100000,
+    "dropped_by_watermark": 35554,
+    "covered_dropped": 0,
+    "uncovered_dropped": 35554,
+    "reconcile_passes": 0,
+    "still_missing": 0,
+    "malformed_rows": 0,
+    "future_rows": 0,
+    "canary_rows": 0,
+    "rejected_fraction": 0.0,
+    "max_dropped_rows": 0,
+    "max_rejected_fraction": 0.001
+   }
+  ]
+ },
+ "load": {
+  "prefix": "3e8f8b09-3f9a-daed-321f",
+  "sent": 50000,
+  "delivered": 50000,
+  "failed": 0,
+  "seconds": 250.1,
+  "settle_s": 24.3,
+  "late_ids": [
+   "3e8f8b09-3f9a-daed-321f-01e5b9975733",
+   "3e8f8b09-3f9a-daed-321f-036a70562fd3",
+   "3e8f8b09-3f9a-daed-321f-047cffd4de93",
+   "3e8f8b09-3f9a-daed-321f-096759da3ba3",
+   "3e8f8b09-3f9a-daed-321f-0aec139ab043",
+   "3e8f8b09-3f9a-daed-321f-0ffe9f1ba303",
+   "3e8f8b09-3f9a-daed-321f-10f30a9855c3",
+   "3e8f8b09-3f9a-daed-321f-1279c55b2a63",
+   "3e8f8b09-3f9a-daed-321f-15c5f6194483",
+   "3e8f8b09-3f9a-daed-321f-174ab0d9dd23",
+   "3e8f8b09-3f9a-daed-321f-185f3c26cfe3",
+   "3e8f8b09-3f9a-daed-321f-1d47962c28f3",
+   "3e8f8b09-3f9a-daed-321f-1ecc50eca193",
+   "3e8f8b09-3f9a-daed-321f-218eea71d2b3",
+   "3e8f8b09-3f9a-daed-321f-2337a430ab53",
+   "3e8f8b09-3f9a-daed-321f-243e1e078463",
+   "3e8f8b09-3f9a-daed-321f-29308d84b723",
+   "3e8f8b09-3f9a-daed-321f-2ab944470fc3",
+   "3e8f8b09-3f9a-daed-321f-2f8a33c43e83",
+   "3e8f8b09-3f9a-daed-321f-309cbf42d143",
+   "3e8f8b09-3f9a-daed-321f-32057905a9e3",
+   "3e8f8b09-3f9a-daed-321f-358719480a53",
+   "3e8f8b09-3f9a-daed-321f-3717e48258a3",
+   "3e8f8b09-3f9a-daed-321f-381e5e89b5b3",
+   "3e8f8b09-3f9a-daed-321f-3d10ca16a473",
+   "3e8f8b09-3f9a-daed-321f-3e9984c93d13",
+   "3e8f8b09-3f9a-daed-321f-4035ab80d4d3",
+   "3e8f8b09-3f9a-daed-321f-45061701c793",
+   "3e8f8b09-3f9a-daed-321f-468cd1c05c33",
+   "3e8f8b09-3f9a-daed-321f-4b815d414ef3",
+   "3e8f8b09-3f9a-daed-321f-4c93c8ce61b3",
+   "3e8f8b09-3f9a-daed-321f-4e18828ef653",
+   "3e8f8b09-3f9a-daed-321f-519aa2d55ac3",
+   "3e8f8b09-3f9a-daed-321f-52ed0e0fe913",
+   "3e8f8b09-3f9a-daed-321f-5415e812c223",
+   "3e8f8b09-3f9a-daed-321f-58e65793f4e3",
+   "3e8f8b09-3f9a-daed-321f-5a6f2e524d83",
+   "3e8f8b09-3f9a-daed-321f-5df8c310e7a3",
+   "3e8f8b09-3f9a-daed-321f-5f619dd37c43",
+   "3e8f8b09-3f9a-daed-321f-63dedc6d5053",
+   "3e8f8b09-3f9a-daed-321f-64d34bea4313",
+   "3e8f8b09-3f9a-daed-321f-665805aadbb3",
+   "3e8f8b09-3f9a-daed-321f-69a4376b75d3",
+   "3e8f8b09-3f9a-daed-321f-6b2af12bca73",
+   "3e8f8b09-3f9a-daed-321f-6c556b312783",
+   "3e8f8b09-3f9a-daed-321f-7127d6bfd643",
+   "3e8f8b09-3f9a-daed-321f-72ac917eaee3",
+   "3e8f8b09-3f9a-daed-321f-77a11cff41a3",
+   "3e8f8b09-3f9a-daed-321f-78b3887c7063",
+   "3e8f8b09-3f9a-daed-321f-7a38423cc903",
+   "3e8f8b09-3f9a-daed-321f-7f0d31bdfbc3",
+   "3e8f8b09-3f9a-daed-321f-80a6d5779383",
+   "3e8f8b09-3f9a-daed-321f-822faf366823",
+   "3e8f8b09-3f9a-daed-321f-85bb40f48243",
+   "3e8f8b09-3f9a-daed-321f-87201ab71ae3",
+   "3e8f8b09-3f9a-daed-321f-8828f4ba77f3",
+   "3e8f8b09-3f9a-daed-321f-8d3d603b66b3",
+   "3e8f8b09-3f9a-daed-321f-8ea23afbff53",
+   "3e8f8b09-3f9a-daed-321f-93b4a678ee13",
+   "3e8f8b09-3f9a-daed-321f-948915f980d3",
+   "3e8f8b09-3f9a-daed-321f-960fefb81973",
+   "3e8f8b09-3f9a-daed-321f-99b18fccfde3",
+   "3e8f8b09-3f9a-daed-321f-9b005b390833",
+   "3e8f8b09-3f9a-daed-321f-9c0b350c6543",
+   "3e8f8b09-3f9a-daed-321f-a07209506f03",
+   "3e8f8b09-3f9a-daed-321f-a57ae3274813",
+   "3e8f8b09-3f9a-daed-321f-a6e3bde7c0b3",
+   "3e8f8b09-3f9a-daed-321f-abf42964f373",
+   "3e8f8b09-3f9a-daed-321f-acc694e5e233",
+   "3e8f8b09-3f9a-daed-321f-ae4f6ea47ad3",
+   "3e8f8b09-3f9a-daed-321f-b1db006294f3",
+   "3e8f8b09-3f9a-daed-321f-b341da256d93",
+   "3e8f8b09-3f9a-daed-321f-b95d23a97963",
+   "3e8f8b09-3f9a-daed-321f-bac3fa69ce03",
+   "3e8f8b09-3f9a-daed-321f-bfd469f6e0c3",
+   "3e8f8b09-3f9a-daed-321f-c1700ca09883",
+   "3e8f8b09-3f9a-daed-321f-c2f6c7631123",
+   "3e8f8b09-3f9a-daed-321f-c7cbb2e003e3",
+   "3e8f8b09-3f9a-daed-321f-c8dc3e6132a3",
+   "3e8f8b09-3f9a-daed-321f-ca42f8218b43",
+   "3e8f8b09-3f9a-daed-321f-cdaeadee2563",
+   "3e8f8b09-3f9a-daed-321f-cf5767aeba03",
+   "3e8f8b09-3f9a-daed-321f-d05fc1b59713",
+   "3e8f8b09-3f9a-daed-321f-d5504d3289d3",
+   "3e8f8b09-3f9a-daed-321f-d6d907f51e73",
+   "3e8f8b09-3f9a-daed-321f-dbabf3723133",
+   "3e8f8b09-3f9a-daed-321f-dcbc7ef323f3",
+   "3e8f8b09-3f9a-daed-321f-de2538b3b893",
+   "3e8f8b09-3f9a-daed-321f-e11da08d1403",
+   "3e8f8b09-3f9a-daed-321f-e2827b4deca3",
+   "3e8f8b09-3f9a-daed-321f-e5ee2c0a06c3",
+   "3e8f8b09-3f9a-daed-321f-e794e6ca9f63",
+   "3e8f8b09-3f9a-daed-321f-e869524b8e23",
+   "3e8f8b09-3f9a-daed-321f-ed91cc5eeb33",
+   "3e8f8b09-3f9a-daed-321f-f3eb759e1293",
+   "3e8f8b09-3f9a-daed-321f-f4fde11f0553",
+   "3e8f8b09-3f9a-daed-321f-f662bbdf9df3",
+   "3e8f8b09-3f9a-daed-321f-f9ce6c9c3413",
+   "3e8f8b09-3f9a-daed-321f-fb77275c8cb3",
+   "3e8f8b09-3f9a-daed-321f-fc4992ddbf73"
+  ],
+  "rejected_ids": {
+   "malformed": "3e8f8b09-3f9a-daed-321f-14b21a82e40b",
+   "future": "3e8f8b09-3f9a-daed-321f-fdb17c86465b"
+  },
+  "progress": {
+   "lake": {
+    "batches": 5,
+    "input_rows": 52603,
+    "dropped_by_watermark": 80,
+    "malformed_rows": 1,
+    "future_rows": 1
+   },
+   "warehouse": {
+    "batches": 125,
+    "input_rows": 50000,
+    "dropped_by_watermark": 100,
+    "malformed_rows": 1,
+    "future_rows": 1
+   }
+  },
+  "missing_late_before_final_pass": 100
+ },
+ "passes_during_load": [],
+ "stores": {
+  "postgres": {
+   "expected": 50000,
+   "rows": 49898,
+   "distinct": 49898,
+   "missing": 102,
+   "duplicates": 0,
+   "unexpected": 0,
+   "exactly_once": false,
+   "late_present": 0,
+   "malformed_present": false,
+   "future_present": false,
+   "missing_other_than_late_and_rejected": [],
+   "sample_missing": 0
+  },
+  "iceberg": {
+   "expected": 50000,
+   "rows": 49918,
+   "distinct": 49918,
+   "missing": 82,
+   "duplicates": 0,
+   "unexpected": 0,
+   "exactly_once": false,
+   "late_present": 20,
+   "malformed_present": false,
+   "future_present": false,
+   "missing_other_than_late_and_rejected": [],
+   "count": 49918,
+   "wait_s": 158.0
+  }
+ },
+ "progress_total": {
+  "lake": {
+   "batches": 9,
+   "input_rows": 150000,
+   "dropped_by_watermark": 33304,
+   "malformed_rows": 1,
+   "future_rows": 1
+  },
+  "warehouse": {
+   "batches": 219,
+   "input_rows": 150000,
+   "dropped_by_watermark": 35654,
+   "malformed_rows": 1,
+   "future_rows": 1
+  }
+ },
+ "passes": [],
+ "checks_final": [
+  {
+   "check": "stream_loss_lake",
+   "status": "fail",
+   "target": "lake.raw.recentchange",
+   "message": "33304 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 9,
+   "input_rows": 150000,
+   "dropped_by_watermark": 33304,
+   "covered_dropped": 0,
+   "uncovered_dropped": 33304,
+   "reconcile_passes": 0,
+   "still_missing": 0,
+   "malformed_rows": 1,
+   "future_rows": 1,
+   "canary_rows": 0,
+   "rejected_fraction": 1.3e-05,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  },
+  {
+   "check": "stream_loss_warehouse",
+   "status": "fail",
+   "target": "raw.recentchange",
+   "message": "35654 rows dropped by the watermark (allowed 0)",
+   "window_hours": 24.0,
+   "batches": 219,
+   "input_rows": 150000,
+   "dropped_by_watermark": 35654,
+   "covered_dropped": 0,
+   "uncovered_dropped": 35654,
+   "reconcile_passes": 0,
+   "still_missing": 0,
+   "malformed_rows": 1,
+   "future_rows": 1,
+   "canary_rows": 0,
+   "rejected_fraction": 1.3e-05,
+   "max_dropped_rows": 0,
+   "max_rejected_fraction": 0.001
+  }
+ ],
+ "refresh_final": {
+  "exit": 0,
+  "seconds": 19.2,
+  "last_line": "{\"path\": \"catalog/20261113T180902501874Z-9085d103-2c73-4c31-a903-28cdba97154c\", \"version\": \"20261113T180902501874Z-9085d103-2c73-4c31-a903-28cdba97154c\", \"event\": \"catalog.published\", \"command\": \"warehouse-refresh\", \"run_id\": \"ed6ba313e2c1\", \"level\": \"info\", \"timestamp\": \"2026-11-13T18:09:02.508132Z\"}"
+ },
+ "fct_edits_late": {
+  "in_raw": 0,
+  "edits_in_raw": 0,
+  "in_fct_edits": 0
+ },
+ "mart_answer": {
+  "sql": "SELECT count(*) AS edits FROM marts.fct_edits",
+  "exit": 0,
+  "text": "edits: 51,751.\n\nSQL:\n  SELECT COUNT(*) AS edits FROM marts.fct_edits LIMIT 1000\n\nedits\n-----\n51751\n\nProvenance:\n  marts.fct_edits: rebuilt 2026-11-13T18:08:51.938850+00:00, quality fail (37 checks)\n\nWarnings:\n  - marts.fct_edits: failing checks: stream_loss_warehouse",
+  "provenance": [
+   {
+    "relation": "marts.fct_edits",
+    "last_refreshed_at": "2026-11-13T18:08:51.938850+00:00",
+    "stale": false,
+    "quality": "fail",
+    "checks": 37,
+    "failing": [
+     "stream_loss_warehouse"
+    ],
+    "warning": [],
+    "covers": [
+     "marts.fct_edits",
+     "raw.recentchange",
+     "staging.namespaces",
+     "staging.stg_recentchange"
+    ]
+   }
+  ],
+  "rows": [
+   [
+    51751
+   ]
+  ]
+ },
+ "lake_hours": [
+  {
+   "check": "reconcile_hour:2026-10-16T23",
+   "status": "pass",
+   "failures": 0,
+   "late_events_hour": false,
+   "warehouse_distinct": 19271,
+   "lake_distinct": 19271,
+   "missing_in_lake": 0,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  },
+  {
+   "check": "reconcile_hour:2026-10-17T00",
+   "status": "pass",
+   "failures": 0,
+   "late_events_hour": false,
+   "warehouse_distinct": 30729,
+   "lake_distinct": 30729,
+   "missing_in_lake": 0,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  },
+  {
+   "check": "reconcile_hour:2026-11-13T17",
+   "status": "fail",
+   "failures": 20,
+   "late_events_hour": false,
+   "warehouse_distinct": 0,
+   "lake_distinct": 20,
+   "missing_in_lake": 0,
+   "extra_in_lake": 20,
+   "lake_duplicates": 0
+  },
+  {
+   "check": "reconcile_hour:2026-11-13T18",
+   "status": "pass",
+   "failures": 0,
+   "late_events_hour": false,
+   "warehouse_distinct": 49898,
+   "lake_distinct": 49898,
+   "missing_in_lake": 0,
+   "extra_in_lake": 0,
+   "lake_duplicates": 0
+  }
+ ],
+ "marks": {
+  "start": 1794592624.81899,
+  "replay_2": 1794592765.1965673,
+  "load": 1794592887.4565156,
+  "load_end": 1794593140.3265665,
+  "passes_end": 1794593140.3265676,
+  "settled": 1794593164.6400082,
+  "final_pass_end": 1794593164.6532934
+ },
+ "environment": {
+  "nproc": 4,
+  "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+  "mem_total_kb": 16366644,
+  "kernel": "7.0.0-1019-azure",
+  "docker": "29.4.2",
+  "compose": "5.1.3",
+  "containers": {
+   "kafka": {
+    "image": "apache/kafka:4.2.2@sha256:1213eb3943d551e5ed1fca7a4e109001cee35770b66a02a0c37a8964efe09b69",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "minio": {
+    "image": "tributary-minio:dev",
+    "mem_limit_bytes": 536870912,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "postgres": {
+    "image": "postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f",
+    "mem_limit_bytes": 1073741824,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "stream": {
+    "image": "tributary-stream:dev",
+    "mem_limit_bytes": 3221225472,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   },
+   "trino": {
+    "image": "trinodb/trino:484@sha256:2704eb53935af5e582d63d6033e9bf99d20c325e9b0e30b1016ef59a4773979f",
+    "mem_limit_bytes": 2147483648,
+    "nano_cpus": null,
+    "cpu_shares": null,
+    "cpuset": null
+   }
+  }
+ },
+ "finished_at": "2026-11-13T18:09:05.468428+00:00"
+}

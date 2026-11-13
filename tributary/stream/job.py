@@ -23,7 +23,13 @@ from pyspark.sql.streaming.query import StreamingQuery
 
 from tributary.stream.lake import catalog_conf, start_lake_query
 from tributary.stream.parse import OBSERVATION, deduplicate, parse_events
-from tributary.stream.sink import BatchHealth, PostgresSink, ensure_schema, record_health
+from tributary.stream.sink import (
+    BatchHealth,
+    Offsets,
+    PostgresSink,
+    ensure_schema,
+    record_health,
+)
 
 if TYPE_CHECKING:
     from pyspark.sql.streaming.listener import (
@@ -182,13 +188,15 @@ def _watermark(raw: str | None) -> datetime | None:
 
 def batch_health(p: StreamingQueryProgress) -> BatchHealth:
     """A progress report's loss counters: late rows dropped by the state operators,
-    rejected records from the parser's observed metric (absent counts are 0)."""
+    rejected records from the parser's observed metric (absent counts are 0), and
+    the batch's Kafka offsets when the query reads one topic."""
     row = p.observedMetrics.get(OBSERVATION)
     observed = row.asDict() if row is not None else {}
 
     def count(name: str) -> int:
         return int(observed.get(name) or 0)
 
+    source = p.sources[0] if len(p.sources) == 1 else None
     return BatchHealth(
         query=p.name or "",
         batch_id=p.batchId,
@@ -198,7 +206,26 @@ def batch_health(p: StreamingQueryProgress) -> BatchHealth:
         future_rows=count("future_rows"),
         canary_rows=count("canary_rows"),
         watermark=_watermark(p.eventTime.get("watermark")),
+        start_offsets=kafka_offsets(source.startOffset) if source else None,
+        end_offsets=kafka_offsets(source.endOffset) if source else None,
+        query_id=str(p.id) if p.id else None,
     )
+
+
+def kafka_offsets(raw: str | None) -> Offsets | None:
+    """A progress report's Kafka offsets (``{"topic": {"0": 12, ...}}``); None for any other
+    source's offsets (a file source reports ``{"logOffset": n}``) or none at all."""
+    parsed = _offsets(raw)
+    if not isinstance(parsed, dict) or not parsed:
+        return None
+    out: Offsets = {}
+    for topic, partitions in parsed.items():
+        if not isinstance(partitions, dict) or not partitions:
+            return None
+        if not all(isinstance(o, int) and not isinstance(o, bool) for o in partitions.values()):
+            return None
+        out[str(topic)] = {str(k): int(v) for k, v in partitions.items()}
+    return out
 
 
 class ProgressLogger(StreamingQueryListener):
@@ -210,10 +237,13 @@ class ProgressLogger(StreamingQueryListener):
     logged and never stops the query: the counters are also in the log line.
     """
 
-    def __init__(self, conninfo: str | None = None) -> None:
+    def __init__(self, conninfo: str | None = None, *, warehouse_writes: bool = True) -> None:
         # Listener callbacks run on a py4j thread, which does not inherit contextvars.
         self._log = log.bind(**structlog.contextvars.get_contextvars())
         self._conninfo = conninfo
+        # A discarding sink (the scaling benchmark's) lands nothing, so its offsets
+        # must never tell a reconciliation pass that the warehouse holds them.
+        self._warehouse_writes = warehouse_writes
 
     @override
     def onQueryStarted(self, event: QueryStartedEvent) -> None:
@@ -252,8 +282,11 @@ class ProgressLogger(StreamingQueryListener):
         )
         if self._conninfo is None or p.numInputRows == 0:
             return
+        health = batch_health(p)
+        if health.query == QUERY_NAME and not self._warehouse_writes:
+            health = health._replace(start_offsets=None, end_offsets=None)
         try:
-            record_health(self._conninfo, batch_health(p))
+            record_health(self._conninfo, health)
         except Exception as exc:  # any database error: the query must keep running
             self._log.warning("stream.health_not_recorded", batch_id=p.batchId, error=str(exc))
 
@@ -337,7 +370,11 @@ def run(settings: Settings, *, available_now: bool = False) -> None:
 
     previous = {s: signal.signal(s, request_stop) for s in (signal.SIGTERM, signal.SIGINT)}
     try:
-        spark.streams.addListener(ProgressLogger(settings.pg_conninfo))
+        spark.streams.addListener(
+            ProgressLogger(
+                settings.pg_conninfo, warehouse_writes=settings.stream_sink == "postgres"
+            )
+        )
         supervise(start_queries(spark, settings, available_now=available_now), stop)
     finally:
         for s, handler in previous.items():

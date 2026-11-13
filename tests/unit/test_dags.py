@@ -72,10 +72,18 @@ def test_raw_recentchange_polls_and_reads_its_own_events(bag: dict[str, Any]) ->
     assert dag["dagrun_timeout"] < 5 * 60
     task = dag["tasks"]["detect_new_rows"]
     assert task["inlets"] == task["outlets"] == [assets.RAW_RECENTCHANGE]
-    # The stream_loss checks run every five minutes beside it, whether rows arrived or not.
+    # The stream_loss checks run every five minutes beside it, whether rows arrived or not,
+    # after a reconciliation pass has had the chance to cover the drops (passed, skipped
+    # or failed: all_done).
     check = dag["tasks"]["check_stream"]
-    assert check["upstream"] == []
+    assert check["upstream"] == ["reconcile_drops"]
+    assert check["trigger_rule"] == "all_done"
     assert check["outlets"] == []
+    assert dag["tasks"]["reconcile_drops"]["upstream"] == []
+    # A long pass is cut off with time left for check_stream inside the run's timeout.
+    timeout = dag["tasks"]["reconcile_drops"]["execution_timeout"]
+    assert timeout is not None
+    assert timeout <= dag["dagrun_timeout"] - 60
 
 
 def test_warehouse_refresh_is_scheduled_on_the_raw_asset(bag: dict[str, Any]) -> None:

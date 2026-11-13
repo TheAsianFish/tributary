@@ -28,6 +28,10 @@ lake_app = typer.Typer(
     no_args_is_help=True, help="Maintain and check the Iceberg lake through Trino."
 )
 app.add_typer(lake_app, name="lake")
+stream_app = typer.Typer(
+    help="The Spark stream job, and the reconciliation of its topic against the warehouse."
+)
+app.add_typer(stream_app, name="stream")
 bench_app = typer.Typer(
     no_args_is_help=True, help="Generate the query-engine benchmark's data (make bench-query)."
 )
@@ -87,18 +91,85 @@ def produce(
         raise typer.Exit(1)
 
 
-@app.command()
+@stream_app.callback(invoke_without_command=True)
 def stream(
+    ctx: typer.Context,
     available_now: Annotated[
         bool,
         typer.Option("--available-now", help="Process what is in Kafka now, then stop."),
     ] = False,
 ) -> None:
-    """Run the Spark job: Kafka → watermark + dedup → raw.recentchange."""
+    """Run the Spark job: Kafka → watermark + dedup → raw.recentchange (and the lake)."""
+    if ctx.invoked_subcommand is not None:
+        return
     from tributary.stream.job import run
 
     bind_run_id("stream")
     run(get_settings(), available_now=available_now)
+
+
+@stream_app.command("reconcile")
+def stream_reconcile(
+    start: Annotated[
+        str,
+        typer.Option(
+            help="earliest: everything the topic holds; uncovered: from the first batch "
+            "whose dropped rows no pass has covered (nothing to do if there is none)."
+        ),
+    ] = "earliest",
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Report missing events; write nothing back.")
+    ] = False,
+    every: Annotated[
+        float | None,
+        typer.Option(min=1.0, help="Start a pass every N seconds until SIGTERM or SIGINT."),
+    ] = None,
+) -> None:
+    """Judge the topic against raw.recentchange up to the committed offsets; write the
+    missing events back. One JSON line per pass (also in ops.reconcile_runs)."""
+    import signal
+    import threading
+    import time
+
+    from tributary.stream.reconcile import NothingToJudgeError, build_session, run_pass
+
+    if start not in ("earliest", "uncovered"):
+        raise typer.BadParameter("must be earliest or uncovered", param_hint="--start")
+    run_id = bind_run_id("stream-reconcile")
+    settings = get_settings()
+    t0 = time.perf_counter()
+    spark = build_session(settings)
+    session_s = time.perf_counter() - t0
+    stop = threading.Event()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda *_: stop.set())
+    try:
+        while True:
+            began = time.monotonic()
+            try:
+                result = run_pass(
+                    spark,
+                    settings,
+                    run_id,
+                    start="uncovered" if start == "uncovered" else "earliest",
+                    dry_run=dry_run,
+                )
+            except NothingToJudgeError as exc:
+                typer.echo(f"run {run_id}: {exc}", err=True)
+                if every is None:
+                    raise typer.Exit(1) from None
+                result = None
+            except Exception as exc:  # a failed pass records nothing; the next one retries
+                if every is None:
+                    raise
+                log.error("reconcile.pass_failed", run_id=run_id, error=str(exc)[:500])
+                result = None
+            line = result.summary() if result else {"pass_id": None, "records": 0}
+            typer.echo(json.dumps({**line, "session_s": round(session_s, 3)}, default=str))
+            if every is None or stop.wait(max(0.0, every - (time.monotonic() - began))):
+                break
+    finally:
+        spark.stop()
 
 
 @sample_app.command("capture")

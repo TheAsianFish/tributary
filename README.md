@@ -20,7 +20,8 @@ every claim about it is a command that re-runs the measurement.
 
 ![Demo: the running Compose stack, the 50,000 sample events in PostgreSQL once each, guarded queries through tributary sql (a DELETE and a disguised pg_terminate_backend both blocked), and a question answered by tributary ask with its SQL and provenance](docs/demo.gif)
 
-**Status: release 0.1.0 (all eight milestones).** Kafka feeds one Spark
+**Status: release 0.1.0, and twelve of the thirteen milestones in
+[PLAN.md](PLAN.md) done.** Kafka feeds one Spark
 application with two streaming queries: one into the PostgreSQL warehouse,
 modelled with dbt, and one into an Iceberg table on MinIO, queried with Trino.
 Airflow rebuilds the marts when new rows land, records every quality check in
@@ -37,7 +38,10 @@ the stream job and the broker mid-batch and checks every event landed once in
 both stores. `make bench-scale` measures throughput at 1, 3 and 6 partitions
 and names what limits it. `make bench-skew` measures what one event
 stamped in the future costs the events after it, against a prediction made
-from the sample first. `make bench-query` times ten queries on PostgreSQL,
+from the sample first. `make bench-late` replays the sample twice and sends
+late, malformed and future events, to show that a reconciliation of the
+topic tells a late copy from a lost event and writes the lost ones back.
+`make bench-query` times ten queries on PostgreSQL,
 Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured
 numbers are in [RESULTS.md](RESULTS.md), and changes in
 [CHANGELOG.md](CHANGELOG.md).
@@ -123,6 +127,7 @@ The same steps run by hand from the host:
 uv sync --all-extras
 uv run tributary warehouse refresh                 # dbt seed+run, dbt test -> ops.quality_runs, publish the catalog
 uv run tributary lake reconcile                    # closed hours, warehouse vs lake -> ops.quality_runs
+uv run tributary stream reconcile                  # the topic vs raw.recentchange; missing events written back
 uv run tributary lake pruning 2026-10-16T23        # does a one-hour filter read only that hour's files?
 uv run tributary lake maintain                     # compact closed hours, expire snapshots, remove orphans
 ```
@@ -273,7 +278,7 @@ different failure:
 | The same event sent twice (re-run, live-stream reconnect) | `dropDuplicatesWithinWatermark` on the event UUID, keyed in Spark's state store. A copy arriving after its key expired is normally behind the watermark and dropped as late; if the watermark jumped by more than the delay in one batch (after an outage) it passes as a new key, and then the primary key below stops it (both cases pinned by a test). |
 | A micro-batch replayed after a crash between the sink's write and Spark's commit | The sink: `COPY` into a temp table, then `INSERT ... ON CONFLICT (event_id) DO NOTHING`. Writing the same batch twice is a no-op. Spark's state cannot help here: the replay re-runs the batch from the previous state. |
 | Offsets lost or truncated in Kafka | `failOnDataLoss=true`: the job stops instead of silently skipping. |
-| Events that arrive late | The watermark delay (10 min) is chosen from the measured lateness of the real stream: p99 8 s, max 143 s over 50,000 events, 0 that a 10-minute delay would drop. Rows dropped by the watermark are counted per batch in `ops.stream_progress`, and the `stream_loss` quality check fails on any. |
+| Events that arrive late | The watermark delay (10 min) is chosen from the measured lateness of the real stream: p99 8 s, max 143 s over 50,000 events, 0 that a 10-minute delay would drop. Rows dropped by the watermark are counted per batch in `ops.stream_progress` with the batch's Kafka offsets. A dropped row may be a copy of an event that landed, so `tributary stream reconcile` reads the topic up to the committed offsets, classes every record as landed, rejected or missing, and writes the missing ones back; the `stream_loss` check fails only on drops no pass has read or events a pass left missing. |
 | One event stamped in the future (a fast clock upstream, a replay re-timed past the clock) | The watermark only moves forward, so one such event accepted would make every later real event "late". The parser rejects an event more than half the watermark delay (300 s) ahead of its Kafka record time and counts it as `future`. Before this bound (it was a day), one event 23 h ahead cost 39,000 of the sample's 50,000 events in local mode and 44,350 of 50,000 on the Compose stack; now 0. |
 | A poison message (bad JSON, bad UUID, a timestamp past year 9999, a NUL byte in a text field) | Counted as malformed and filtered before the sink, so one bad record cannot fail every replay of its batch. |
 
@@ -601,6 +606,7 @@ runs are listed there under "To measure", with their estimated cost.
 | Sample lateness (50,000 live events, stream order) | 54% out of order; p99 8 s, max 143 s; 0 dropped at a 10-min watermark |
 | One event stamped X s ahead, sample in 100 micro-batches (`make bench-skew`, Spark local mode) | With the old one-day bound: 0 lost up to 450 s, 2 at 600 s, 6,010 at 900 s, 39,000 of 50,000 at 3,600 s and 23 h, equal to the prediction made from the sample before the run, the same events each time; first lossy skew 575 s. With the 300 s bound: 0 lost at every skew, and 0 of the 50,000 real events rejected |
 | One event 23 h ahead on the Compose stack (`make bench-poison`) | Old bound: 44,350 of 50,000 lost in PostgreSQL and 31,551 in Iceberg, `stream_loss` red on both; 300 s bound: the poison rejected as `future`, 0 real events lost in either store (49,999 landed), both checks green |
+| A second replay of the sample, then 50,000 events with 100 sent 15 min behind the watermark (`make bench-late`) | 35,554 rows dropped on the second replay, as predicted from the sample, with 0 events lost. Without reconciliation `stream_loss` stays red and the 100 late events are lost. With a pass every 30 s: 0 in-flight events reported missing over 10 passes, the 100 late events written back (all 51 edits among them reach `marts.fct_edits`), both rejected records counted and not landed, the check green; one pass over the whole 150,000-record topic 9.9 s. Iceberg still lacks 74 of the late events (never repaired), which the per-hour comparison names |
 | `docker compose up` replay | 50,000 produced, 50,000 rows, 0 dropped, 0 malformed; last row 113 s after `up` |
 | End-to-end test | 5,000 events land once; re-sending all of them changes no row and does not stall or restart the job |
 | Both sinks on the full sample | 50,000 / 50,000 distinct ids in PostgreSQL (last row 112 s after the producer started) and in Iceberg (133 s, one-minute trigger) |
@@ -644,19 +650,16 @@ the release steps and [CHANGELOG.md](CHANGELOG.md) what each version holds.
 
 ## Roadmap
 
-All eleven milestones in [PLAN.md](PLAN.md) are done, on local-model
+Twelve milestones in [PLAN.md](PLAN.md) are done, on local-model
 recordings where they named Claude (there was no API key). M10 tested the
 benchmark default on 50 questions that did not pick it, under a rule
 written down first. M11 bounded how far ahead of the clock one event may be,
 measured what the old bound cost against a prediction made first, and made
-dropped and rejected rows a quality check. Two more are planned
-(PLAN.md, "Evolution round 2"):
+dropped and rejected rows a quality check. M12 made that check tell a late
+copy from a lost event, by reconciling the topic against the landing table,
+and writes the lost ones back. One more is planned (PLAN.md, "Evolution
+round 2"):
 
-- **M12, a dropped row is a loss only if the event is missing.** The
-  `stream_loss` check counts a late duplicate of a landed event as a drop
-  (5,000 events sent twice: 0 lost, 5,000 "dropped"), and a truly late
-  event is never recovered. A reconciliation of the Kafka topic against the
-  landing table tells the two apart and writes the missing events back.
 - **M13, an answer that says when it is probably wrong.** The model calls
   every answer "high" confidence. In the recorded BIRD runs, two prompt
   variants returning the same rows goes with 32 of 41 right answers against
@@ -682,6 +685,11 @@ After those:
 4. **A shared rate-limit store** for multi-replica API deployments.
 5. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
    dialect for the guard, so `/sql` can run guarded queries on the lake.
+6. **Late events into the lake.** A reconciliation pass writes missing
+   events back to PostgreSQL only; the lake keeps its gap (74 of 100 late
+   events in `make bench-late`), and its `stream_loss` check stays a plain
+   counter. Writing them back needs a second writer on the Iceberg table
+   beside the streaming one, with its own fault runs.
 
 ## Licence
 

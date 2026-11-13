@@ -119,16 +119,10 @@ def _as_int(flag: Column) -> Column:
     return F.when(flag, 1).otherwise(0)
 
 
-def parse_events(kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SKEW_S) -> DataFrame:
-    """Parse Kafka source rows into the columns of ``raw.recentchange``.
-
-    Reads the Kafka source columns ``value``, ``partition``, ``offset`` and
-    ``timestamp`` and returns exactly :data:`tributary.events.COLUMNS`, in order.
-    ``event_ts`` comes from the MediaWiki ``timestamp``, ``emitted_at`` from
-    ``meta.dt`` (NULL when it does not parse). Requires the session time zone UTC.
-    """
+def _flag(kafka_df: DataFrame, max_future_skew_s: int) -> DataFrame:
+    """The Kafka columns beside the parsed event ``e`` and the flags every rule reads."""
     e = F.col("e")
-    flagged = (
+    return (
         kafka_df.select(
             F.from_json(F.col("value").cast("string"), EVENT_SCHEMA).alias("e"),
             F.col("partition"),
@@ -141,15 +135,12 @@ def parse_events(kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SK
             F.col("_wellformed") & _within_skew(e, F.col("timestamp"), max_future_skew_s),
         )
         .withColumn("_canary", F.coalesce(e["meta"]["domain"] == F.lit("canary"), F.lit(False)))
-        .observe(
-            OBSERVATION,
-            F.count(F.lit(1)).alias("input_rows"),
-            F.sum(_as_int(~F.col("_wellformed"))).alias("malformed_rows"),
-            F.sum(_as_int(F.col("_wellformed") & ~F.col("_valid"))).alias("future_rows"),
-            F.sum(_as_int(F.col("_valid") & F.col("_canary"))).alias("canary_rows"),
-        )
-        .where(F.col("_valid") & ~F.col("_canary"))
     )
+
+
+def _row_columns() -> list[Column]:
+    """The columns of ``raw.recentchange`` over a flagged frame, in :data:`COLUMNS` order."""
+    e = F.col("e")
     columns = {
         "event_id": e["meta"]["id"],
         "event_ts": F.timestamp_seconds(e["timestamp"]),
@@ -174,7 +165,64 @@ def parse_events(kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SK
         "kafka_offset": F.col("offset"),
         "kafka_ts": F.col("timestamp"),
     }
-    return flagged.select(*(columns[name].alias(name) for name in COLUMNS))
+    return [columns[name].alias(name) for name in COLUMNS]
+
+
+def parse_events(kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SKEW_S) -> DataFrame:
+    """Parse Kafka source rows into the columns of ``raw.recentchange``.
+
+    Reads the Kafka source columns ``value``, ``partition``, ``offset`` and
+    ``timestamp`` and returns exactly :data:`tributary.events.COLUMNS`, in order.
+    ``event_ts`` comes from the MediaWiki ``timestamp``, ``emitted_at`` from
+    ``meta.dt`` (NULL when it does not parse). Requires the session time zone UTC.
+    """
+    flagged = (
+        _flag(kafka_df, max_future_skew_s)
+        .observe(
+            OBSERVATION,
+            F.count(F.lit(1)).alias("input_rows"),
+            F.sum(_as_int(~F.col("_wellformed"))).alias("malformed_rows"),
+            F.sum(_as_int(F.col("_wellformed") & ~F.col("_valid"))).alias("future_rows"),
+            F.sum(_as_int(F.col("_valid") & F.col("_canary"))).alias("canary_rows"),
+        )
+        .where(F.col("_valid") & ~F.col("_canary"))
+    )
+    return flagged.select(*_row_columns())
+
+
+REJECT_REASON = "reject_reason"
+"""The extra column of :func:`classify_events`: NULL for a row the job would keep."""
+
+
+def classify_events(
+    kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SKEW_S
+) -> DataFrame:
+    """Every Kafka record, as :func:`parse_events` would see it, with why it would drop it.
+
+    The columns of :func:`parse_events` (all NULL on a rejected record but
+    ``kafka_partition``, ``kafka_offset`` and ``kafka_ts``) plus
+    :data:`REJECT_REASON`: ``malformed``, ``future`` or ``canary`` by the same
+    rules and in the same order as the stream job, NULL for a row it keeps. The
+    reconciliation reads the topic through this, so a record it judges is the
+    record the job judged.
+    """
+    reason = (
+        F.when(~F.col("_wellformed"), F.lit("malformed"))
+        .when(~F.col("_valid"), F.lit("future"))
+        .when(F.col("_canary"), F.lit("canary"))
+    )
+    flagged = _flag(kafka_df, max_future_skew_s).withColumn(REJECT_REASON, reason)
+    kept = F.col(REJECT_REASON).isNull()
+    # A rejected record's values are not read and may not even convert to Python (an
+    # event time past year 9999), so only where it sits in the topic is kept.
+    columns = [
+        c if name in _POSITION else F.when(kept, c).alias(name)
+        for name, c in zip(COLUMNS, _row_columns(), strict=True)
+    ]
+    return flagged.select(*columns, F.col(REJECT_REASON))
+
+
+_POSITION = frozenset({"kafka_partition", "kafka_offset", "kafka_ts"})
 
 
 def deduplicate(df: DataFrame, watermark_delay: str) -> DataFrame:

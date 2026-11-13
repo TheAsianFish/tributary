@@ -96,7 +96,8 @@ class Template:
 
     def render(self, event_id: str, now: float, ahead_s: int | None = None) -> bytes:
         """The event sent at ``now``; ``ahead_s`` stamps it that far past ``now`` instead
-        of its own lateness behind it (the poison of ``bench.faults``' ``poison`` scenario)."""
+        of its own lateness behind it (the poison of ``bench.faults``' ``poison`` scenario;
+        negative: that far behind, ``bench.late``'s late events)."""
         stamp = datetime.fromtimestamp(now, UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
         ts = int(now) + ahead_s if ahead_s is not None else int(now) - self.lateness_s
         values = {"id": event_id, "dt": stamp, "ts": str(ts)}
@@ -160,6 +161,22 @@ class LoadPlan:
     limit: int | None = None
     poison: tuple[int, int] | None = None
     """``(seq, ahead_s)``: event ``seq`` is stamped ``ahead_s`` past its send time."""
+    shifts: tuple[tuple[int, int], ...] = ()
+    """More ``(seq, ahead_s)`` pairs, ``ahead_s`` negative for an event sent late."""
+    malformed: tuple[int, ...] = ()
+    """Sequence numbers sent as a record that is not JSON (the key is still the id)."""
+
+    def stamps(self) -> dict[int, int]:
+        """Every event stamped off its own lateness: seq to seconds past its send time."""
+        out = dict(self.shifts)
+        if self.poison is not None:
+            out[self.poison[0]] = self.poison[1]
+        return out
+
+
+def malformed_value(event_id: str) -> bytes:
+    """A record the parser rejects as malformed: a JSON object cut off after the id."""
+    return b'{"meta":{"id":"' + event_id.encode() + b'","dt":'
 
 
 def due(elapsed: float, rate: float) -> int:
@@ -219,6 +236,8 @@ def _worker(plan: LoadPlan, index: int, start: Any, shared: _Shared) -> None:
     time.sleep(max(0.0, t0 - time.monotonic()))
     seq = index
     limit = plan.limit
+    stamps = plan.stamps()
+    broken = frozenset(plan.malformed)
     step_start = t0
     try:
         for step_no, step in enumerate(plan.steps):
@@ -243,8 +262,11 @@ def _worker(plan: LoadPlan, index: int, start: Any, shared: _Shared) -> None:
                         exhausted = True
                         break
                     event_id = bench_id(plan.prefix, seq)
-                    ahead = plan.poison[1] if plan.poison and seq == plan.poison[0] else None
-                    value = templates[seq % len(templates)].render(event_id, wall, ahead)
+                    if seq in broken:
+                        value = malformed_value(event_id)
+                    else:
+                        template = templates[seq % len(templates)]
+                        value = template.render(event_id, wall, stamps.get(seq))
                     while True:
                         try:
                             producer.produce(
