@@ -49,6 +49,24 @@ CREATE TABLE IF NOT EXISTS ops.stream_progress (
     PRIMARY KEY (query, batch_id)
 );
 
+-- What each batch lost on the way in, written from the query's progress report (so
+-- for the lake query too, and for a batch whose every row was dropped, which the
+-- warehouse sink never sees): rows the watermark dropped as late, and records the
+-- parser rejected, by reason. A row the progress report wrote alone has no
+-- max_event_ts and rows = inserted = 0.
+ALTER TABLE ops.stream_progress ALTER COLUMN max_event_ts DROP NOT NULL;
+ALTER TABLE ops.stream_progress ALTER COLUMN rows SET DEFAULT 0;
+ALTER TABLE ops.stream_progress ALTER COLUMN inserted SET DEFAULT 0;
+ALTER TABLE ops.stream_progress
+    ADD COLUMN IF NOT EXISTS input_rows           bigint,
+    ADD COLUMN IF NOT EXISTS dropped_by_watermark bigint,
+    ADD COLUMN IF NOT EXISTS malformed_rows       bigint,
+    ADD COLUMN IF NOT EXISTS future_rows          bigint,
+    ADD COLUMN IF NOT EXISTS canary_rows          bigint,
+    ADD COLUMN IF NOT EXISTS watermark            timestamptz,
+    ADD COLUMN IF NOT EXISTS reported_at          timestamptz;
+CREATE INDEX IF NOT EXISTS stream_progress_committed ON ops.stream_progress (committed_at);
+
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS
 SELECT DISTINCT ON (check_name) *

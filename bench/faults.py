@@ -113,8 +113,10 @@ def wait_in_flight(cid: str, query: str, timeout: float) -> tuple[bool, int | No
 
 KILL_MODES = ("warehouse-written", "lake-committed", "warehouse", "lake")
 
+# rows > 0: the sink's own rows, not the loss counters a progress report adds after commit.
 PROGRESS_SQL = (
-    "SELECT coalesce(max(batch_id), -1) FROM ops.stream_progress WHERE query = 'warehouse'"
+    "SELECT coalesce(max(batch_id), -1) FROM ops.stream_progress"
+    " WHERE query = 'warehouse' AND rows > 0"
 )
 METADATA_SQL = (
     "SELECT metadata_location FROM iceberg_catalog.iceberg_tables"

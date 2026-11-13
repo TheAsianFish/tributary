@@ -1,13 +1,20 @@
 """Kafka records to warehouse rows: the Spark twin of :func:`tributary.events.to_row`.
 
 The JSON schema is explicit (no inference), so a field of the wrong type becomes
-NULL instead of changing the plan. A record is dropped when it is not JSON, has
-no valid lowercase UUID, lacks ``timestamp``, ``wiki`` or ``type``, has a
-``timestamp`` more than a day ahead of its Kafka record time (it would ratchet
-the watermark and drop every later event), carries a NUL byte in a text field
-(PostgreSQL rejects it, and the sink would fail the same batch on every
-replay), or is a Wikimedia canary. The counts are published
-as the observed metric ``parse`` in every ``StreamingQueryProgress``.
+NULL instead of changing the plan. A record is dropped, and counted by reason
+in the observed metric ``parse`` of every ``StreamingQueryProgress``, when it is:
+
+``malformed``
+    not JSON, without a valid lowercase UUID, without ``timestamp``, ``wiki``
+    or ``type``, or with a NUL byte in a text field (PostgreSQL rejects it,
+    and the sink would fail the same batch on every replay);
+``future``
+    well formed, but its ``timestamp`` is more than the skew bound ahead of its
+    Kafka record time. Accepted, it would move the watermark past the clock
+    and every later real event would be dropped as late (see
+    :data:`tributary.events.DEFAULT_FUTURE_SKEW_FRACTION`);
+``canary``
+    a Wikimedia canary (valid, but not an edit).
 """
 
 from __future__ import annotations
@@ -23,7 +30,13 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from tributary.events import COLUMNS, MAX_EVENT_TS, MAX_FUTURE_SKEW_S, MIN_EVENT_TS, UUID_RE
+from tributary.events import (
+    COLUMNS,
+    DEFAULT_FUTURE_SKEW_S,
+    MAX_EVENT_TS,
+    MIN_EVENT_TS,
+    UUID_RE,
+)
 
 OBSERVATION = "parse"
 
@@ -79,15 +92,21 @@ def _has_nul(e: Column) -> Column:
     return F.coalesce(clause, F.lit(False))
 
 
-def _is_valid(e: Column, kafka_ts: Column) -> Column:
+def _is_wellformed(e: Column) -> Column:
     return F.coalesce(
         e["meta"]["id"].rlike(UUID_RE.pattern)
         & e["timestamp"].between(MIN_EVENT_TS, MAX_EVENT_TS)
-        & (e["timestamp"] <= F.unix_timestamp(kafka_ts) + MAX_FUTURE_SKEW_S)
         & e["wiki"].isNotNull()
         & e["type"].isNotNull()
         & ~_has_nul(e),
         F.lit(False),
+    )
+
+
+def _within_skew(e: Column, kafka_ts: Column, max_future_skew_s: int) -> Column:
+    """``timestamp`` at most the bound ahead of the record time (whole seconds, as stored)."""
+    return F.coalesce(
+        e["timestamp"] <= F.unix_timestamp(kafka_ts) + F.lit(max_future_skew_s), F.lit(False)
     )
 
 
@@ -100,7 +119,7 @@ def _as_int(flag: Column) -> Column:
     return F.when(flag, 1).otherwise(0)
 
 
-def parse_events(kafka_df: DataFrame) -> DataFrame:
+def parse_events(kafka_df: DataFrame, max_future_skew_s: int = DEFAULT_FUTURE_SKEW_S) -> DataFrame:
     """Parse Kafka source rows into the columns of ``raw.recentchange``.
 
     Reads the Kafka source columns ``value``, ``partition``, ``offset`` and
@@ -116,12 +135,17 @@ def parse_events(kafka_df: DataFrame) -> DataFrame:
             F.col("offset"),
             F.col("timestamp"),
         )
-        .withColumn("_valid", _is_valid(e, F.col("timestamp")))
+        .withColumn("_wellformed", _is_wellformed(e))
+        .withColumn(
+            "_valid",
+            F.col("_wellformed") & _within_skew(e, F.col("timestamp"), max_future_skew_s),
+        )
         .withColumn("_canary", F.coalesce(e["meta"]["domain"] == F.lit("canary"), F.lit(False)))
         .observe(
             OBSERVATION,
             F.count(F.lit(1)).alias("input_rows"),
-            F.sum(_as_int(~F.col("_valid"))).alias("malformed_rows"),
+            F.sum(_as_int(~F.col("_wellformed"))).alias("malformed_rows"),
+            F.sum(_as_int(F.col("_wellformed") & ~F.col("_valid"))).alias("future_rows"),
             F.sum(_as_int(F.col("_valid") & F.col("_canary"))).alias("canary_rows"),
         )
         .where(F.col("_valid") & ~F.col("_canary"))

@@ -11,6 +11,7 @@ import contextlib
 import json
 import signal
 import threading
+from datetime import datetime
 from types import FrameType
 from typing import TYPE_CHECKING, override
 
@@ -21,14 +22,15 @@ from pyspark.sql.streaming.listener import StreamingQueryListener
 from pyspark.sql.streaming.query import StreamingQuery
 
 from tributary.stream.lake import catalog_conf, start_lake_query
-from tributary.stream.parse import deduplicate, parse_events
-from tributary.stream.sink import PostgresSink, ensure_schema
+from tributary.stream.parse import OBSERVATION, deduplicate, parse_events
+from tributary.stream.sink import BatchHealth, PostgresSink, ensure_schema, record_health
 
 if TYPE_CHECKING:
     from pyspark.sql.streaming.listener import (
         QueryProgressEvent,
         QueryStartedEvent,
         QueryTerminatedEvent,
+        StreamingQueryProgress,
     )
 
     from tributary.config import Settings
@@ -103,7 +105,26 @@ def parsed_events(
     keeps its own offsets and dedup state in its own checkpoint.
     """
     source = kafka_source(spark, settings, max_offsets)
-    return deduplicate(parse_events(source), settings.watermark_delay)
+    return deduplicate(parse_events(source, settings.future_skew_s), settings.watermark_delay)
+
+
+def warn_if_skew_unsafe(settings: Settings) -> bool:
+    """Warn when the skew bound is not below the watermark delay; True if it is not.
+
+    An accepted event ``S`` seconds ahead of its record time moves the watermark
+    to ``clock + S - delay``. With ``S`` at or above the delay that is past the
+    clock, so every later real event is dropped as late until the clock catches up.
+    """
+    bound, delay = settings.future_skew_s, settings.watermark_delay_s
+    if bound < delay:
+        return False
+    log.warning(
+        "stream.skew_bound_unsafe",
+        max_future_skew_s=bound,
+        watermark_delay_s=delay,
+        hint="one record this far ahead puts the watermark past the clock",
+    )
+    return True
 
 
 def warn_if_discarding(settings: Settings) -> bool:
@@ -151,12 +172,48 @@ def start_warehouse_query(
     return writer.start()
 
 
-class ProgressLogger(StreamingQueryListener):
-    """Log one structured line per query lifecycle event and micro-batch."""
+def _watermark(raw: str | None) -> datetime | None:
+    """The progress report's watermark (ISO text); None before the first one is set."""
+    if not raw:
+        return None
+    value = datetime.fromisoformat(raw)
+    return None if value.timestamp() <= 0 else value
 
-    def __init__(self) -> None:
+
+def batch_health(p: StreamingQueryProgress) -> BatchHealth:
+    """A progress report's loss counters: late rows dropped by the state operators,
+    rejected records from the parser's observed metric (absent counts are 0)."""
+    row = p.observedMetrics.get(OBSERVATION)
+    observed = row.asDict() if row is not None else {}
+
+    def count(name: str) -> int:
+        return int(observed.get(name) or 0)
+
+    return BatchHealth(
+        query=p.name or "",
+        batch_id=p.batchId,
+        input_rows=p.numInputRows,
+        dropped_by_watermark=sum(int(s.numRowsDroppedByWatermark) for s in p.stateOperators),
+        malformed_rows=count("malformed_rows"),
+        future_rows=count("future_rows"),
+        canary_rows=count("canary_rows"),
+        watermark=_watermark(p.eventTime.get("watermark")),
+    )
+
+
+class ProgressLogger(StreamingQueryListener):
+    """Log one structured line per query lifecycle event and micro-batch.
+
+    With a ``conninfo`` it also writes each batch's loss counters (see
+    :func:`batch_health`) to ``ops.stream_progress``, which the ``stream_loss``
+    check reads. Batches that read nothing are not recorded. A failed write is
+    logged and never stops the query: the counters are also in the log line.
+    """
+
+    def __init__(self, conninfo: str | None = None) -> None:
         # Listener callbacks run on a py4j thread, which does not inherit contextvars.
         self._log = log.bind(**structlog.contextvars.get_contextvars())
+        self._conninfo = conninfo
 
     @override
     def onQueryStarted(self, event: QueryStartedEvent) -> None:
@@ -193,6 +250,12 @@ class ProgressLogger(StreamingQueryListener):
                 for s in p.sources
             ],
         )
+        if self._conninfo is None or p.numInputRows == 0:
+            return
+        try:
+            record_health(self._conninfo, batch_health(p))
+        except Exception as exc:  # any database error: the query must keep running
+            self._log.warning("stream.health_not_recorded", batch_id=p.batchId, error=str(exc))
 
     @override
     def onQueryTerminated(self, event: QueryTerminatedEvent) -> None:
@@ -264,6 +327,7 @@ def run(settings: Settings, *, available_now: bool = False) -> None:
     ensure_topic(settings.kafka_bootstrap, settings.topic, settings.topic_partitions)
     ensure_schema(settings.pg_conninfo)
     ensure_schema(settings.pg_conninfo, "ops.sql")
+    warn_if_skew_unsafe(settings)
     spark = build_session(settings)
     stop = threading.Event()
 
@@ -273,7 +337,7 @@ def run(settings: Settings, *, available_now: bool = False) -> None:
 
     previous = {s: signal.signal(s, request_stop) for s in (signal.SIGTERM, signal.SIGINT)}
     try:
-        spark.streams.addListener(ProgressLogger())
+        spark.streams.addListener(ProgressLogger(settings.pg_conninfo))
         supervise(start_queries(spark, settings, available_now=available_now), stop)
     finally:
         for s, handler in previous.items():
