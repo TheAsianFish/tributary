@@ -11,10 +11,14 @@ from structlog.testing import capture_logs
 from tributary.config import Settings
 from tributary.warehouse.stream_health import (
     TARGETS,
+    DroppedBatch,
+    PassWindow,
     Thresholds,
     WindowCounts,
+    covers,
     evaluate,
     summary,
+    uncovered,
 )
 
 NOW = datetime(2026, 11, 13, 12, 0, tzinfo=UTC)
@@ -144,3 +148,95 @@ def test_kafka_offsets_are_read_from_a_progress_report_and_nothing_else() -> Non
     assert kafka_offsets(None) is None
     assert kafka_offsets("{}") is None
     assert kafka_offsets('{"t":{"0":true}}') is None
+
+
+# ------------------------------------------------- dropped rows a pass has covered
+
+T = "wiki.recentchange"
+
+
+def batch(start: dict[str, int] | None, end: dict[str, int] | None, n: int = 10) -> DroppedBatch:
+    return DroppedBatch(
+        "warehouse",
+        7,
+        n,
+        None if start is None else {T: start},
+        None if end is None else {T: end},
+    )
+
+
+def window(start: dict[str, int], end: dict[str, int], query: str = "warehouse") -> PassWindow:
+    return PassWindow(1, query, {T: start}, {T: end})
+
+
+def test_a_pass_covers_a_batch_only_when_it_read_every_offset_the_batch_read() -> None:
+    b = batch({"0": 100, "1": 50}, {"0": 200, "1": 80})
+    assert covers(window({"0": 0, "1": 0}, {"0": 200, "1": 80}), b)
+    assert covers(window({"0": 100, "1": 50}, {"0": 900, "1": 900}), b)
+    # Stopped one offset short, or started one past the batch's first record.
+    assert not covers(window({"0": 0, "1": 0}, {"0": 199, "1": 80}), b)
+    assert not covers(window({"0": 101, "1": 0}, {"0": 200, "1": 80}), b)
+    # A partition the pass never read, another query's pass, another topic.
+    assert not covers(window({"0": 0}, {"0": 200}), b)
+    assert not covers(window({"0": 0, "1": 0}, {"0": 200, "1": 80}, query="lake"), b)
+    assert not covers(PassWindow(1, "warehouse", {"other": {}}, {"other": {}}), b)
+
+
+def test_a_partition_the_batch_read_nothing_from_needs_nothing() -> None:
+    b = batch({"0": 100, "1": 50}, {"0": 200, "1": 50})
+    # An `uncovered` pass reads nothing where no uncovered batch read: [end, end).
+    assert covers(window({"0": 100, "1": 80}, {"0": 200, "1": 80}), b)
+
+
+def test_a_batch_without_offsets_is_never_covered_and_one_without_a_start_starts_at_0() -> None:
+    everything = window({"0": 0, "1": 0}, {"0": 10**9, "1": 10**9})
+    assert not covers(everything, batch(None, None))  # recorded before M12
+    assert covers(everything, batch(None, {"0": 5, "1": 5}))
+    assert not covers(window({"0": 1, "1": 0}, {"0": 10**9, "1": 10**9}), batch(None, {"0": 5}))
+
+
+def test_uncovered_keeps_the_batches_no_pass_covers() -> None:
+    first = batch({"0": 0}, {"0": 100})
+    second = batch({"0": 100}, {"0": 200})
+    assert uncovered([first, second], [window({"0": 0}, {"0": 150})]) == [second]
+    assert uncovered([first, second], []) == [first, second]
+
+
+def test_dropped_rows_a_pass_covered_no_longer_fail_the_check() -> None:
+    """A redelivery: every dropped row was a copy of an event that landed."""
+    redelivered = counts(dropped_by_watermark=35_554, covered_dropped=35_554, passes=3)
+    check = evaluate(redelivered, Thresholds(), window=WINDOW, now=NOW)
+    assert check.status == "pass"
+    assert check.failures == 0
+    assert check.details["covered_dropped"] == 35_554
+    assert check.details["uncovered_dropped"] == 0
+    assert check.details["reconcile_passes"] == 3
+
+
+def test_drops_after_the_last_pass_still_fail_and_say_what_was_covered() -> None:
+    check = evaluate(
+        counts(dropped_by_watermark=12, covered_dropped=10, passes=1),
+        Thresholds(),
+        window=WINDOW,
+        now=NOW,
+    )
+    assert check.status == "fail"
+    assert check.failures == 2
+    assert check.details["message"] == (
+        "2 rows dropped by the watermark and not covered by a reconciliation pass"
+        " (10 covered) (allowed 0)"
+    )
+
+
+def test_an_event_a_pass_left_missing_fails_even_with_every_drop_covered() -> None:
+    check = evaluate(
+        counts(dropped_by_watermark=100, covered_dropped=100, still_missing=100, passes=1),
+        Thresholds(),
+        window=WINDOW,
+        now=NOW,
+    )
+    assert check.status == "fail"
+    assert check.failures == 100
+    assert check.details["message"] == (
+        "100 events a reconciliation pass found missing are still not in the table"
+    )

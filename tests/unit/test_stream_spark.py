@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
-from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -29,7 +27,7 @@ from pyspark.sql.types import (
 )
 
 from tributary.events import COLUMNS, DEFAULT_FUTURE_SKEW_S, to_row
-from tributary.stream.job import ROCKSDB_PROVIDER, ProgressLogger
+from tributary.stream.job import ProgressLogger
 from tributary.stream.parse import OBSERVATION, deduplicate, parse_events
 from tributary.stream.sink import adapt_row
 
@@ -48,25 +46,6 @@ KAFKA_SCHEMA = StructType(
         StructField("timestamp", TimestampType()),
     ]
 )
-
-
-@pytest.fixture(scope="module")
-def spark() -> Iterator[SparkSession]:
-    os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
-    session = (
-        SparkSession.builder.master("local[2]")
-        .appName("tributary-tests")
-        .config("spark.sql.session.timeZone", "UTC")
-        .config("spark.sql.shuffle.partitions", "2")
-        .config("spark.ui.enabled", "false")
-        .config("spark.ui.showConsoleProgress", "false")
-        .config("spark.sql.streaming.stateStore.providerClass", ROCKSDB_PROVIDER)
-        .config("spark.sql.streaming.stateStore.rocksdb.changelogCheckpointing.enabled", "true")
-        .getOrCreate()
-    )
-    session.sparkContext.setLogLevel("ERROR")
-    yield session
-    session.stop()
 
 
 def uuid(n: int) -> str:

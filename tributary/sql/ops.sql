@@ -103,6 +103,42 @@ BEGIN
 END
 $migrate_offsets$;
 
+-- One row per reconciliation pass (`tributary stream reconcile`): the offset window
+-- it read, what it found there and what it wrote back. A pass that fails records
+-- nothing, so a row means the window was judged in full.
+CREATE TABLE IF NOT EXISTS ops.reconcile_runs (
+    id            bigserial   PRIMARY KEY,
+    run_id        text        NOT NULL,
+    query         text        NOT NULL,
+    topic         text        NOT NULL,
+    start_offsets jsonb       NOT NULL,
+    end_offsets   jsonb       NOT NULL,
+    records       bigint      NOT NULL,
+    landed        bigint      NOT NULL,
+    malformed     bigint      NOT NULL,
+    future        bigint      NOT NULL,
+    canary        bigint      NOT NULL,
+    missing       bigint      NOT NULL,
+    recovered     bigint      NOT NULL,
+    left_missing  bigint      NOT NULL,
+    dry_run       boolean     NOT NULL,
+    seconds       double precision NOT NULL,
+    started_at    timestamptz NOT NULL,
+    finished_at   timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
+-- Every event a pass found missing (valid, below the committed offsets, its id not in
+-- raw.recentchange), and whether it was still missing when the pass finished.
+CREATE TABLE IF NOT EXISTS ops.reconcile_missing (
+    pass_id         bigint      NOT NULL REFERENCES ops.reconcile_runs (id) ON DELETE CASCADE,
+    event_id        uuid        NOT NULL,
+    event_ts        timestamptz NOT NULL,
+    kafka_partition integer     NOT NULL,
+    kafka_offset    bigint      NOT NULL,
+    left_missing    boolean     NOT NULL,
+    PRIMARY KEY (pass_id, event_id)
+);
+
 -- The latest result of every check: what an answer's provenance reports.
 CREATE OR REPLACE VIEW ops.latest_quality AS
 SELECT DISTINCT ON (check_name) *
@@ -111,3 +147,4 @@ ORDER BY check_name, finished_at DESC, id DESC;
 
 COMMENT ON TABLE ops.quality_runs IS 'Every data-quality check result, one row per check per run.';
 COMMENT ON TABLE ops.refresh_runs IS 'Every dbt model build, one row per model per run.';
+COMMENT ON TABLE ops.reconcile_runs IS 'Every reconciliation pass of the topic against raw.recentchange.';
