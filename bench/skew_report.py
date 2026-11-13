@@ -86,6 +86,7 @@ def poison_table(results: Path = RESULTS) -> str:
             continue
         doc = _read(path)
         bound = doc["stream_max_future_skew_s"]
+        bound = "300 (default)" if bound == "default" else bound
         checks = {c["check"]: c for c in doc["checks"]}
         for sink, query in (("postgres", "warehouse"), ("iceberg", "lake")):
             s = doc[sink]

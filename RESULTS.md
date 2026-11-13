@@ -1814,7 +1814,34 @@ with `TRIBUTARY_MAX_FUTURE_SKEW_S=86400`, the old bound under the same
 predicate. `after` runs it with the default.
 
 <!-- bench:poison -->
+| Arm | Bound | Sink | Landed of 50,000 | Real events lost | Poison landed | Dropped by watermark | Rejected as future | `stream_loss` check |
+|:--|---:|:--|---:|---:|:-:|---:|---:|:--|
+| before | 86400 | PostgreSQL | 5,650 | 44,350 | yes | 44,350 | 0 | fail |
+| before | 86400 | Iceberg | 18,449 | 31,551 | yes | 31,551 | 0 | fail |
+| after | 300 (default) | PostgreSQL | 49,999 | 0 | no | 0 | 1 | pass |
+| after | 300 (default) | Iceberg | 49,999 | 0 | no | 0 | 1 | pass |
 <!-- /bench:poison -->
+
+Before the fix, the counters the job now writes equal the loss exactly:
+44,350 rows dropped by the watermark is every real event missing from
+PostgreSQL, and 31,551 every one missing from Iceberg. Both `stream_loss`
+checks failed ("44350 rows dropped by the watermark (allowed 0)"), and
+`ops.latest_quality` holds both as `fail`. The job logged
+`stream.skew_bound_unsafe` at start. What survived after the poison fits
+the two-batch lag (the run does not record per-batch ids, so this is the
+mechanism's reading, not a count by batch). PostgreSQL kept the 5,000 events
+before the poison, the poison and 649 after it, about what the poison's own
+2 s batch and the next one hold at 200 events/s. The lake triggers once a
+minute, so the same two batches held 13,448 real events after the poison. The watermark ended at 03:24 the next day, 23 h less 10 min past the
+clock, so this stack is now unusable for any wall-clock run (the
+precondition below refuses it).
+
+After the fix the poison is the only record not landed, in both stores. It
+is counted as `future` (1 of 50,000 input rows, under the 0.1% threshold),
+nothing is dropped, and both checks pass, with the rejected record in their
+details. The watermark stayed 10 minutes behind the newest real event.
+Each run took 250 s of producing plus about 2.5 min for the counts to
+settle, on 4 vCPU with Trino running. Cost: $0.
 
 ### The M5 watermark precondition
 
