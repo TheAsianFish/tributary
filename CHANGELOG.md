@@ -35,6 +35,17 @@ All notable changes to this project are recorded here. The format follows
 - `make bench-skew` (loss against one future-stamped event's skew, Spark local
   mode, with the prediction from the sample written first) and
   `make bench-poison` (the same on the Compose stack, both sinks).
+- **`tributary stream reconcile` (M12).** A Spark batch read of the topic up to
+  the offsets the warehouse query has committed, through the job's own
+  parser: every record classed as landed, rejected or missing, the missing
+  ones written back with the sink's idempotent write, and the pass recorded
+  in `ops.reconcile_runs` and `ops.reconcile_missing`. `--start uncovered`
+  reads from the first batch with drops no pass has covered; `--dry-run`
+  only reports; `--every N` repeats. The `raw_recentchange` DAG runs a pass
+  when drops are uncovered, so the Airflow image now carries a Java 21
+  runtime, PySpark and the Kafka connector.
+- `make bench-late` (the sample replayed twice, then 50,000 events with 100
+  late and two rejected, with and without passes every 30 s).
 
 ### Changed
 
@@ -48,8 +59,21 @@ All notable changes to this project are recorded here. The format follows
   existing table.
 - The fault runs' precondition refuses a stack holding events more than the
   skew bound ahead of the clock (it was 60 s).
+- **`stream_loss` fails only on loss a reconciliation has not ruled out.** A
+  dropped row in a batch some pass has read is a copy of a landed event or
+  was written back, so the warehouse check now fails on dropped rows no pass
+  has covered and on events a pass found missing that are still absent. With
+  no pass on record it is the old check. The lake's check is unchanged.
+- `ops.stream_progress` records each batch's Kafka start and end offsets and
+  the streaming query's id. `tributary stream` is now a command group;
+  `tributary stream` alone still runs the job.
 
 ### Fixed
+
+- **A redelivered or replayed event read as a lost one.** Spark counts a late
+  copy as dropped before the dedup can know its first copy landed, so a second
+  replay of the sample turned `stream_loss` red for a day (35,554 "dropped",
+  0 lost). A reconciliation pass now settles it.
 
 - **The guard admitted calls written as a column of a relation.** PostgreSQL
   reads `w.f` as `f(w)` when `f` is not a column; over a mart, a subquery, a
