@@ -1,0 +1,10 @@
+{
+ "made_at": "2026-11-13T04:24:07+00:00",
+ "python": "3.12.16",
+ "pyspark": "4.1.3",
+ "java_home": "/usr/lib/jvm/temurin-17-jdk-amd64",
+ "cpus": 4,
+ "machine": "x86_64",
+ "spark_master": "local[2]",
+ "batch_events": 500
+}

@@ -280,6 +280,8 @@ def spark_session() -> SparkSession:
         .config("spark.sql.shuffle.partitions", "2")
         .config("spark.ui.enabled", "false")
         .config("spark.ui.showConsoleProgress", "false")
+        # recentProgress keeps the last 100 reports by default; a run has 101 batches.
+        .config("spark.sql.streaming.numRecentProgressUpdates", "1000")
         .config("spark.sql.streaming.stateStore.providerClass", ROCKSDB_PROVIDER)
         .config("spark.sql.streaming.stateStore.rocksdb.changelogCheckpointing.enabled", "true")
         .getOrCreate()
@@ -377,6 +379,8 @@ def measure(
         shutil.rmtree(work, ignore_errors=True)
     seconds = time.monotonic() - started
     data = [p for p in progress if p.numInputRows > 0]
+    if len(data) != len(batches):
+        raise RuntimeError(f"{len(data)} progress reports for {len(batches)} batches")
     delivered = {i for ids in ids_by_batch.values() for i in ids}
     dropped_by_batch = {
         p.batchId: n
