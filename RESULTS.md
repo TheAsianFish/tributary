@@ -1853,6 +1853,154 @@ milestone, or a job run with a looser bound (`make bench-poison ARM=before`
 leaves exactly that), would lose a whole run the same way. Refusing costs one
 query, while recording that run would cost an hour.
 
+## A dropped row is a loss only if the event is missing (M12)
+
+The question: can the pipeline tell a late copy of an event that already
+landed from an event that is really lost, and bring the lost one back? The
+watermark counter M11 turned into the `stream_loss` check cannot. Spark counts
+a row as dropped before the dedup can know it is a copy, so a redelivery
+reads as loss, and a truly late event is never written anywhere.
+
+`tributary stream reconcile` reads the topic itself, as a Spark batch through
+the stream job's own parser. It stops at the end offsets of the warehouse
+query's last recorded batch: a batch's progress report is posted after Spark
+writes its commit, which is after the sink wrote every partition, so every
+record below those offsets has either landed or been dropped for good. It
+classes each record as landed, rejected (`malformed`, `future`) or missing
+(valid, and its id not in `raw.recentchange`), writes the missing ones back
+with the sink's own `COPY` + `ON CONFLICT` write, and records the pass and
+every missing id in `ops.reconcile_runs` and `ops.reconcile_missing`.
+`stream_loss` now fails on dropped rows in batches no pass has read, or on an
+event a pass found missing that is still absent. With no pass on record it is
+exactly the old check. The `raw_recentchange` DAG runs a pass from the first
+uncovered batch when there is one.
+
+`make bench-late ARM=before|after` ran each arm on a fresh Compose stack
+(`make down`, then `make up-lakehouse`: both sinks and Trino; 4 vCPU, 15 GB):
+
+1. The committed sample through the platform's producer at 500 events/s,
+   waited on until the warehouse query had committed every offset in the
+   topic and held it for 20 s; then `tributary warehouse refresh`, so
+   `marts.fct_edits` exists and every later build of it is incremental.
+2. The sample again, the same way. The prediction for this replay was
+   committed before any run (`bench/results/m12-late/prediction.json`,
+   commit `e984a59`): once the first replay has settled, the watermark is the
+   newest event time minus 10 minutes, and a copy at or below it is dropped
+   as late. That is 35,554 of the 50,000; the dedup state catches the other
+   14,446.
+3. 50,000 bench events at 200 events/s, timed by the wall clock. 100 of them
+   (every 400th from event 10,000) are stamped 1,500 s behind their send time,
+   15 minutes behind the watermark. Event 20,200 is a record cut off mid-JSON,
+   and event 30,200 is stamped an hour ahead. In `after`,
+   `tributary stream reconcile --every 30` ran in its own container
+   (`docker compose run`, the stream image, `local[3]`) from the start of the
+   load to its end, and one more pass ran once the warehouse had committed
+   everything.
+4. The read-out: the batches' counters in `ops.stream_progress`, every
+   expected id looked up in both stores, every pass with its missing ids,
+   the `stream_loss` checks, `tributary warehouse refresh` again, the late
+   ids in `marts.fct_edits`, `tributary sql "SELECT count(*) AS edits FROM
+   marts.fct_edits"` with its provenance, and the per-hour PostgreSQL against
+   Iceberg comparison (`tributary.lake.reconcile.compare_hours`) over every
+   hour the run wrote.
+
+Raw output is in `bench/results/m12-late/` (`run-before.json`,
+`run-after.json`, the reconciler's log). Each arm took about 15 minutes.
+Cost: $0, no model involved.
+
+<!-- bench:late -->
+| | Predicted | before | after |
+|:--|:--|:--|:--|
+| Second replay: rows dropped by the watermark (warehouse) | 35,554 | 35,554 | 35,554 |
+| Second replay: rows dropped by the watermark (lake) | - | 33,224 | 33,635 |
+| Second replay: sample events missing from PostgreSQL | 0 | 0 | 0 |
+| `stream_loss_warehouse` after the second replay, before any pass | fail | fail | fail |
+| Load: rows dropped by the watermark (warehouse) | 100 | 100 | 100 |
+| Load: records rejected | 1 malformed, 1 future | 1 malformed, 1 future | 1 malformed, 1 future |
+| Rejected records landed (both stores) | 0 | 0 | 0 |
+| Reconciliation passes | - | none | 9 during, 1 after |
+| In-flight events reported missing, over every pass | 0 | - | 0 |
+| Late events found missing, over every pass | 100 | - | 100 |
+| Late events missing from PostgreSQL at the end | 100 before, 0 after | 100 of 100 | 0 of 100 |
+| Any other event missing from PostgreSQL | 0 | 0 | 0 |
+| `stream_loss_warehouse` at the end | fail before, pass after | fail | pass |
+| `stream_loss_lake` at the end | - | fail | fail |
+| Late edits in `marts.fct_edits` after the next refresh | all, after | 0 of 0 | 51 of 51 |
+| Provenance of `SELECT count(*) FROM marts.fct_edits` | - | `marts.fct_edits: rebuilt 2026-11-13T18:08:51.938850+00:00, quality fail (37 checks)` / `marts.fct_edits: failing checks: stream_loss_warehouse` | `marts.fct_edits: rebuilt 2026-11-13T17:55:54.045462+00:00, quality pass (37 checks)` |
+| The final pass, whole topic | under 60 s | - | 9.9 s over 150,000 records (16.1 s with the container and JVM start) |
+| Late events in Iceberg (never repaired) | - | 20 of 100 | 26 of 100 |
+| Per-hour PostgreSQL against Iceberg | - | 2026-11-13T17: 0 missing, 20 extra | 2026-11-13T17: 74 missing, 0 extra |
+<!-- /bench:late -->
+
+Every pass of the `after` arm. Each read the whole topic up to the committed
+offsets, so a pass during the load read the two replays as well.
+
+<!-- bench:late-passes -->
+| Pass | When | Records read | Landed | Rejected | Missing (late / other) | Written back | Left missing | Seconds |
+|--:|:--|--:|--:|--:|:--|--:|--:|--:|
+| 1 | during the load | 100,241 | 100,241 | 0 | 0 / 0 | 0 | 0 | 10.0 |
+| 2 | during the load | 106,244 | 106,244 | 0 | 0 / 0 | 0 | 0 | 3.2 |
+| 3 | during the load | 112,241 | 112,235 | 0 | 6 / 0 | 6 | 0 | 3.2 |
+| 4 | during the load | 118,240 | 118,225 | 0 | 15 / 0 | 15 | 0 | 2.3 |
+| 5 | during the load | 124,242 | 124,226 | 1 | 15 / 0 | 15 | 0 | 3.4 |
+| 6 | during the load | 130,241 | 130,224 | 2 | 15 / 0 | 15 | 0 | 3.2 |
+| 7 | during the load | 136,244 | 136,227 | 2 | 15 / 0 | 15 | 0 | 2.7 |
+| 8 | during the load | 142,240 | 142,223 | 2 | 15 / 0 | 15 | 0 | 3.3 |
+| 9 | during the load | 148,241 | 148,224 | 2 | 15 / 0 | 15 | 0 | 2.4 |
+| 10 | after the load | 150,000 | 149,994 | 2 | 4 / 0 | 4 | 0 | 9.9 |
+<!-- /bench:late-passes -->
+
+### The hypotheses, answered
+
+| Hypothesis (PLAN.md, Evolution round 2) | Result |
+|---|---|
+| A second replay of the settled sample drops exactly 35,554 rows and loses none | **Yes**, in both arms: 35,554 rows dropped by the warehouse query's watermark, as predicted from the sample, and all 50,000 sample events still in PostgreSQL. |
+| That replay turns today's check red, and a reconciliation makes the same run green | **Yes.** After the replay `stream_loss_warehouse` failed in both arms ("35554 rows dropped by the watermark"). At the end it is still red in `before` (35,654 uncovered) and green in `after`: every one of the 35,654 dropped rows is in a batch a pass read, and nothing a pass found is still missing. |
+| No pass reports an in-flight event as missing (0 false positives over every pass) | **Yes**: 0 over 10 passes, 9 of them while events were arriving at 200/s. Every id any pass reported missing is one of the 100 late events, and each was reported by exactly one pass (the next one found it landed). |
+| The two rejected records are counted as rejected and not brought back | **Yes**: every pass that read them counted 1 `malformed` and 1 `future`, the batch counters agree, and neither is in PostgreSQL or Iceberg in either arm. |
+| The 100 late events: missing before, in PostgreSQL after (a demonstration: an anti-join finds what it is built to find) | 100 of 100 missing at the end of `before`. In `after`, 0 missing: 96 were written back by the passes during the load, the last 4 by the pass after it. |
+| A recovered event reaches the mart | **Yes**: 51 of the 100 late events are edits (`edit` or `new`, what `fct_edits` keeps), and all 51 are in `marts.fct_edits` after the next refresh, which built it incrementally on arrival time. In `before`, 0. |
+| One pass over the 50,000-event topic takes under 60 s | **Yes, with room**: the final pass read the whole topic, 150,000 records (both replays and the load), in 9.9 s from planning to its record, 16.1 s including the container and the JVM. The passes during the load took 2.3 to 10.0 s over 100,000 to 148,000 records; the first pass in a JVM is the slow one. |
+
+What the provenance says. In `before`, the answer to `SELECT count(*) AS
+edits FROM marts.fct_edits` carries "quality fail" and the warning
+"failing checks: stream_loss_warehouse", although no sample event was
+lost; 100 bench events were. In `after`, the same answer is "quality pass".
+
+### What is left: the lake
+
+A pass repairs PostgreSQL only. Writing back into Iceberg would be a batch
+append beside the streaming lake query, a second writer on the table that
+needs its own fault runs (PLAN.md rejected it for this milestone). So the
+lake keeps its losses, and two things report them:
+
+- `stream_loss_lake` stays a counter: a pass judges PostgreSQL, so it covers
+  nothing for the lake, and the check failed at the end of both arms. The
+  lake's own second-replay drops differ from the warehouse's (33,224 and
+  33,635 against 35,554 in both): it triggers once a minute, so its
+  watermark at any offset is not the warehouse's.
+- The per-hour reconciliation names the gap. The lake's slower trigger also
+  let some late events through (its watermark lagged further): 20 of the 100
+  in `before`, 26 in `after`. So in `before` the hour holding them shows 20
+  ids in the lake that PostgreSQL lacks, and in `after`, once PostgreSQL has
+  all 100, it shows the 74 the lake lacks. The hourly DAG compares closed
+  hours only, and the run ended before the watermark closed that hour; the
+  comparison here is the same function over every hour the run wrote.
+
+### What the reconciliation cannot do
+
+- **Kafka's retention bounds it.** A pass can only read what the broker
+  still holds (here the topic's default, 7 days). Once retention has deleted
+  the offsets a batch with drops read, no pass can cover that batch, and the
+  check stays red until the batch leaves the 24 h window. A pass started
+  from `uncovered` leaves such batches out, and the DAG then starts no
+  Spark for them. A check window longer than retention would be red for
+  good, which is the honest answer: the drops can no longer be judged.
+- **It judges what the warehouse committed, under the current query.** The
+  bound is the current streaming query's offsets (a reset checkpoint is a
+  new query id), and a benchmark's discarding sink records no offsets.
+- **It recovers into one store.** See the lake above.
+
 ## To measure
 
 | What | Command | Milestone | Cost |
