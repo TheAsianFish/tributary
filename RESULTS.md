@@ -1717,7 +1717,7 @@ stream position 10,250 (the middle of batch 20). It is a copy of the event
 there with its own id, stamped X s past that event's `meta.dt`.
 
 `python -m bench.skew predict` wrote `prediction.json` from the sample alone. It
-was committed before any Spark run (`2ff2a78`). It replays Spark's rule: batch
+was committed before any Spark run, in its own commit ("Add make bench-skew and its prediction from the sample"). It replays Spark's rule: batch
 k drops an event when its time is **at or below** the newest accepted event
 time through batch **k − 2**, minus the delay. Late rows are filtered with the
 previous batch's watermark (pinned by

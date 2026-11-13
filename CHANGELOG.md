@@ -26,6 +26,28 @@ All notable changes to this project are recorded here. The format follows
   two variants question by question (exact McNemar), on each subset and
   pooled. Under a rule written down before the run, `full+v+f+a` stays the
   live default.
+- **The `stream_loss` quality check (M11).** Each micro-batch's rows dropped by
+  the watermark and records rejected by the parser (`malformed`, `future`,
+  and canaries) are written to `ops.stream_progress` for both queries. The
+  check sums the last 24 h and fails on any dropped row, or on more than 0.1%
+  of the input rejected. It runs in the `raw_recentchange` DAG and as
+  `tributary warehouse check-stream`, and an answer's provenance names it.
+- `make bench-skew` (loss against one future-stamped event's skew, Spark local
+  mode, with the prediction from the sample written first) and
+  `make bench-poison` (the same on the Compose stack, both sinks).
+
+### Changed
+
+- **The future-skew bound is half the watermark delay (300 s), not a day.**
+  `TRIBUTARY_MAX_FUTURE_SKEW_S` overrides it; the job warns at start when it
+  is not below the delay. An event accepted S seconds ahead moves the
+  watermark to `clock + S − delay`. With the one-day bound, one event 23 h
+  ahead cost 39,000 of the sample's 50,000 events in local mode.
+- `ops.stream_progress.max_event_ts` may be NULL (a batch the progress report
+  recorded alone), and the table has the loss counters. `ops.sql` migrates an
+  existing table.
+- The fault runs' precondition refuses a stack holding events more than the
+  skew bound ahead of the clock (it was 60 s).
 
 ### Fixed
 
@@ -44,6 +66,11 @@ All notable changes to this project are recorded here. The format follows
   is.
 - `test_marts_from_information_schema` skips with the reason when the marts
   are not built.
+- **The integration tests replayed events hours into the future.** They placed
+  their events just after the newest landed row; on a stack holding
+  wall-clock events that was up to 2.8 h ahead of the clock, and the next
+  benchmark run lost every event (the M5 incident). They now time events
+  behind the clock.
 
 ## [0.1.0] - 2026-11-11
 
