@@ -4,9 +4,9 @@ Needs the Compose services (``docker compose up -d --wait``) with the stream job
 running, and reaches them through the host ports in ``.env.example``.
 
 The events are the first 5,000 of the sample with fresh ids minted for this run
-and event times shifted past anything the stack has landed, so the counts are
-about this run even on a stack that has already replayed the whole sample
-(whose newer events would otherwise put these behind the watermark).
+and event times moved to the wall clock (each minus its own lateness in the
+sample), so the counts are about this run even on a stack that has already
+replayed the whole sample, whose events are all behind these.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from datetime import datetime
 import psycopg
 import pytest
 
+from bench.load import lateness
 from tributary.config import Settings
 from tributary.events import Event, event_id, event_time
 from tributary.ingest.producer import ensure_topic, make_producer, produce_events
@@ -51,23 +52,28 @@ def newest_landed(conn: psycopg.Connection[tuple[object, ...]]) -> datetime | No
 
 
 @pytest.fixture(scope="module")
-def events(settings: Settings, conn: psycopg.Connection[tuple[object, ...]]) -> list[Event]:
-    """The first 5,000 sample events, re-keyed with fresh ids and moved past the watermark.
+def events(settings: Settings) -> list[Event]:
+    """The first 5,000 sample events, re-keyed with fresh ids and re-timed to the wall clock.
 
-    Every event time is shifted by the same amount, so the sample's own disorder
-    (at most 143 s of lateness) is kept, and the oldest one lands one second
-    after the newest row already in the table. The shift stays within the
-    parser's one-day bound on event time ahead of the Kafka record time.
+    Each event time is now minus the event's own lateness in the sample (how far
+    it trailed the newest event before it, at most 143 s), as the benchmark's
+    load generator times them: the sample's disorder is kept, and no event is
+    ahead of the clock. These events used to be shifted to just after the
+    newest landed row instead, which on a stack holding wall-clock events put
+    them hours ahead of the time they were sent: the job's watermark followed,
+    and the next benchmark run lost every event (the M5 incident,
+    ``bench/skew.py incident``). The job now rejects an event more than 300 s
+    ahead of its record time, and its watermark is at least that far behind
+    the clock, so events stamped at the clock are never late.
     """
     sample = list(read_sample(settings.sample_path, limit=N_EVENTS))
-    oldest = min(event_time(e) for e in sample)
-    landed = newest_landed(conn)
-    shift = max(0, int((landed - oldest).total_seconds()) + 1) if landed is not None else 0
+    late = lateness([event_time(e).timestamp() for e in sample])
+    now = int(time.time())
     fresh = []
-    for event in sample:
+    for event, lag in zip(sample, late, strict=True):
         event = copy.deepcopy(event)
         event["meta"]["id"] = str(uuid.uuid4())
-        event["timestamp"] = int(event["timestamp"]) + shift
+        event["timestamp"] = now - lag
         fresh.append(event)
     return fresh
 
