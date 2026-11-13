@@ -1,0 +1,42 @@
+{
+ "made_at": "2026-11-13T17:01:36+00:00",
+ "rule": "after the first replay settles the watermark is max(event_ts) - delay; the second replay drops a copy as late when event_ts <= watermark, and the dedup state catches every other copy",
+ "sample": {
+  "events": 50000,
+  "first": "2026-10-16T23:45:26+00:00",
+  "last": "2026-10-17T00:21:44+00:00"
+ },
+ "delay_s": 600,
+ "second_replay": {
+  "events": 50000,
+  "watermark": "2026-10-17T00:11:44+00:00",
+  "dropped_by_watermark": 35554,
+  "caught_by_dedup_state": 14446,
+  "lost": 0,
+  "check_before": "fail",
+  "check_after": "pass"
+ },
+ "load": {
+  "events": 50000,
+  "rate": 200.0,
+  "late": {
+   "seqs": 100,
+   "behind_send_s": 1500
+  },
+  "malformed_seq": 20200,
+  "future": {
+   "seq": 30200,
+   "ahead_s": 3600
+  }
+ },
+ "hypotheses": {
+  "in_flight_reported_missing": 0,
+  "rejected_counted_not_landed": {
+   "malformed": 1,
+   "future": 1
+  },
+  "late_missing_before": 100,
+  "late_missing_after": 0,
+  "pass_over_topic_s_under": 60.0
+ }
+}
