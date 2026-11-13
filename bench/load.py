@@ -94,9 +94,12 @@ class Template:
     holes: tuple[str, ...]
     lateness_s: int
 
-    def render(self, event_id: str, now: float) -> bytes:
+    def render(self, event_id: str, now: float, ahead_s: int | None = None) -> bytes:
+        """The event sent at ``now``; ``ahead_s`` stamps it that far past ``now`` instead
+        of its own lateness behind it (the poison of ``bench.faults``' ``poison`` scenario)."""
         stamp = datetime.fromtimestamp(now, UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-        values = {"id": event_id, "dt": stamp, "ts": str(int(now) - self.lateness_s)}
+        ts = int(now) + ahead_s if ahead_s is not None else int(now) - self.lateness_s
+        values = {"id": event_id, "dt": stamp, "ts": str(ts)}
         out = [self.pieces[0]]
         for hole, piece in zip(self.holes, self.pieces[1:], strict=True):
             out.append(values[hole])
@@ -155,6 +158,8 @@ class LoadPlan:
     sample_path: Path
     workers: int = 1
     limit: int | None = None
+    poison: tuple[int, int] | None = None
+    """``(seq, ahead_s)``: event ``seq`` is stamped ``ahead_s`` past its send time."""
 
 
 def due(elapsed: float, rate: float) -> int:
@@ -238,7 +243,8 @@ def _worker(plan: LoadPlan, index: int, start: Any, shared: _Shared) -> None:
                         exhausted = True
                         break
                     event_id = bench_id(plan.prefix, seq)
-                    value = templates[seq % len(templates)].render(event_id, wall)
+                    ahead = plan.poison[1] if plan.poison and seq == plan.poison[0] else None
+                    value = templates[seq % len(templates)].render(event_id, wall, ahead)
                     while True:
                         try:
                             producer.produce(

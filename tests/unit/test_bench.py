@@ -193,6 +193,13 @@ class TestTemplate:
         assert a["meta"]["id"] != b["meta"]["id"]
         assert (a["timestamp"], b["timestamp"]) == (1_800_000_000 - 2, 1_800_000_100 - 2)
 
+    def test_a_poison_is_stamped_ahead_of_its_send_time(self) -> None:
+        tpl = make_template(_event(), 7)
+        out = json.loads(tpl.render(bench_id(PREFIX, 4), self.NOW, ahead_s=82_800))
+        assert out["timestamp"] == int(self.NOW) + 82_800
+        # meta.dt (and so the producer's record time) is still the send time.
+        assert out["meta"]["dt"].endswith(".123Z")
+
     def test_holes_are_in_document_order(self) -> None:
         tpl = make_template(_event(), 0)
         assert sorted(tpl.holes) == ["dt", "id", "ts"]

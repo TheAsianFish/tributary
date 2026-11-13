@@ -151,6 +151,13 @@ bench-skew: ## Loss against one future-stamped event's skew, Spark local mode on
 	uv run python -m bench.skew all
 	uv run python -m bench.report
 
+ARM ?= after
+bench-poison: ## One event 23 h ahead in 50,000 on a fresh Compose stack, both sinks; ARM=before runs the old one-day bound (deletes volumes; ~15 min)
+	$(MAKE) down
+	TRIBUTARY_MAX_FUTURE_SKEW_S=$(if $(filter before,$(ARM)),86400,) $(MAKE) up-lakehouse
+	uv run python -m bench.faults poison --arm $(ARM)
+	uv run python -m bench.report
+
 bench-results: ## Re-render RESULTS.md's ingest and query tables from bench/results/
 	uv run python -m bench.report
 

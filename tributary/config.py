@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from psycopg.conninfo import make_conninfo
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LIVE_STREAM_URL = "https://stream.wikimedia.org/v2/stream/recentchange"
@@ -204,6 +204,12 @@ class Settings(BaseSettings):
             user=self.agent_user,
             password=self.agent_password.get_secret_value(),
         )
+
+    @field_validator("max_future_skew_s", mode="before")
+    @classmethod
+    def _empty_skew_is_default(cls, value: object) -> object:
+        # Compose passes an unset variable through as an empty string.
+        return None if value == "" else value
 
     @property
     def watermark_delay_s(self) -> int:
