@@ -21,6 +21,18 @@ job's watermark dropped and records its parser rejected, over the last
 reaches a table, so no dbt test can see it; the check fails the task (no
 retry) when it is over its threshold, and an answer's provenance names it.
 
+A dropped row is not always a lost event: a redelivered or replayed event is
+dropped as late too, after its first copy landed. So before the check,
+`reconcile_drops` looks for batches whose dropped rows no reconciliation pass
+has covered and, if there are any, runs one pass from the first of them
+(`tributary stream reconcile --start uncovered`: the topic read up to the
+committed offsets, every event classed as landed, rejected or missing, the
+missing ones written back to `raw.recentchange`). With nothing uncovered it
+is skipped and costs one query. `check_stream` runs whatever happened to the
+pass (`all_done`): a failed pass leaves the drops uncovered, so the check
+reports them. The pass needs the broker and a JVM, which the Airflow image
+carries for this task alone.
+
 The high-water mark lives in the asset events themselves: the task lists
 `raw.recentchange` as an inlet as well as an outlet and reads the newest
 event's `extra`. That keeps the state next to the thing it describes (visible
@@ -40,7 +52,7 @@ from airflow.sdk.exceptions import AirflowFailException, AirflowSkipException
 from tributary.config import get_settings
 from tributary.warehouse import assets
 from tributary.warehouse.refresh import WarehouseError, check_freshness, next_high_water_mark
-from tributary.warehouse.stream_health import StreamLossError
+from tributary.warehouse.stream_health import StreamLossError, uncovered_batches
 from tributary.warehouse.stream_health import check_stream as record_stream_checks
 
 RAW = Asset(name=assets.RAW_RECENTCHANGE, group=assets.GROUP)
@@ -89,7 +101,26 @@ def raw_recentchange() -> None:
         }
         return newest
 
-    @task
+    # No retry: the next run, five minutes on, tries again from the same uncovered batch.
+    @task(retries=0)
+    def reconcile_drops() -> dict[str, object]:
+        settings = get_settings()
+        now = datetime.now(UTC)
+        window = timedelta(hours=settings.stream_check_window_hours)
+        batches = uncovered_batches(settings.pg_conninfo, now - window, now)
+        if not batches:
+            raise AirflowSkipException("every dropped row is covered by a reconciliation pass")
+        # Spark only when there is something to judge: a JVM for a pass, not for every poll.
+        from tributary.stream.reconcile import build_session, run_pass
+
+        spark = build_session(settings)
+        try:
+            result = run_pass(spark, settings, get_current_context()["run_id"], start="uncovered")
+        finally:
+            spark.stop()
+        return result.summary() if result is not None else {"batches": len(batches)}
+
+    @task(trigger_rule="all_done")
     def check_stream() -> int:
         try:
             return len(record_stream_checks(get_settings(), get_current_context()["run_id"]))
@@ -97,7 +128,7 @@ def raw_recentchange() -> None:
             raise AirflowFailException(str(exc)) from exc
 
     detect_new_rows()
-    check_stream()
+    reconcile_drops() >> check_stream()
 
 
 raw_recentchange()

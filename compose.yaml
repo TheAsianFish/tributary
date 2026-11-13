@@ -79,6 +79,13 @@ x-airflow: &airflow
     TRIBUTARY_TRINO_PORT: "8080"
     # Closed hours (compaction, reconciliation) follow the stream job's watermark.
     TRIBUTARY_WATERMARK_DELAY: ${TRIBUTARY_WATERMARK_DELAY:-10 minutes}
+    # A reconciliation pass reads the topic through the job's own parser, so it
+    # needs the broker and the job's skew bound (empty: half the watermark delay).
+    TRIBUTARY_KAFKA_BOOTSTRAP: kafka:9092
+    TRIBUTARY_TOPIC: ${TRIBUTARY_TOPIC:-wiki.recentchange}
+    TRIBUTARY_TOPIC_PARTITIONS: ${TRIBUTARY_TOPIC_PARTITIONS:-3}
+    TRIBUTARY_MAX_FUTURE_SKEW_S: ${TRIBUTARY_MAX_FUTURE_SKEW_S:-}
+    TRIBUTARY_SPARK_MASTER: local[2]
     TRIBUTARY_DBT_VARS: ${TRIBUTARY_DBT_VARS:-}
     TRIBUTARY_CATALOG_DIR: /data/catalog
     TRIBUTARY_LOG_LEVEL: ${TRIBUTARY_LOG_LEVEL:-INFO}
@@ -353,8 +360,9 @@ services:
       retries: 5
       start_period: 30s
     restart: unless-stopped
-    # The LocalExecutor runs the tasks here, dbt subprocesses included.
-    mem_limit: 2g
+    # The LocalExecutor runs the tasks here, dbt subprocesses and a reconciliation
+    # pass's Spark driver (1 GB heap) included.
+    mem_limit: 3g
 
   airflow-dag-processor:
     <<: *airflow

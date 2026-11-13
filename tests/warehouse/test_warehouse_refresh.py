@@ -58,10 +58,19 @@ def test_raw_asset_emits_once_then_skips(raw_runs: tuple[Any, Any], conninfo: st
     first, second = raw_runs
     assert str(first.state) == "success"
     # check_stream runs beside it every time; with no failing stream it passes.
-    assert task_states(first) == {"detect_new_rows": "success", "check_stream": "success"}
+    # With no dropped row on record there is nothing to reconcile.
+    assert task_states(first) == {
+        "detect_new_rows": "success",
+        "reconcile_drops": "skipped",
+        "check_stream": "success",
+    }
     # Nothing ingested since: skipped, so no asset event and no rebuild.
     assert str(second.state) == "success"
-    assert task_states(second) == {"detect_new_rows": "skipped", "check_stream": "success"}
+    assert task_states(second) == {
+        "detect_new_rows": "skipped",
+        "reconcile_drops": "skipped",
+        "check_stream": "success",
+    }
 
     from airflow.models.asset import AssetEvent, AssetModel
     from airflow.utils.session import create_session
@@ -97,7 +106,11 @@ def test_nothing_new_still_checks_freshness_and_fails_when_stale(
     # The sink has stalled: no new rows, so no refresh, but freshness must still fail.
     dagrun = run("raw_recentchange", "raw_recentchange (nothing new, stale)")
     assert str(dagrun.state) == "failed"
-    assert task_states(dagrun) == {"detect_new_rows": "failed", "check_stream": "success"}
+    assert task_states(dagrun) == {
+        "detect_new_rows": "failed",
+        "reconcile_drops": "skipped",
+        "check_stream": "success",
+    }
     with psycopg.connect(conninfo) as conn:
         rows = conn.execute(
             "SELECT check_type, status, source FROM ops.quality_runs"
