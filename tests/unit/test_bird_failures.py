@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from eval.bird import report
+from eval.bird import paired, report
 from eval.bird.failures import CATEGORY_KEYS, check_labels, failures_table, wrong_answers
 
 
@@ -59,12 +59,12 @@ def _report() -> dict[str, Any]:
 
 
 def test_mcnemar_is_the_two_sided_binomial_on_discordant_pairs() -> None:
-    assert report.mcnemar_exact(0, 0) == 1.0
-    assert report.mcnemar_exact(3, 3) == 1.0
-    assert report.mcnemar_exact(5, 0) == pytest.approx(2 / 32)
-    assert report.mcnemar_exact(10, 1) == pytest.approx(2 * 12 / 2**11)
-    assert report.mcnemar_exact(1, 10) == report.mcnemar_exact(10, 1)
-    assert report.mcnemar_exact(8, 2) == pytest.approx(
+    assert paired.mcnemar_exact(0, 0) == 1.0
+    assert paired.mcnemar_exact(3, 3) == 1.0
+    assert paired.mcnemar_exact(5, 0) == pytest.approx(2 / 32)
+    assert paired.mcnemar_exact(10, 1) == pytest.approx(2 * 12 / 2**11)
+    assert paired.mcnemar_exact(1, 10) == paired.mcnemar_exact(10, 1)
+    assert paired.mcnemar_exact(8, 2) == pytest.approx(
         2 * sum(math.comb(10, i) for i in range(3)) / 1024
     )
 

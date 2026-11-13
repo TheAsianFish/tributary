@@ -660,7 +660,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"run's variants, a live run {DEFAULT_LIVE_VARIANTS})",
     )
     parser.add_argument("--tracks", default="official,corrected")
-    parser.add_argument("--subset", default="dev50")
+    parser.add_argument(
+        "--subset",
+        default=None,
+        help="dev50, holdout50 or all (default: a replay replays the recorded run's subset, "
+        "a live run dev50)",
+    )
     parser.add_argument(
         "--recorded",
         type=Path,
@@ -679,11 +684,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     replay = args.provider == "fake"
-    if args.variants is None:
-        if replay:
-            recorded_variants = json.loads(args.recorded.read_text(encoding="utf-8"))["variants"]
-            args.variants = ",".join(recorded_variants)
-        else:
+    if replay:
+        recorded_report = json.loads(args.recorded.read_text(encoding="utf-8"))
+        if args.subset not in (None, recorded_report["subset"]):
+            parser.error(
+                f"{args.recorded.name} is a {recorded_report['subset']} run; "
+                f"a replay cannot grade it on {args.subset}"
+            )
+        args.subset = recorded_report["subset"]
+        if args.variants is None:
+            args.variants = ",".join(recorded_report["variants"])
+    else:
+        args.subset = args.subset or "dev50"
+        if args.variants is None:
             args.variants = DEFAULT_LIVE_VARIANTS
     try:
         variants = [Variant.parse(v) for v in args.variants.split(",") if v]
@@ -784,7 +797,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             report["run"]["model_calls_from_recordings"] = resuming.recorded_calls
             report["run"]["model_calls_live"] = resuming.live_calls
     out = args.out or (
-        RESULTS / "bird-replay.json" if replay else report_path(args.provider, model, args.subset)
+        RESULTS / f"bird-replay-{args.subset}.json"
+        if replay
+        else report_path(args.provider, model, args.subset)
     )
     out.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
     print(render(report))

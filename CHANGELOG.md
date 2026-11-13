@@ -19,6 +19,13 @@ All notable changes to this project are recorded here. The format follows
   measures the values it is about to send and fails the query past the cap,
   reported as the repairable error `too_large`, before the client holds a
   byte of it.
+- **A held-out BIRD sample (M10).** `holdout50`, 50 official questions
+  disjoint from `dev50` and drawn by the same stratified hash rule, recorded
+  on `qwen2.5-coder:7b` for `full`, `full+a` and `full+v+f+a`; `make eval`
+  replays both subsets. `uv run python -m eval.bird.paired A B` compares any
+  two variants question by question (exact McNemar), on each subset and
+  pooled. Under a rule written down before the run, `full+v+f+a` stays the
+  live default.
 
 ### Fixed
 

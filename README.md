@@ -200,13 +200,14 @@ make bench-results  # re-render RESULTS.md's ingest tables from bench/results/
 Grade the agent on BIRD Mini-Dev (PostgreSQL alone is enough):
 
 ```bash
-make eval                                   # replay the recorded dev50 run: no model, no database
+make eval                                   # replay the recorded dev50 and holdout50 runs: no model, no database
 docker compose up -d postgres && make bird  # 800 MB download once, then about a minute
 docker compose --profile ollama up -d ollama
 docker compose exec ollama ollama pull qwen2.5-coder:7b
 make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b          # live, about 70 min on 4 CPUs
 ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 RECORD=1
 make eval-link                              # schema-linking recall, offline
+uv run python -m eval.bird.paired full+a full+v+f+a  # paired comparison, each subset and pooled
 ```
 
 The demo at the top is a real terminal session against the quickstart's
@@ -609,7 +610,8 @@ runs are listed there under "To measure", with their estimated cost.
 | BIRD dev50, `qwen2.5-coder:7b` on CPU ($0) | 21 / 50 (42%, 95% CI 29–56%) with full schema and with bm25 alike, on different questions; 11 of 50 refused as unanswerable although the schema answers them |
 | BIRD dev50, M7 planner features (`make eval`, `qwen2.5-coder:7b`, $0) | Dropping the "unanswerable" exit: 21 → 25 / 50 (refusals 11 → 0, but only 4 of the 11 become right). Adding value hints and three worked examples: 26 / 50 official and 18 → 26 / 45 corrected, challenging questions 2 → 4 of 10 official and 1 → 7 of 9 corrected, for 13% more input tokens; neither pairing against the baseline is significant at n = 50 (McNemar p = 0.23 and 0.10) |
 | Failure taxonomy (30 baseline failures, hand-labelled) | 11 refusals, 5 queries that never ran, 3 questionable gold labels; the rest are wrong literals, misread evidence, joins and shape |
-| Replay of the BIRD run (what CI tests) | All 380 verdicts of four variants in 10 s (mostly loading the value index), no model and no database |
+| BIRD holdout50, the M7 default on 50 fresh questions (`make eval`, `qwen2.5-coder:7b`, $0) | Under a rule written before the run, `full+v+f+a` stays the default: 24 / 50 official and 27 / 46 corrected, against 16 and 19 for `full+a` and 17 and 19 for `full`. The answer-every-question rule alone did not replicate (+3 −4 against `full`): it fixes refusals but changes answers the baseline had right. Pooled with dev50 (n = 100), `full+v+f+a` against `full` is +18 −6, p = 0.023 |
+| Replay of the BIRD runs (what CI tests) | dev50's 380 verdicts of four variants in 9 s and holdout50's 288 of three in 9 s (mostly loading the value index), no model and no database |
 | Clean-checkout quickstart (M8, this machine, warm Docker build cache) | `docker compose up -d --build` to all 50,000 events in PostgreSQL in under 3 min; `pip install '.[warehouse]'` 78 s; `tributary warehouse refresh` 90 s (8 relations, 49 checks passing); the guarded `sql` queries and both `ask` paths (live `qwen2.5-coder:7b` in 5 min 10 s on CPU, the recorded replay in under 50 ms) gave the README's answers |
 | Release dry runs (M8) | `release.yml` (build, `twine check --strict`, clean-venv install) and `images.yml` (both images for amd64 and arm64, nothing pushed) green under `act` |
 
@@ -624,35 +626,34 @@ the release steps and [CHANGELOG.md](CHANGELOG.md) what each version holds.
 
 ## Roadmap
 
-The first nine milestones in [PLAN.md](PLAN.md) are done, on local-model
-recordings where they named Claude (there was no API key). M9 (the guard's
-differential oracle and the result byte cap) closed the first question of
-"Evolution round 1" in PLAN.md. Two more are planned:
+The first ten milestones in [PLAN.md](PLAN.md) are done, on local-model
+recordings where they named Claude (there was no API key). M10 tested the
+benchmark default on 50 questions that did not pick it, under a rule
+written down first: it stays, but for a different reason than M7 gave. One
+more is planned:
 
-1. **M10: the default variant on a held-out sample.** `full+v+f+a` was chosen
-   on the 50 questions it is reported on; 50 fresh ones say whether the gain
-   replicates, under a rule written down before the run.
-2. **M11: a future-stamped event must not cost later events.** The watermark
+1. **M11: a future-stamped event must not cost later events.** The watermark
    only moves forward, and the parser accepts an event a day ahead. The loss
    is measured against the skew, the bound is tied to the watermark delay,
    and dropped rows become a quality check instead of a log line.
 
-After those:
+After that:
 
-3. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
+2. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
    Haiku 5.5 and Opus 5.5, recorded so CI replays them. RESULTS.md lists the
    commands and the estimated cost of each, and the `Live` workflow runs
    them once the repository has a key.
-4. **The `core` schema linker** (`link_core`: BM25 top-k, value tables and
+3. **The `core` schema linker** (`link_core`: BM25 top-k, value tables and
    shortest foreign-key paths). Its interface, strict tests and evaluation
    are in place. Then BIRD's eleven schemas pooled into one 75-table
    warehouse, where the full schema no longer fits the prompt and linking has
    to carry the answer.
-5. **The rest of the M7 grid** on the local model: the leave-one-out cells,
+4. **The rest of the M7 grid** on the local model: the leave-one-out cells,
+   which M10 made the open question (value hints or examples?),
    and the vote at a lower temperature. Then the warehouse questions
    re-recorded with value hints and examples, so the product can turn them on.
-6. **A shared rate-limit store** for multi-replica API deployments.
-7. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
+5. **A shared rate-limit store** for multi-replica API deployments.
+6. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
    dialect for the guard, so `/sql` can run guarded queries on the lake.
 
 ## Licence

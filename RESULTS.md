@@ -579,24 +579,36 @@ every query the run sent to PostgreSQL in
 `tests/recordings/bird-executions.jsonl.gz`. Cost $0 (local model).
 
 <!-- bird:ex -->
-| Model | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging | Model calls | Tokens in / out | Model time per question, p50 / p95 |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| qwen2.5-coder:7b (ollama) | `full-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 50 | 104,241 / 8,402 | 37.6 s / 112.7 s |
-| qwen2.5-coder:7b (ollama) | `full-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 7/13 | 8/23 | 1/9 | 13 | 35,813 / 2,773 | 33.8 s / 106.0 s |
-| qwen2.5-coder:7b (ollama) | `full-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 62 | 131,273 / 10,687 | 42.5 s / 225.1 s |
-| qwen2.5-coder:7b (ollama) | `full-r2` | corrected | **18/45** (40.0%) | 27.0%–54.5% | 7/13 | 10/23 | 1/9 | 21 | 62,073 / 4,522 | 34.6 s / 190.5 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 50 | 84,189 / 8,664 | 47.2 s / 158.1 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
-| qwen2.5-coder:7b (ollama) | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
-| qwen2.5-coder:7b (ollama) | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
-| qwen2.5-coder:7b (ollama) | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
+| Model | Subset | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging | Model calls | Tokens in / out | Model time per question, p50 / p95 |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 50 | 104,241 / 8,402 | 37.6 s / 112.7 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 7/13 | 8/23 | 1/9 | 13 | 35,813 / 2,773 | 33.8 s / 106.0 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 8/15 | 11/25 | 2/10 | 62 | 131,273 / 10,687 | 42.5 s / 225.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full-r2` | corrected | **18/45** (40.0%) | 27.0%–54.5% | 7/13 | 10/23 | 1/9 | 21 | 62,073 / 4,522 | 34.6 s / 190.5 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r0` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 50 | 84,189 / 8,664 | 47.2 s / 158.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r0` | corrected | **16/45** (35.6%) | 23.2%–50.2% | 8/13 | 6/23 | 2/9 | 13 | 32,842 / 2,805 | 43.2 s / 74.2 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r2` | official | **21/50** (42.0%) | 29.4%–55.8% | 9/15 | 9/25 | 3/10 | 62 | 111,740 / 11,161 | 51.2 s / 191.9 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `bm25-k4-r2` | corrected | **17/45** (37.8%) | 25.1%–52.4% | 8/13 | 7/23 | 2/9 | 16 | 41,644 / 3,575 | 43.5 s / 158.2 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r0` | official | **24/50** (48.0%) | 34.8%–61.5% | 9/15 | 14/25 | 1/10 | 50 | 104,291 / 10,529 | 68.2 s / 188.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r0` | corrected | **21/45** (46.7%) | 32.9%–60.9% | 8/13 | 12/23 | 1/9 | 13 | 35,826 / 3,028 | 69.6 s / 145.1 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r2` | official | **25/50** (50.0%) | 36.6%–63.4% | 9/15 | 14/25 | 2/10 | 66 | 141,976 / 14,126 | 80.4 s / 308.9 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+a-r2` | corrected | **22/45** (48.9%) | 35.0%–63.0% | 8/13 | 13/23 | 1/9 | 22 | 64,300 / 5,278 | 75.4 s / 267.6 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r0` | official | **25/50** (50.0%) | 36.6%–63.4% | 7/15 | 14/25 | 4/10 | 50 | 124,569 / 10,326 | 73.8 s / 136.6 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r0` | corrected | **25/45** (55.6%) | 41.2%–69.1% | 6/13 | 12/23 | 7/9 | 13 | 41,816 / 3,362 | 61.3 s / 111.3 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r2` | official | **26/50** (52.0%) | 38.5%–65.2% | 7/15 | 15/25 | 4/10 | 66 | 172,160 / 13,885 | 77.8 s / 303.3 s |
+| qwen2.5-coder:7b (ollama) | dev50 | `full+v+f+a-r2` | corrected | **26/45** (57.8%) | 43.3%–71.0% | 6/13 | 13/23 | 7/9 | 19 | 61,682 / 4,685 | 66.0 s / 131.5 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full-r0` | official | **16/50** (32.0%) | 20.8%–45.8% | 8/15 | 7/25 | 1/10 | 50 | 84,368 / 9,090 | 62.6 s / 183.8 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full-r0` | corrected | **18/46** (39.1%) | 26.4%–53.5% | 8/15 | 9/23 | 1/8 | 13 | 24,556 / 2,725 | 61.2 s / 184.4 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full-r2` | official | **17/50** (34.0%) | 22.4%–47.9% | 8/15 | 7/25 | 2/10 | 63 | 108,884 / 11,977 | 68.3 s / 195.2 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full-r2` | corrected | **19/46** (41.3%) | 28.3%–55.7% | 8/15 | 9/23 | 2/8 | 15 | 30,553 / 4,375 | 61.9 s / 195.2 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+a-r0` | official | **16/50** (32.0%) | 20.8%–45.8% | 8/15 | 7/25 | 1/10 | 50 | 84,418 / 10,270 | 66.9 s / 256.7 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+a-r0` | corrected | **19/46** (41.3%) | 28.3%–55.7% | 7/15 | 10/23 | 2/8 | 13 | 24,569 / 2,911 | 66.9 s / 187.8 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+a-r2` | official | **16/50** (32.0%) | 20.8%–45.8% | 8/15 | 7/25 | 1/10 | 70 | 120,484 / 15,000 | 90.5 s / 301.6 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+a-r2` | corrected | **19/46** (41.3%) | 28.3%–55.7% | 7/15 | 10/23 | 2/8 | 15 | 30,219 / 3,853 | 72.7 s / 301.6 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+v+f+a-r0` | official | **23/50** (46.0%) | 33.0%–59.6% | 11/15 | 10/25 | 2/10 | 50 | 108,016 / 11,769 | 100.9 s / 133.3 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+v+f+a-r0` | corrected | **26/46** (56.5%) | 42.2%–69.8% | 9/15 | 14/23 | 3/8 | 13 | 30,642 / 3,326 | 102.2 s / 205.2 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+v+f+a-r2` | official | **24/50** (48.0%) | 34.8%–61.5% | 12/15 | 10/25 | 2/10 | 62 | 137,803 / 14,459 | 103.2 s / 270.7 s |
+| qwen2.5-coder:7b (ollama) | holdout50 | `full+v+f+a-r2` | corrected | **27/46** (58.7%) | 44.3%–71.7% | 10/15 | 14/23 | 3/8 | 15 | 38,362 / 4,606 | 106.3 s / 280.1 s |
 <!-- /bird:ex -->
 
 The `-r0` rows are the same run read at its first attempt (the first model
@@ -682,6 +694,12 @@ and the replay checks all 380 verdicts.
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `full-r2` | 83 | 193,346 / 15,209 | $0.00 | $0.03 / $1.08 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r0` | 63 | 117,031 / 11,469 | $0.00 | $0.02 / $0.70 |
 | `bird-dev50-ollama-qwen2.5-coder-7b.json` | `bm25-k4-r2` | 78 | 153,384 / 14,736 | $0.00 | $0.02 / $0.91 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full+a-r0` | 63 | 108,987 / 13,181 | $0.00 | $0.02 / $0.70 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full+a-r2` | 85 | 150,703 / 18,853 | $0.00 | $0.02 / $0.98 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r0` | 63 | 138,658 / 15,095 | $0.00 | $0.02 / $0.86 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full+v+f+a-r2` | 77 | 176,165 / 19,065 | $0.00 | $0.03 / $1.09 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full-r0` | 63 | 108,924 / 11,815 | $0.00 | $0.02 / $0.67 |
+| `bird-holdout50-ollama-qwen2.5-coder-7b.json` | `full-r2` | 78 | 139,437 / 16,352 | $0.00 | $0.02 / $0.88 |
 
 Estimated cost of the live runs: the token counts `bird-dev50-ollama-qwen2.5-coder-7b.json` measured for its four variants with repairs (786,848 in / 67,919 out, both tracks), scaled by question count, at list price with no cache hits (an upper bound on input: the planner caches its schema prefix), Claude's own tokenizer and thinking tokens not modelled:
 
@@ -757,6 +775,8 @@ questions is noise; the p-value says how much.
 - **Model time.** The two M7 cells took 78–80 s per question at the median. They ran side by side, sharing the CPU, so this is not comparable with M4's serial 42 s. Their token counts are.
 
 **The default.** `make eval`'s live default is now `full,full+v+f+a`: the baseline and the variant that is best on both tracks, for 13% more input tokens than the next best. It is the only cell that improved the challenging questions, and neither pairing against `full` is significant at this size, which is what a larger subset (`SUBSET=all`, under To measure) would settle.
+
+M10 tested this choice on 50 questions that did not pick it, under a rule written down first: the default stays, but the gain comes from value hints and examples, not from `+a` (see [the held-out sample](#the-default-variant-on-a-held-out-sample-m10)).
 
 The product's agent keeps value hints and worked examples **off** by default (`TRIBUTARY_AGENT_VALUES=false`, `TRIBUTARY_AGENT_EXAMPLES=0`), for three reasons:
 
@@ -1485,6 +1505,155 @@ because it scores the model's SQL and replays recorded bare executions. 52
 queries (the 40 gold plus edge cases: `ORDER BY`, duplicate names, `WITH`,
 set operations, `VALUES`, arrays, bytea, NaN) return identical columns, row
 order, values and types with and without the cap.
+
+## The default variant on a held-out sample (M10)
+
+M7 chose `full+v+f+a` as `make eval`'s live default on the same 50 questions
+it is reported on (+8 −3, p = 0.23 and +13 −5, p = 0.10 against `full`).
+This section asks whether that gain survives on 50 questions that did not
+pick it.
+
+### Fixed before any model call
+
+<!-- m10:prereg -->
+**The sample.** `holdout50` is drawn by dev50's rule from what dev50 left:
+per difficulty, the official questions Arcwise-Plat-SQL also covers, minus
+dev50's 50, sorted by `sha256("tributary:holdout50:<id>")`, the smallest 15
+simple, 25 moderate and 10 challenging (`eval/bird/data.py`,
+`subset_ids`). Its ids are committed in `eval/bird/data/subsets.json`, and
+a unit test fails if the rule ever draws anything else. 46 of the 50 are in
+the verified corrected track. Each run's worked examples (`+f`) come from
+the questions outside its own subset, so `holdout50`'s pool holds dev50's
+questions and the committed dev50 recordings replay unchanged.
+
+**The run.** `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b
+SUBSET=holdout50 VARIANTS=full+a,full+v+f+a,full RECORD=1` (resumable with
+`RESUME=1`), both tracks, temperature 0, seed 0, 16k context, one request
+at a time; `full+a` and `full+v+f+a` first, since they decide the default.
+
+**The decision rule.** `full+v+f+a` stays `make eval`'s live default only
+if, on `holdout50` alone, it is at least level with `full+a` on both
+tracks (correct answers with repairs, official and corrected). Otherwise
+the default becomes `full+a`, and this section says the M7 gain did not
+replicate. dev50 does not vote: it is the sample that picked the variant.
+
+**The hypotheses (PLAN.md, M10).**
+
+1. `+a` keeps a net gain over `full` on `holdout50` (gained > lost on
+   both tracks): refusals are a mechanism, not a fluke.
+2. `+v+f` over `+a` is within ±2 questions on the official track.
+3. Pooled to n = 100 (dev50 + `holdout50`), at most one of the two
+   pairings against `full` (`full+a`, `full+v+f+a`) reaches p < 0.05 on
+   the official track.
+<!-- /m10:prereg -->
+
+### holdout50: each variant on the held-out questions
+
+<!-- bird:holdout -->
+| Variant | Official EX (95% interval) | Corrected EX (95% interval) | Official EX, no repairs | Refused | Model calls | Tokens in / out | Model time per question, p50 / p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `full` | **17/50** (34.0%, 22.4%–47.9%) | **19/46** (41.3%, 28.3%–55.7%) | 16/50 | 6 | 78 | 139,437 / 16,352 | 68.3 s / 195.2 s |
+| `full+a` | **16/50** (32.0%, 20.8%–45.8%) | **19/46** (41.3%, 28.3%–55.7%) | 16/50 | 0 | 85 | 150,703 / 18,853 | 90.5 s / 301.6 s |
+| `full+v+f+a` | **24/50** (48.0%, 34.8%–61.5%) | **27/46** (58.7%, 44.3%–71.7%) | 23/50 | 0 | 77 | 176,165 / 19,065 | 103.2 s / 270.7 s |
+<!-- /bird:holdout -->
+
+### The pairings, on each subset and pooled
+
+"+gained -lost" counts the questions the second variant gets right and the
+first gets wrong, and the reverse, on the same questions; p is the exact
+two-sided McNemar test on those discordant questions. The pooled columns add
+the two subsets' counts (n = 100 on the official track, 45 + 46 = 91 on the
+corrected one). `uv run python -m eval.bird.paired A B` prints the same
+comparison for any two recorded variants.
+
+<!-- bird:pairs -->
+| Pairing | Track | dev50: n | dev50: correct | dev50: +gained -lost | dev50: p | holdout50: n | holdout50: correct | holdout50: +gained -lost | holdout50: p | dev50 + holdout50: n | dev50 + holdout50: correct | dev50 + holdout50: +gained -lost | dev50 + holdout50: p |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `full+a` vs `full` | official | 50 | 21 → 25 | +7 -3 | 0.344 | 50 | 17 → 16 | +3 -4 | 1.000 | 100 | 38 → 41 | +10 -7 | 0.629 |
+| `full+a` vs `full` | corrected | 45 | 18 → 22 | +5 -1 | 0.219 | 46 | 19 → 19 | +4 -4 | 1.000 | 91 | 37 → 41 | +9 -5 | 0.424 |
+| `full+v+f+a` vs `full` | official | 50 | 21 → 26 | +8 -3 | 0.227 | 50 | 17 → 24 | +10 -3 | 0.092 | 100 | 38 → 50 | +18 -6 | 0.023 |
+| `full+v+f+a` vs `full` | corrected | 45 | 18 → 26 | +13 -5 | 0.096 | 46 | 19 → 27 | +11 -3 | 0.057 | 91 | 37 → 53 | +24 -8 | 0.007 |
+| `full+v+f+a` vs `full+a` | official | 50 | 25 → 26 | +8 -7 | 1.000 | 50 | 16 → 24 | +12 -4 | 0.077 | 100 | 41 → 50 | +20 -11 | 0.150 |
+| `full+v+f+a` vs `full+a` | corrected | 45 | 22 → 26 | +11 -7 | 0.481 | 46 | 19 → 27 | +11 -3 | 0.057 | 91 | 41 → 53 | +22 -10 | 0.050 |
+<!-- /bird:pairs -->
+
+Pooled execution accuracy:
+
+<!-- bird:pooled -->
+| Variant | Official EX, dev50 + holdout50 | Corrected EX, dev50 + holdout50 |
+|---|---:|---:|
+| `full` | **38/100** (38.0%, 29.1%–47.8%) | **37/91** (40.7%, 31.1%–50.9%) |
+| `full+a` | **41/100** (41.0%, 31.9%–50.8%) | **41/91** (45.1%, 35.2%–55.3%) |
+| `full+v+f+a` | **50/100** (50.0%, 40.4%–59.6%) | **53/91** (58.2%, 48.0%–67.8%) |
+<!-- /bird:pooled -->
+
+### The default, under the rule
+
+<!-- bird:decision -->
+**The rule, applied.** On holdout50 alone, `full+v+f+a` answers official 24 against 16 for `full+a`; corrected 27 against 19 for `full+a`. `full+v+f+a` is at least level with `full+a` on both tracks, so it stays `make eval`'s live default (`full,full+v+f+a`).
+<!-- /bird:decision -->
+
+`DEFAULT_LIVE_VARIANTS` in `eval/bird/run.py` is unchanged, and a unit test
+(`test_the_live_default_is_what_the_rule_picks_on_the_committed_run`) fails
+if it ever disagrees with the rule applied to the committed holdout50 run.
+
+### The hypotheses, answered
+
+1. **`+a` keeps a net gain over `full`: no.** On holdout50 `full+a` against
+   `full` is +3 −4 official (p = 1.000) and +4 −4 corrected (p = 1.000).
+   The mechanism did work: `full` refused 6 official questions and `full+a`
+   answered all of them, 2 correctly (dev50: 4 of 11). What cancelled it is
+   the rest of the prompt change. All 4 official questions `full+a` lost
+   (707, 717, 733, 1239) were ones `full` had answered correctly, not
+   refusals: adding the rule's sentence changed the SQL the model wrote on
+   questions the rule was never meant to touch (733 became a statement the
+   guard blocked). So M7's +7 −3 on dev50 was a real mechanism plus
+   perturbation that happened to fall its way. On fresh questions the
+   perturbation was as large as the mechanism's gain.
+2. **`+v+f` over `+a` within ±2 on the official track: no, it is larger.**
+   `full+v+f+a` against `full+a` is +12 −4 official (16 → 24, p = 0.077)
+   and +11 −3 corrected (19 → 27, p = 0.057). On dev50 the same pairing was
+   +8 −7. The gain M7 attributed mostly to `+a` belongs, on this sample, to
+   value hints and worked examples. M7 saw the opposite, which is what
+   noise on 50 questions looks like when three variants are compared.
+3. **Pooled to n = 100, at most one of the two pairings against `full`
+   reaches p < 0.05 on the official track: yes, exactly one.**
+   `full+v+f+a` against `full` is +18 −6 (38 → 50 of 100, p = 0.023);
+   `full+a` against `full` is +10 −7 (p = 0.629). On the corrected track
+   the pooled `full+v+f+a` pairing is +24 −8 (37 → 53 of 91, p = 0.007).
+   Read the pooled p with care: dev50 is the sample that chose the variant,
+   so it is biased toward it. holdout50 alone does not reach 0.05 (p =
+   0.092 official, 0.057 corrected), but it points the same way with a
+   larger net (+7 and +8) than dev50 had (+5 and +8).
+
+**What this changes.** The default stays, on fresh evidence rather than on
+the sample that picked it. The explanation of *why* it wins changes: the
+answer-every-question rule alone is a wash, and value hints with worked
+examples carry the gain. The M7 ablation cannot separate `+v` from `+f`
+(the leave-one-out cells are still under [To measure](#to-measure)).
+
+The product's agent still keeps value hints and worked examples off. The
+first of M7's three reasons (a net gain of 1 and 4 over `full+a`) is
+weaker now: on holdout50 it is 8 and 8. The other two stand, and the
+warehouse re-recording under To measure is what would decide it, not
+BIRD.
+
+### The run
+
+`make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=holdout50
+VARIANTS=full+a,full+v+f+a,full RECORD=1 RESUME=1`, `qwen2.5-coder:7b`
+(Ollama digest `dae161e27b0e`, 4.7 GB) on Ollama 0.40.6 in Compose (8 GB
+limit), CPU only, 4 vCPU, temperature 0, seed 0, one request at a time.
+240 model calls, 6.14 h of model time in total (the sum of each recorded
+call's latency). The run took two sessions: the first was interrupted
+after 144 calls (all of `full+a` and the start of `full+v+f+a`; 3.65 h of
+model time); `RESUME=1` answered those from the recordings and made the
+remaining 96 calls live, in 149 min 23 s of wall time (`wall_seconds`
+8960.8 in the report). The corrected track needs few calls of its own,
+because most of its questions are worded as in the official track and
+reuse the same request. BIRD's `calculate_ex` agrees with the harness on
+245 / 245 pairs. Cost: $0. The replay (`make eval`, what CI runs) checks
+the run verdict for verdict in 9 s, beside dev50's.
 
 ## To measure
 

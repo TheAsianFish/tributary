@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import re
 import sys
 from collections.abc import Sequence
@@ -30,7 +29,21 @@ from pathlib import Path
 from typing import Any
 
 from eval.bird.failures import failures_table, load_labels
-from eval.bird.run import ESTIMATE_MODELS, estimate_cost
+from eval.bird.paired import (
+    CANDIDATE,
+    CHALLENGER,
+    DECIDING_MODEL,
+    DECIDING_PROVIDER,
+    DECIDING_SUBSET,
+    PAIRINGS,
+    PairingError,
+    accuracy,
+    decide,
+    deciding_run,
+    mcnemar_exact,
+    pair,
+)
+from eval.bird.run import ESTIMATE_MODELS, estimate_cost, wilson
 from tributary.config import REPO_ROOT
 
 RESULTS_MD = REPO_ROOT / "RESULTS.md"
@@ -121,9 +134,9 @@ def _ordered(items: dict[str, Any], first: Sequence[str] = ("full",)) -> list[tu
 
 def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     lines = [
-        "| Model | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging "
+        "| Model | Subset | Variant | Track | EX | 95% interval | Simple | Moderate | Challenging "
         "| Model calls | Tokens in / out | Model time per question, p50 / p95 |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for _, report in reports:
         model = f"{report['model']} ({report['provider']})"
@@ -139,7 +152,7 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
                         return f"{e['correct']}/{e['total']}" if e else DASH
 
                     lines.append(
-                        f"| {model} | `{variant}-{repairs}` | {track} | "
+                        f"| {model} | {report['subset']} | `{variant}-{repairs}` | {track} | "
                         f"**{s['correct']}/{s['total']}** ({_pct(s['ex'])}) | "
                         f"{_pct(lo)}{DASH}{_pct(hi)} | {cell('simple')} | {cell('moderate')} | "
                         f"{cell('challenging')} | {s['model_calls']} | "
@@ -147,15 +160,6 @@ def ex_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
                         f"{s['model_ms_p50'] / 1000:.1f} s / {s['model_ms_p95'] / 1000:.1f} s |"
                     )
     return "\n".join(lines)
-
-
-def mcnemar_exact(gained: int, lost: int) -> float:
-    """Two-sided exact McNemar p-value: the discordant pairs as a fair coin's flips."""
-    n = gained + lost
-    if n == 0:
-        return 1.0
-    tail: float = sum(math.comb(n, i) for i in range(min(gained, lost) + 1)) / 2**n
-    return min(1.0, 2 * tail)
 
 
 def paired(baseline: Sequence[dict[str, Any]], other: Sequence[dict[str, Any]]) -> tuple[int, int]:
@@ -306,6 +310,133 @@ def ledger_table(reports: Sequence[tuple[str, dict[str, Any]]]) -> str:
     return "\n".join(lines)
 
 
+# --- M10: the held-out sample, the pooled view and the default ---------------------------
+
+
+TRACK_ORDER = ("official", "corrected")
+
+
+def _ex_cell(correct: int, total: int) -> str:
+    lo, hi = wilson(correct, total)
+    ex = correct / total if total else 0.0
+    return f"**{correct}/{total}** ({_pct(ex)}, {_pct(lo)}{DASH}{_pct(hi)})"
+
+
+def holdout_table(report: dict[str, Any]) -> str:
+    """Each variant on the held-out subset: EX with its interval on both tracks, refusals,
+    calls, tokens and model time (with repairs)."""
+    variants = report["variants"]
+    tracks = [t for t in TRACK_ORDER if t in next(iter(variants.values()))]
+    lines = [
+        "| Variant | "
+        + " | ".join(f"{t.capitalize()} EX (95% interval)" for t in tracks)
+        + " | Official EX, no repairs | Refused | Model calls | Tokens in / out "
+        "| Model time per question, p50 / p95 |",
+        "|---|" + "---:|" * (len(tracks) + 5),
+    ]
+    ledger = {row["variant"]: row for row in report["ledger"]}
+    for name, entry in _ordered(variants, ("full", CHALLENGER, CANDIDATE)):
+        cells = [_ex_cell(entry[t]["r2"]["correct"], entry[t]["r2"]["total"]) for t in tracks]
+        r0 = entry[tracks[0]]["r0"]
+        cells.append(DASH if r0 is None else f"{r0['correct']}/{r0['total']}")
+        s0 = entry[tracks[0]]["r2"]
+        cells.append(str((s0["by_status"] or {}).get("unanswerable", 0)))
+        row = ledger[f"{name}-r2"]
+        cells += [
+            str(row["model_calls"]),
+            f"{row['input_tokens']:,} / {row['output_tokens']:,}",
+            f"{s0['model_ms_p50'] / 1000:.1f} s / {s0['model_ms_p95'] / 1000:.1f} s",
+        ]
+        lines.append(f"| `{name}` | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def _pair_cells(reports: Sequence[dict[str, Any]], baseline: str, other: str, track: str) -> str:
+    try:
+        p = pair(reports, baseline, other, track)
+    except PairingError:
+        return f"{DASH} | {DASH} | {DASH} | {DASH}"
+    return (
+        f"{p.n} | {p.baseline_correct} {chr(0x2192)} {p.other_correct} | "
+        f"+{p.gained} -{p.lost} | {p.p:.3f}"
+    )
+
+
+def pairs_table(reports: Sequence[dict[str, Any]]) -> str:
+    """M10's three pairings, on each subset alone and pooled over all of them."""
+    columns = [*[[r] for r in reports], list(reports)] if len(reports) > 1 else [list(reports)]
+    labels = [" + ".join(str(r["subset"]) for r in group) for group in columns]
+    header = "| Pairing | Track | " + " | ".join(
+        f"{label}: n | {label}: correct | {label}: +gained -lost | {label}: p" for label in labels
+    )
+    lines = [header + " |", "|---|---|" + "---:|" * (4 * len(columns))]
+    for baseline, other in PAIRINGS:
+        for track in TRACK_ORDER:
+            cells = [_pair_cells(group, baseline, other, track) for group in columns]
+            lines.append(f"| `{other}` vs `{baseline}` | {track} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def pooled_table(reports: Sequence[dict[str, Any]]) -> str:
+    """Each M10 variant's EX pooled over every subset, with its interval."""
+    labels = " + ".join(str(r["subset"]) for r in reports)
+    lines = [
+        f"| Variant | Official EX, {labels} | Corrected EX, {labels} |",
+        "|---|---:|---:|",
+    ]
+    for name in ("full", CHALLENGER, CANDIDATE):
+        cells = []
+        for track in TRACK_ORDER:
+            try:
+                cells.append(_ex_cell(*accuracy(reports, name, track)))
+            except PairingError:
+                cells.append(DASH)
+        lines.append(f"| `{name}` | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def decision_text(report: dict[str, Any]) -> str:
+    """The pre-stated rule applied to the held-out run, in one paragraph."""
+    d = decide(report)
+    counts = "; ".join(
+        f"{track} {c} against {ch} for `{CHALLENGER}`" for track, c, ch in d.by_track
+    )
+    if d.kept:
+        verdict = (
+            f"`{CANDIDATE}` is at least level with `{CHALLENGER}` on both tracks, so it "
+            f"stays `make eval`'s live default (`full,{CANDIDATE}`)."
+        )
+    else:
+        verdict = (
+            f"`{CANDIDATE}` is behind `{CHALLENGER}` on at least one track, so under the rule "
+            f"the live default becomes `full,{CHALLENGER}`: the M7 gain of value hints and "
+            "worked examples did not replicate on questions that did not pick it."
+        )
+    return (
+        f"**The rule, applied.** On {DECIDING_SUBSET} alone, `{CANDIDATE}` answers {counts}. "
+        + verdict
+    )
+
+
+def m10_reports(
+    reports: Sequence[tuple[str, dict[str, Any]]],
+    model: str = DECIDING_MODEL,
+    provider: str = DECIDING_PROVIDER,
+) -> tuple[dict[str, Any], list[dict[str, Any]]] | None:
+    """The held-out run the rule was stated for and every run of the same model to pool with
+    it (dev50 first). A run of another model, whatever its file name, takes no part."""
+    holdout = deciding_run([r for _, r in reports], model, provider)
+    if holdout is None:
+        return None
+    same = [
+        r
+        for _, r in reports
+        if r.get("model") == model and r.get("provider") == provider and r.get("subset") != "all"
+    ]
+    same.sort(key=lambda r: (r["subset"] != "dev50", r["subset"]))
+    return holdout, same
+
+
 def render_all(results: Path = RESULTS) -> dict[str, str]:
     reports = run_reports(results)
     tables = {
@@ -332,6 +463,16 @@ def render_all(results: Path = RESULTS) -> dict[str, str]:
     tables["ablation"] = ablation_table(basis) if basis is not None else none
     if labels is not None and basis is not None:
         tables["failures"] = failures_table(labels, basis)
+    m10 = m10_reports(reports)
+    pending = f"No {DECIDING_SUBSET} run recorded yet."
+    if m10 is None:
+        tables.update(holdout=pending, pairs=pending, pooled=pending, decision=pending)
+    else:
+        holdout, pooled = m10
+        tables["holdout"] = holdout_table(holdout)
+        tables["pairs"] = pairs_table(pooled)
+        tables["pooled"] = pooled_table(pooled)
+        tables["decision"] = decision_text(holdout)
     return tables
 
 

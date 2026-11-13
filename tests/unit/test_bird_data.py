@@ -161,6 +161,67 @@ def test_select_dev50_keeps_exactly_the_subset_members() -> None:
     assert [q.id for q in chosen] == [q.id for q in pool if q.id in {c.id for c in chosen}]
 
 
+def _corrected_ids() -> list[int]:
+    rows = json.loads((data.DATA_DIR / data.CORRECTED.name).read_text(encoding="utf-8"))
+    return [int(r["question_id"]) for r in rows]
+
+
+def test_holdout50_is_disjoint_from_dev50_with_the_same_quota() -> None:
+    pool = official_questions()
+    by_id = {q.id: q for q in pool}
+    allowed = _corrected_ids()
+
+    dev50 = subset_ids("dev50", pool, also_in=allowed)
+    holdout = subset_ids("holdout50", pool, also_in=allowed)
+
+    assert len(set(holdout)) == 50
+    assert not set(holdout) & set(dev50)
+    assert set(holdout) <= set(allowed)
+    assert Counter(by_id[i].difficulty for i in holdout) == {
+        "simple": 15,
+        "moderate": 25,
+        "challenging": 10,
+    }
+
+
+def test_holdout50_is_the_seeded_rule_applied_to_what_dev50_left() -> None:
+    pool = official_questions()
+    allowed = set(_corrected_ids())
+    dev50 = set(subset_ids("dev50", pool, also_in=allowed))
+    by_id = {q.id: q for q in pool}
+
+    holdout = subset_ids("holdout50", pool, also_in=allowed)
+
+    # Per difficulty, the 'holdout50'-seeded hash ranks every chosen id ahead of every
+    # eligible id left out: the same rule as dev50, with dev50's ids removed first.
+    for difficulty in ("simple", "moderate", "challenging"):
+        eligible = [
+            q.id
+            for q in pool
+            if q.difficulty == difficulty and q.id in allowed and q.id not in dev50
+        ]
+        chosen = [i for i in holdout if by_id[i].difficulty == difficulty]
+        left = set(eligible) - set(chosen)
+        worst = max(data._rank("holdout50", i) for i in chosen)
+        assert all(data._rank("holdout50", i) > worst for i in left)
+
+
+def test_committed_subset_ids_are_what_the_rule_draws() -> None:
+    # The ids were committed before any model call on holdout50: the rule must never move.
+    pool = official_questions()
+    committed = data.committed_subsets()
+
+    assert set(committed) == set(data.SUBSETS)
+    for name, ids in committed.items():
+        assert ids == subset_ids(name, pool, also_in=_corrected_ids())
+        assert sorted(q.id for q in select(pool, name)) == ids
+
+
+def test_select_refuses_an_unknown_subset() -> None:
+    with pytest.raises(ValueError, match="unknown subset 'dev51'"):
+        select([question(1)], "dev51")
+
+
 # --- prompt -------------------------------------------------------------------------------------
 
 

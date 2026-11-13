@@ -87,18 +87,26 @@ record: ## Re-record the 40 questions' model calls from a live provider (PROVIDE
 
 # BIRD Mini-Dev (M4). `make bird` needs PostgreSQL (`docker compose up -d postgres`);
 # `make eval` with PROVIDER=fake replays recorded model calls and database executions and
-# needs neither a model nor a database (CI runs it).
+# needs neither a model nor a database (CI runs it): every committed run, each on its own subset.
 VARIANTS ?=
 TRACKS ?= official,corrected
 SUBSET ?= dev50
+BIRD_RUNS = $(sort $(wildcard eval/results/bird-*-ollama-*.json eval/results/bird-*-anthropic-*.json))
 
 bird: ## Download BIRD Mini-Dev, load it into PostgreSQL, verify every gold query, index values (~3 min)
 	uv run python -m eval.bird.load
 	uv run python -m eval.bird.values
 
-eval: ## BIRD execution accuracy (PROVIDER=fake replays; ollama|anthropic run live, RECORD=1 stores)
+eval: ## BIRD execution accuracy (PROVIDER=fake replays every recorded run; ollama|anthropic run live, RECORD=1 stores)
+ifeq ($(PROVIDER),fake)
+	@set -e; for run in $(BIRD_RUNS); do \
+		echo "== replay $$run"; \
+		uv run python -m eval.bird.run --provider fake --recorded $$run $(if $(VARIANTS),--variants $(VARIANTS)); \
+	done
+else
 	uv run python -m eval.bird.run --provider $(PROVIDER) $(if $(VARIANTS),--variants $(VARIANTS)) \
 		--tracks $(TRACKS) --subset $(SUBSET) $(if $(MODEL),--model $(MODEL)) $(if $(RECORD),--record) $(if $(RESUME),--resume)
+endif
 	uv run python -m eval.bird.report $(if $(filter fake,$(PROVIDER)),--check)
 
 eval-link: ## Schema-linking recall and precision on BIRD, full vs bm25 (offline)
