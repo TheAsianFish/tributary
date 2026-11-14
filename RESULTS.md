@@ -2160,6 +2160,15 @@ right on 3 of those. Graded on the second pass instead, the split is
 | The plain pass is right more often when they agree, one-sided Fisher p < 0.05 | **Yes:** 22 / 25 against 3 / 15, p = 2.7 × 10⁻⁵ (*transfers*; the simulation gave this outcome 41.6% before the run) |
 | The stated `confidence` is "high" on at least 95% of answers | **Yes, on all of them:** 40 / 40 in the plain pass, 34 / 34 answered in the second |
 
+**The simulated odds, re-run.** The pre-registered block's odds (41.6%
+*transfers*, 35.6% *inconclusive*, 22.8% *not seen*) do not come back
+exactly from the call it names: `simulate([True] * 25 + [False] * 15,
+0.51, 0.24)` (100,000 runs, seed 13) gives 42.0%, 35.6% and 22.5%, and the
+unrounded rates (0.512, 0.241) give 42.2%, 35.4% and 22.3%. The block
+stays as committed; the difference is under half a point and changes no
+reading of it. A unit test now pins the re-run figures, so the stated
+odds and the code cannot drift apart again.
+
 **Against the baselines.** Answered without a repair marks more questions
 (88% against 62.5%) and is right on fewer of them (69% against 88%), so by
 the stated rule agreement does not beat it: agreement is not more accurate

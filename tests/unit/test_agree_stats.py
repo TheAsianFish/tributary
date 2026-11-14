@@ -7,6 +7,7 @@ import math
 import pytest
 
 from eval.agree_stats import Table, fisher_greater, needed, rates_from, simulate, verdict
+from tributary.config import REPO_ROOT
 
 
 def test_fisher_matches_a_hand_computed_tail() -> None:
@@ -52,3 +53,13 @@ def test_simulation_is_seeded_and_sums_to_one() -> None:
 
 def test_rates_from_a_table() -> None:
     assert rates_from(Table(32, 9, 6, 53)) == (32 / 38, 9 / 62)
+
+
+def test_the_odds_results_md_states_are_what_the_simulation_gives() -> None:
+    # The pre-registered block's 41.6 / 35.6 / 22.8 do not come back from the call it names;
+    # RESULTS.md states the re-run figures beside it, and they must stay what the code gives.
+    labels = [True] * 25 + [False] * 15
+    odds = {k: f"{100 * v:.1f}%" for k, v in simulate(labels, 0.51, 0.24).items()}
+    assert odds == {"transfers": "42.0%", "inconclusive": "35.6%", "not seen": "22.5%"}
+    text = " ".join((REPO_ROOT / "RESULTS.md").read_text(encoding="utf-8").split())
+    assert "0.51, 0.24)` (100,000 runs, seed 13) gives 42.0%, 35.6% and 22.5%" in text
