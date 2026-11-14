@@ -2172,9 +2172,11 @@ odds and the code cannot drift apart again.
 **Against the baselines.** Answered without a repair marks more questions
 (88% against 62.5%) and is right on fewer of them (69% against 88%), so by
 the stated rule agreement does not beat it: agreement is not more accurate
-at a coverage at least as large; it is a different trade-off. It leaves
-out 10 more questions, of which the plain pass got only 2 right. It does
-beat the `simple` label, which marks 30% of the questions at 75%.
+at a coverage at least as large; it is a different trade-off. The two
+signals do not nest: no-repair marks 12 questions that agreement does not
+(the plain pass got 3 of them right), and agreement marks 2 that needed a
+repair (1 right). It does beat the `simple` label, which marks 30% of the
+questions at 75%.
 
 **What agreement cannot see.** The three agreed answers that were wrong are
 the same query in both passes, up to aliases, and the same errors the M3
