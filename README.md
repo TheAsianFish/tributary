@@ -20,7 +20,7 @@ every claim about it is a command that re-runs the measurement.
 
 ![Demo: the running Compose stack, the 50,000 sample events in PostgreSQL once each, guarded queries through tributary sql (a DELETE and a disguised pg_terminate_backend both blocked), and a question answered by tributary ask with its SQL and provenance](docs/demo.gif)
 
-**Status: release 0.1.0, and twelve of the thirteen milestones in
+**Status: release 0.1.0, and all thirteen milestones in
 [PLAN.md](PLAN.md) done.** Kafka feeds one Spark
 application with two streaming queries: one into the PostgreSQL warehouse,
 modelled with dbt, and one into an Iceberg table on MinIO, queried with Trino.
@@ -41,6 +41,9 @@ stamped in the future costs the events after it, against a prediction made
 from the sample first. `make bench-late` replays the sample twice and sends
 late, malformed and future events, to show that a reconciliation of the
 topic tells a late copy from a lost event and writes the lost ones back.
+`make eval-agree` tests, under a rule written down before the run, whether
+two prompt variants agreeing on an answer's rows says it is probably right;
+`tributary ask --second-pass` shows that agreement with the answer.
 `make bench-query` times ten queries on PostgreSQL,
 Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured
 numbers are in [RESULTS.md](RESULTS.md), and changes in
@@ -433,6 +436,19 @@ there because the one before it can be wrong:
 | Database (`tributary/agent/execute.py`, `roles.py`) | Role `tributary_agent`: SELECT on marts and `ops` only, read-only sessions by default. Each query: its own connection, a prepared statement (one statement, enforced by the protocol), `READ ONLY` transaction, statement timeout, empty `search_path`, `EXPLAIN` cost ceiling, row cap, and a result byte cap PostgreSQL enforces before it sends a row (`TRIBUTARY_AGENT_MAX_RESULT_BYTES`, 8 MiB). With the guard switched off it still refuses 92 of the 131 attacks. | Catalog reads, `set_config`, sleeping, signalling its own sessions and whole-row calls are open to any role: the 39 the guard alone stops. |
 | Answer (`answer.py`, `provenance.py`) | The text is composed from the rows (the model never restates a number), and carries the SQL that ran, the tables read and, for each, its last successful rebuild and the latest result of every check on it and on its sources. Stale or failing tables become warnings in the answer text. | A correct query over a stale or broken table is still a wrong answer. |
 
+**An answer that says when it is probably wrong.** The model's own
+`confidence` is "high" on every answer, right or wrong, so it is no signal.
+With `TRIBUTARY_AGENT_SECOND_PASS=true` (or `tributary ask --second-pass`)
+the agent asks again with value hints and three worked examples and marks
+the answer `agreement: agreed` when both passes return the same set of rows,
+`differed` otherwise. The answer is always the first pass's: no vote and no
+choice between answers, so the flag never changes what is answered. On the
+40 warehouse questions, under a rule fixed before the second pass was
+recorded, the answer was right 22 times in 25 when the passes agreed and 3
+in 15 when they differed (one-sided Fisher p = 2.7 × 10⁻⁵), for a median 60 s
+of extra model time per question on a CPU. It cannot see an error both
+prompts share: the three agreed wrong answers were the same query twice.
+
 The model boundary (`tributary/agent/provider.py`) is one request shape and
 three providers: `anthropic` (structured outputs, prompt caching on the
 schema prefix, server-side fallback on refusals, cost per call), `ollama`
@@ -617,6 +633,7 @@ runs are listed there under "To measure", with their estimated cost.
 | Database layer alone, guard off (`make eval-guard-db`) | 92 / 131 refused; the 39 that run (catalog reads, `set_config`, `version()`, `(10).pg_sleep`, and `p.pg_terminate_backend` over an `unnest` of the role's own pids, which killed its other sessions from a read-only transaction, and `w.pg_typeof` over a mart) are the guard's alone to stop |
 | 40 warehouse questions on local models (CPU, $0) | `qwen2.5-coder:7b` 25 / 40, `:14b` 31 / 40 (execution accuracy); 4 of the 6 questions both miss are the same error, a pre-aggregated mart whose grain does not fit the question |
 | Replay of the recorded runs (what CI tests) | Same 40 verdicts and SQL in 2.1 s, against 31 min live for the 7B run (68 min for 14B) |
+| Does agreement between two prompt passes say an answer is right? (`make eval-agree`, 40 warehouse questions, rule fixed first, `qwen2.5-coder:7b`, $0) | The plain answer is right 22 / 25 when the passes return the same rows, 3 / 15 when they do not (one-sided Fisher p = 2.7 × 10⁻⁵; the hypothesis transfers, though 25 agreed is one over the predicted 14–24). The model's own `confidence` said "high" on 40 / 40. The 3 agreed wrong answers are the same query in both passes. The second pass alone scores 28 / 40 (+6 −3 against the plain pass, p = 0.51), so the product's defaults stay as they are; it adds a median 60 s of model time per question. On BIRD (exploratory) the same split is 32 / 41 against 6 / 59 |
 | BIRD gold in PostgreSQL (`make bird`) | 500 / 500 official gold queries execute; 449 / 498 corrected labels transpile from SQLite and return the same rows on both engines |
 | BIRD label noise, by execution | On the 333 questions worded identically in both releases, 66 corrected labels (19.8%) return different rows from the official gold |
 | BIRD's own scorer against the harness's | `calculate_ex` agrees on 449 / 449 gold pairs and 134 / 134 live pairs |
@@ -650,24 +667,19 @@ the release steps and [CHANGELOG.md](CHANGELOG.md) what each version holds.
 
 ## Roadmap
 
-Twelve milestones in [PLAN.md](PLAN.md) are done, on local-model
+All thirteen milestones in [PLAN.md](PLAN.md) are done, on local-model
 recordings where they named Claude (there was no API key). M10 tested the
 benchmark default on 50 questions that did not pick it, under a rule
 written down first. M11 bounded how far ahead of the clock one event may be,
 measured what the old bound cost against a prediction made first, and made
 dropped and rejected rows a quality check. M12 made that check tell a late
 copy from a lost event, by reconciling the topic against the landing table,
-and writes the lost ones back. One more is planned (PLAN.md, "Evolution
-round 2"):
+and writes the lost ones back. M13 tested, on the 40 warehouse questions and
+under a rule fixed first, whether two prompt passes agreeing says an answer
+is right (it does: 22 / 25 against 3 / 15), and shows that agreement with
+the answer behind an opt-in second pass.
 
-- **M13, an answer that says when it is probably wrong.** The model calls
-  every answer "high" confidence. In the recorded BIRD runs, two prompt
-  variants returning the same rows goes with 32 of 41 right answers against
-  6 of 59 when they differ; M13 tests that on the 40 warehouse questions
-  under a rule fixed first, and adds an opt-in second pass whose agreement
-  is shown with the answer.
-
-After those:
+Next:
 
 1. **Claude numbers.** The 40 warehouse questions and BIRD dev50 on Claude
    Haiku 5.5 and Opus 5.5, recorded so CI replays them. RESULTS.md lists the
@@ -680,8 +692,10 @@ After those:
    to carry the answer.
 3. **The rest of the M7 grid** on the local model: the leave-one-out cells,
    which M10 made the open question (value hints or examples?),
-   and the vote at a lower temperature. Then the warehouse questions
-   re-recorded with value hints and examples, so the product can turn them on.
+   and the vote at a lower temperature. The warehouse questions with value
+   hints and examples are recorded now (28 / 40 against 25 / 40, +6 −3,
+   p = 0.51): too few questions to turn them on by default, so more
+   warehouse questions come first.
 4. **A shared rate-limit store** for multi-replica API deployments.
 5. **An Iceberg REST catalog** in place of the JDBC catalog, and a Trino
    dialect for the guard, so `/sql` can run guarded queries on the lake.

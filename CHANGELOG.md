@@ -47,6 +47,17 @@ All notable changes to this project are recorded here. The format follows
 - `make bench-late` (the sample replayed twice, then 50,000 events with 100
   late and two rejected, with and without passes every 30 s).
 
+- **An answer that says when it is probably wrong (M13).** An opt-in second
+  pass (`TRIBUTARY_AGENT_SECOND_PASS`, `tributary ask --second-pass`) asks
+  again with value hints and three worked examples and marks the answer
+  `agreement: agreed` or `differed` by whether both passes return the same
+  set of rows; the answer stays the first pass's. `make eval-agree` replays
+  both warehouse passes offline (recorded model calls and, now, recorded
+  warehouse executions) and reads the agreement table by a rule fixed
+  before the second pass was recorded: 22 / 25 right when the passes agree
+  against 3 / 15 when they differ, p = 2.7e-5. `make record` stores the
+  warehouse executions too and names a report by its planner features.
+
 ### Changed
 
 - **The future-skew bound is half the watermark delay (300 s), not a day.**
