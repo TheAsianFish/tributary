@@ -7,8 +7,64 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-14
+
+The first release: the pipeline, the warehouse and lake, the guarded agent, its
+benchmark harness and the ingest and query benchmarks. Published to PyPI as
+`tributary-platform` (the name `tributary` was taken); the import name and the
+command stay `tributary`.
+
+A release candidate was cut on 2026-11-11 and never tagged. The work since
+(the guard's differential oracle, the held-out benchmark sample, the
+future-skew bound, topic reconciliation and the second pass) is part of this
+release; "Changed" and "Fixed" below are against that candidate.
+
 ### Added
 
+- **Ingest (M1).** A producer that replays the committed 50,000-event sample of
+  Wikipedia's `recentchange` stream, or reads the live stream with `--live`,
+  into Kafka 4.2 (KRaft) with the idempotent producer. A Spark Structured
+  Streaming job parses, watermarks (10 minutes, chosen from the sample's
+  measured lateness) and deduplicates the events, then writes them to
+  PostgreSQL by `COPY` and `INSERT ... ON CONFLICT DO NOTHING`, so a replayed
+  micro-batch changes nothing.
+- **Warehouse, lake and orchestration (M2).** A dbt project (staging, five
+  marts, seeds, freshness and hourly volume-anomaly tests) with every check's
+  result in `ops.quality_runs`. A second streaming query writes an Iceberg
+  table on MinIO, partitioned by hour, which Trino queries. Airflow 3 runs
+  `warehouse_refresh` when new rows land and `lake_maintenance` every hour
+  (compaction, snapshot expiry, a reconciliation of every closed hour).
+- **The agent and the API (M3).** `tributary ask`, `tributary sql` and a
+  FastAPI service (`/query`, `/sql`, `/catalog`, `/freshness`). A planner turns
+  the question into SQL with a model (Claude through the Anthropic SDK with
+  structured outputs and prompt caching, or a local model through Ollama),
+  repairs it from the guard's or PostgreSQL's error, and answers with the rows,
+  the SQL and each table's freshness and quality status. A sqlglot AST guard
+  and a read-only database role with a timeout and a cost ceiling stand
+  between the model and the warehouse. The guard suite, `make eval-guard`,
+  checks both.
+- **BIRD Mini-Dev in PostgreSQL (M4).** `make bird` loads the eleven
+  databases and verifies every gold query. The corrected-label track
+  transpiles and verifies the SQLite gold. `make eval` grades execution
+  accuracy on both tracks from recorded model calls and database executions,
+  so CI replays it with no model and no database. `make eval-link` measures
+  schema linking with the `full` and `bm25` linkers.
+- **Ingest benchmarks (M5).** `make bench` kills the stream job (aimed between
+  a sink's write and Spark's commit) and the broker, then checks zero loss and
+  zero duplicates in both stores. `make bench-scale` measures sustained
+  throughput at 1, 3 and 6 partitions and names the bottleneck.
+- **Query engines (M6).** `tributary bench load` and `make bench-query` time
+  ten queries on PostgreSQL, Trino over PostgreSQL and Trino over Iceberg at
+  1M and 20M rows, warm and cold. They also compare three Iceberg layouts on
+  pruning, and run one federated query.
+- **Agent quality (M7).** Value hints from a value index, worked examples from
+  the marts' dbt docs or BIRD's held-out questions, self-consistency voting by
+  result hash, the M7 ablation with McNemar tests and a hand-checked failure
+  taxonomy.
+- **Release (M8).** The `tributary-platform` sdist and wheel, `make dist`
+  (twine check plus a clean-venv install of the wheel), a tag-guarded PyPI
+  workflow by trusted publishing, multi-architecture GHCR images for the API
+  and the stream job, RELEASE.md and this changelog.
 - **A differential oracle for the guard (M9).** `make eval-guard-diff` crosses
   every one-argument function in `pg_proc` with committed spelling templates
   and the 40 gold queries, and asks PostgreSQL, without running anything, which
@@ -106,60 +162,6 @@ All notable changes to this project are recorded here. The format follows
   wall-clock events that was up to 2.8 h ahead of the clock, and the next
   benchmark run lost every event (the M5 incident). They now time events
   behind the clock.
-
-## [0.1.0] - 2026-11-11
-
-The first release: the pipeline, the warehouse and lake, the guarded agent, its
-benchmark harness and the ingest and query benchmarks. Published to PyPI as
-`tributary-platform` (the name `tributary` was taken); the import name and the
-command stay `tributary`.
-
-### Added
-
-- **Ingest (M1).** A producer that replays the committed 50,000-event sample of
-  Wikipedia's `recentchange` stream, or reads the live stream with `--live`,
-  into Kafka 4.2 (KRaft) with the idempotent producer. A Spark Structured
-  Streaming job parses, watermarks (10 minutes, chosen from the sample's
-  measured lateness) and deduplicates the events, then writes them to
-  PostgreSQL by `COPY` and `INSERT ... ON CONFLICT DO NOTHING`, so a replayed
-  micro-batch changes nothing.
-- **Warehouse, lake and orchestration (M2).** A dbt project (staging, five
-  marts, seeds, freshness and hourly volume-anomaly tests) with every check's
-  result in `ops.quality_runs`. A second streaming query writes an Iceberg
-  table on MinIO, partitioned by hour, which Trino queries. Airflow 3 runs
-  `warehouse_refresh` when new rows land and `lake_maintenance` every hour
-  (compaction, snapshot expiry, a reconciliation of every closed hour).
-- **The agent and the API (M3).** `tributary ask`, `tributary sql` and a
-  FastAPI service (`/query`, `/sql`, `/catalog`, `/freshness`). A planner turns
-  the question into SQL with a model (Claude through the Anthropic SDK with
-  structured outputs and prompt caching, or a local model through Ollama),
-  repairs it from the guard's or PostgreSQL's error, and answers with the rows,
-  the SQL and each table's freshness and quality status. A sqlglot AST guard
-  and a read-only database role with a timeout and a cost ceiling stand
-  between the model and the warehouse. The guard suite, `make eval-guard`,
-  checks both.
-- **BIRD Mini-Dev in PostgreSQL (M4).** `make bird` loads the eleven
-  databases and verifies every gold query. The corrected-label track
-  transpiles and verifies the SQLite gold. `make eval` grades execution
-  accuracy on both tracks from recorded model calls and database executions,
-  so CI replays it with no model and no database. `make eval-link` measures
-  schema linking with the `full` and `bm25` linkers.
-- **Ingest benchmarks (M5).** `make bench` kills the stream job (aimed between
-  a sink's write and Spark's commit) and the broker, then checks zero loss and
-  zero duplicates in both stores. `make bench-scale` measures sustained
-  throughput at 1, 3 and 6 partitions and names the bottleneck.
-- **Query engines (M6).** `tributary bench load` and `make bench-query` time
-  ten queries on PostgreSQL, Trino over PostgreSQL and Trino over Iceberg at
-  1M and 20M rows, warm and cold. They also compare three Iceberg layouts on
-  pruning, and run one federated query.
-- **Agent quality (M7).** Value hints from a value index, worked examples from
-  the marts' dbt docs or BIRD's held-out questions, self-consistency voting by
-  result hash, the M7 ablation with McNemar tests and a hand-checked failure
-  taxonomy.
-- **Release (M8).** The `tributary-platform` sdist and wheel, `make dist`
-  (twine check plus a clean-venv install of the wheel), a tag-guarded PyPI
-  workflow by trusted publishing, multi-architecture GHCR images for the API
-  and the stream job, RELEASE.md and this changelog.
 
 ### Security
 
