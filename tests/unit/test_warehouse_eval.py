@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from types import SimpleNamespace
 
-from eval.warehouse_eval import _display, result_key, same_result, summarise
-from tributary.config import REPO_ROOT
+from eval.warehouse_eval import (
+    _display,
+    limits_of,
+    report_name,
+    result_key,
+    same_result,
+    summarise,
+    variant,
+)
+from tributary.config import REPO_ROOT, Settings
 
 
 def test_numbers_compare_by_value_across_types() -> None:
@@ -38,3 +47,15 @@ def test_summary_of_nothing() -> None:
     summary = summarise([])
     assert summary["correct"] == 0
     assert summary["unpriced_calls"] == 0
+
+
+def test_a_run_with_planner_features_gets_its_own_report() -> None:
+    # The second pass must not overwrite the plain pass's report.
+    provider = SimpleNamespace(model="qwen2.5-coder:7b")
+    plain = Settings(provider="ollama")
+    second = Settings(provider="ollama", agent_values=True, agent_examples=3)
+    assert variant(plain) == ""
+    assert variant(second) == "vf"
+    assert report_name(plain, provider) == "warehouse-ollama-qwen2.5-coder-7b.json"
+    assert report_name(second, provider) == "warehouse-ollama-qwen2.5-coder-7b-vf.json"
+    assert limits_of(second)["examples"] == 3
