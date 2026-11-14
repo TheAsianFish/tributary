@@ -12,13 +12,15 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
+from typing import Literal
 
 import structlog
 
+from tributary.agent.agreement import same_rows
 from tributary.agent.answer import Answer, compose, provenance_warnings, result_text
 from tributary.agent.catalog import Catalog, load_dbt
 from tributary.agent.context import value_hints, worked_examples
@@ -28,13 +30,16 @@ from tributary.agent.guard import Guard
 from tributary.agent.linker import DEFAULT_K, Link, link_schema
 from tributary.agent.planner import Planner, PlanOutcome
 from tributary.agent.provenance import PostgresProvenance, ProvenanceSource, TableProvenance
-from tributary.agent.provider import Provider, Usage
+from tributary.agent.provider import Provider, ProviderError, RecordingMissing, Usage
 from tributary.agent.values import ValueIndex
 from tributary.agent.vote import VotingPlanner
 from tributary.config import Settings
 from tributary.warehouse.catalog import current_version
 
 log = structlog.get_logger(__name__)
+
+# The second pass's prompt variant: value hints on and this many worked examples.
+SECOND_PASS_EXAMPLES = 3
 
 
 class CatalogSource:
@@ -74,6 +79,9 @@ class Limits:
     values: bool = False  # hint the indexed values the question names
     examples: int = 0  # show up to this many worked examples from the dbt docs
     votes: int = 1  # self-consistency draws per question (1: no vote)
+    # Ask again with another prompt variant (value hints, SECOND_PASS_EXAMPLES worked
+    # examples) and report whether its rows agree; the answer stays the first pass's.
+    second_pass: bool = False
 
 
 class Agent:
@@ -92,8 +100,10 @@ class Agent:
         self.executor = executor
         self.provenance = provenance
         self.limits = limits or Limits()
+        _check_second_pass(self.limits)
         self._clock = clock
         self._planners: dict[str | None, Planner | VotingPlanner] = {}
+        self._second_planners: dict[str | None, Planner] = {}
 
     @property
     def provider(self) -> Provider:
@@ -111,28 +121,43 @@ class Agent:
     def guard(self, catalog: Catalog | None = None) -> Guard:
         return Guard.for_catalog(catalog or self.catalog(), max_rows=self.limits.row_cap)
 
+    def _single_planner(self, catalog: Catalog, *, values: bool, examples: int) -> Planner:
+        """One planner on ``catalog`` with these prompt features and the agent's limits."""
+        context = []
+        if examples:
+            pool = ExamplePool.from_catalog(catalog)
+            context.append(worked_examples(pool, examples))
+        if values:
+            context.append(value_hints(ValueIndex.from_catalog(catalog)))
+        return Planner(
+            self.provider,
+            self.guard(catalog),
+            self.executor,
+            catalog,
+            max_repairs=self.limits.max_repairs,
+            row_cap=self.limits.row_cap,
+            linker=linker_for(self.limits.linker, self.limits.link_k),
+            context=context,
+        )
+
     def planner(self) -> Planner | VotingPlanner:
         catalog = self.catalog()
         planner = self._planners.get(catalog.version)
         if planner is None or planner.catalog is not catalog:
-            context = []
-            if self.limits.examples:
-                pool = ExamplePool.from_catalog(catalog)
-                context.append(worked_examples(pool, self.limits.examples))
-            if self.limits.values:
-                context.append(value_hints(ValueIndex.from_catalog(catalog)))
-            single = Planner(
-                self.provider,
-                self.guard(catalog),
-                self.executor,
-                catalog,
-                max_repairs=self.limits.max_repairs,
-                row_cap=self.limits.row_cap,
-                linker=linker_for(self.limits.linker, self.limits.link_k),
-                context=context,
+            single = self._single_planner(
+                catalog, values=self.limits.values, examples=self.limits.examples
             )
             planner = VotingPlanner(single, self.limits.votes) if self.limits.votes > 1 else single
             self._planners = {catalog.version: planner}
+        return planner
+
+    def second_planner(self) -> Planner:
+        """The second pass's planner: value hints and worked examples, one draw."""
+        catalog = self.catalog()
+        planner = self._second_planners.get(catalog.version)
+        if planner is None or planner.catalog is not catalog:
+            planner = self._single_planner(catalog, values=True, examples=SECOND_PASS_EXAMPLES)
+            self._second_planners = {catalog.version: planner}
         return planner
 
     def lookup(self, relations: tuple[str, ...]) -> list[TableProvenance]:
@@ -141,14 +166,77 @@ class Agent:
         return self.provenance.lookup(tables)
 
     def ask(self, question: str, *, request_id: str | None = None) -> Answer:
+        """Answer ``question``; with ``Limits.second_pass``, also report agreement.
+
+        The second pass asks the same question with another prompt variant (value
+        hints and :data:`SECOND_PASS_EXAMPLES` worked examples, one draw at the
+        provider's default temperature) and compares its rows with the first pass's
+        by BIRD's set rule (:func:`~tributary.agent.agreement.same_rows`). The answer
+        is always the first pass's (rows, SQL, status, text); only ``agreement``,
+        the usage and the latency change. ``agreed`` needs both passes answered with
+        the same rows; anything else (other rows, a block, a failure, an unanswerable
+        or a provider error in either pass) is ``differed``. When the first pass did
+        not answer, the second pass is not run: the agreement is ``differed``
+        whatever it would return, so the call would buy nothing.
+        """
         outcome = self.planner().run(question)
         relations = outcome.guard.tables if outcome.guard and outcome.status == "answered" else ()
-        return compose(
+        answer = compose(
             outcome,
             self.lookup(relations),
             stale_after=self.limits.stale_after,
             now=self._clock(),
             request_id=request_id,
+        )
+        if not self.limits.second_pass:
+            return answer
+        return self._second_pass(question, outcome, answer)
+
+    def _second_pass(self, question: str, first: PlanOutcome, answer: Answer) -> Answer:
+        if first.status != "answered" or first.result is None:
+            log.info(
+                "agent.second_pass",
+                agreement="differed",
+                first_status=first.status,
+                second_status=None,
+                second_model_ms=0.0,
+            )
+            return replace(answer, agreement="differed")
+        try:
+            second = self.second_planner().run(question)
+        except RecordingMissing:
+            raise  # a missing recording is a test setup fault, not a disagreement
+        except ProviderError as exc:  # the first answer stands; the check could not run
+            log.warning(
+                "agent.second_pass",
+                agreement="differed",
+                first_status=first.status,
+                second_status="provider_error",
+                second_model_ms=0.0,
+                error=str(exc),
+            )
+            return replace(answer, agreement="differed")
+        agreed = (
+            second.status == "answered"
+            and second.result is not None
+            and same_rows(first.result.rows, second.result.rows)
+        )
+        agreement: Literal["agreed", "differed"] = "agreed" if agreed else "differed"
+        log.info(
+            "agent.second_pass",
+            agreement=agreement,
+            first_status=first.status,
+            second_status=second.status,
+            second_model_ms=round(second.model_ms, 1),
+            second_cost_usd=second.usage.cost_usd,
+        )
+        return replace(
+            answer,
+            agreement=agreement,
+            cost_usd=answer.cost_usd + second.usage.cost_usd,
+            input_tokens=answer.input_tokens + second.usage.input_tokens,
+            output_tokens=answer.output_tokens + second.usage.output_tokens,
+            latency_ms=answer.latency_ms + second.latency_ms,
         )
 
     def sql(self, query: str, *, request_id: str | None = None) -> Answer:
@@ -209,6 +297,20 @@ def _link(
     return link_schema(question, catalog, strategy=strategy, k=k, values=values)
 
 
+def _check_second_pass(limits: Limits) -> None:
+    """Refuse a second pass that would repeat the first prompt, or one combined with a vote."""
+    if not limits.second_pass:
+        return
+    if limits.votes > 1:
+        raise ValueError("second_pass cannot be combined with votes > 1: turn one of them off")
+    if limits.values and limits.examples == SECOND_PASS_EXAMPLES:
+        raise ValueError(
+            "second_pass would repeat the first pass's prompt (value hints and "
+            f"{SECOND_PASS_EXAMPLES} worked examples): change values or examples, "
+            "or turn second_pass off"
+        )
+
+
 def guard_error(reasons: tuple[str, ...]) -> str:
     return "blocked by the safety policy: " + "; ".join(reasons)
 
@@ -259,6 +361,7 @@ def build_agent(settings: Settings, provider: Provider | None = None) -> Agent:
             values=settings.agent_values,
             examples=settings.agent_examples,
             votes=settings.agent_votes,
+            second_pass=settings.agent_second_pass,
         ),
     )
 

@@ -51,6 +51,15 @@ def render_answer(document: Mapping[str, object]) -> str:
     warnings = document.get("warnings")
     if isinstance(warnings, list) and warnings:
         out += ["", "Warnings:", *(f"  - {w}" for w in warnings)]
+    agreement = document.get("agreement")
+    if agreement == "agreed":
+        out += ["", "agreement: agreed (a second prompt variant returned the same rows)"]
+    elif agreement == "differed":
+        out += [
+            "",
+            "agreement: differed (a second prompt variant did not return the same rows): "
+            "treat this answer with more caution",
+        ]
     usage = document.get("usage")
     if document.get("model") and isinstance(usage, Mapping):
         out += [

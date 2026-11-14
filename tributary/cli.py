@@ -445,7 +445,7 @@ def _remote(api: str, path: str, body: dict[str, str], key: str | None) -> dict[
 PROVIDERS = ("anthropic", "ollama", "fake")
 
 
-def _local_agent(provider: str | None) -> Agent:
+def _local_agent(provider: str | None, *, second_pass: bool = False) -> Agent:
     from tributary.agent.service import build_agent
 
     settings = get_settings()
@@ -454,7 +454,13 @@ def _local_agent(provider: str | None) -> Agent:
         raise typer.Exit(2)
     if provider:
         settings = settings.model_copy(update={"provider": provider})
-    return build_agent(settings)
+    if second_pass:
+        settings = settings.model_copy(update={"agent_second_pass": True})
+    try:
+        return build_agent(settings)
+    except ValueError as exc:  # a second pass that would repeat the first prompt
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from None
 
 
 def _print_answer(document: dict[str, object], as_json: bool) -> None:
@@ -477,16 +483,27 @@ def ask(
     api_key: ApiKey = None,
     provider: ProviderName = None,
     as_json: AsJson = False,
+    second_pass: Annotated[
+        bool,
+        typer.Option(
+            "--second-pass",
+            help="Ask again with another prompt variant and report whether the rows agree "
+            "(default TRIBUTARY_AGENT_SECOND_PASS; local only).",
+        ),
+    ] = False,
 ) -> None:
     """Answer a question with guarded SQL; prints the answer, the SQL and its provenance."""
     from tributary.agent.execute import ExecutionError
     from tributary.agent.provider import ProviderError
 
     request_id = bind_run_id("ask")
+    if api and second_pass:
+        typer.echo("error: --second-pass is local only; the API follows its own settings", err=True)
+        raise typer.Exit(2)
     if api:
         document = _remote(api, "/query", {"question": question}, api_key)
     else:
-        agent = _local_agent(provider)
+        agent = _local_agent(provider, second_pass=second_pass)
         try:
             document = agent.ask(question, request_id=request_id).to_dict()
         except (ProviderError, FileNotFoundError) as exc:

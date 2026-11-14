@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from eval.warehouse_eval import RESULTS, evaluate_question, load_questions, same_result
+from tributary.agent.catalog import load_dbt
 from tributary.agent.execute import ExecutionError, PostgresExecutor
 from tributary.agent.providers.fake import FakeProvider
 from tributary.agent.roles import ensure_agent_role
@@ -32,11 +33,19 @@ RECORDINGS = REPO_ROOT / "tests" / "recordings" / "warehouse.jsonl"
 ALL_RECORDINGS = sorted(RECORDINGS.parent.glob("warehouse*.jsonl"))
 
 
+# Recordings made with planner features on, and the settings their replay needs (M13's second
+# pass: value hints and three worked examples).
+FEATURES: dict[str, dict[str, object]] = {
+    "warehouse-vf": {"agent_values": True, "agent_examples": 3},
+}
+
+
 def recorded_run(recordings: Path = RECORDINGS) -> Path:
-    """The live run's report for a recordings file (named by its provider and model)."""
+    """The live run's report for a recordings file (named by provider, model and variant)."""
     first = json.loads(recordings.read_text(encoding="utf-8").splitlines()[0])
     model = str(first["model"]).replace("/", "-").replace(":", "-")
-    return RESULTS / f"warehouse-{first['provider']}-{model}.json"
+    suffix = "-vf" if recordings.stem in FEATURES else ""
+    return RESULTS / f"warehouse-{first['provider']}-{model}{suffix}.json"
 
 
 @pytest.fixture(scope="module")
@@ -148,7 +157,8 @@ def test_every_gold_query_passes_the_guard_and_runs(agent: Agent) -> None:
 @pytest.mark.parametrize("recordings", ALL_RECORDINGS, ids=lambda p: p.stem)
 def test_replay_reproduces_the_recorded_run(agent_settings: Settings, recordings: Path) -> None:
     """The fake provider replays every recorded call, and each verdict is the live run's."""
-    agent = build_agent(agent_settings, provider=FakeProvider(recordings))
+    settings = agent_settings.model_copy(update=FEATURES.get(recordings.stem, {}))
+    agent = build_agent(settings, provider=FakeProvider(recordings))
     recorded = json.loads(recorded_run(recordings).read_text())
     expected = {v["id"]: v for v in recorded["verdicts"]}
     questions = load_questions()
@@ -218,3 +228,16 @@ def test_api_query_replays_a_recorded_question(client: TestClient) -> None:
 
 def test_catalog_is_published(agent_settings: Settings) -> None:
     assert (Path(agent_settings.catalog_dir) / "current" / "values.json").exists()
+
+
+def test_the_committed_evaluation_catalog_is_the_published_one(agent_settings: Settings) -> None:
+    # `make eval-agree` replays both warehouse passes offline over eval/warehouse_catalog.json;
+    # the prompts (and so every recording's fingerprint) depend on it matching dbt's.
+    from eval.agree import load_catalog
+
+    published = load_dbt(agent_settings.catalog_dir).to_dict()
+    committed = load_catalog().to_dict()
+    for document in (published, committed):  # when it was published, not what it says
+        document.pop("version")
+        document.pop("generated_at")
+    assert committed == published

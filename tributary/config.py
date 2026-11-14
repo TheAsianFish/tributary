@@ -158,6 +158,9 @@ class Settings(BaseSettings):
     agent_values: bool = False
     agent_examples: int = Field(default=0, ge=0, le=10)
     agent_votes: int = Field(default=1, ge=1, le=7)
+    # Ask each question a second time with value hints and 3 worked examples, and report
+    # whether the two passes returned the same rows (the answer is the first pass's).
+    agent_second_pass: bool = False
     agent_max_repairs: int = Field(default=2, ge=0, le=5)
     agent_row_cap: int = Field(default=1000, ge=1)
     agent_statement_timeout_ms: int = Field(default=10_000, ge=100)
