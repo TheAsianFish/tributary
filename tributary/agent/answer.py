@@ -17,7 +17,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from tributary.agent.execute import jsonable
 from tributary.agent.planner import PlanOutcome
@@ -49,6 +49,9 @@ class Answer:
     latency_ms: float = 0.0
     request_id: str | None = None
     errors: tuple[str, ...] = field(default_factory=tuple)
+    # Whether an opt-in second pass (another prompt variant) returned the same rows;
+    # None when the second pass is off. The answer itself is always the first pass's.
+    agreement: Literal["agreed", "differed"] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """JSON-ready (values converted with :func:`jsonable`).
@@ -73,6 +76,7 @@ class Answer:
             "confidence": self.confidence,
             "attempts": self.attempts,
             "errors": list(self.errors),
+            "agreement": self.agreement,
             "model": self.model,
             "usage": {
                 "input_tokens": self.input_tokens,

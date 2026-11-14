@@ -41,7 +41,7 @@ def _fresh_settings() -> Iterator[None]:
 def use_agent(monkeypatch: pytest.MonkeyPatch, agent: Agent) -> list[str | None]:
     providers: list[str | None] = []
 
-    def local(provider: str | None) -> Agent:
+    def local(provider: str | None, *, second_pass: bool = False) -> Agent:
         providers.append(provider)
         return agent
 
@@ -251,7 +251,7 @@ def test_ask_and_sql_report_an_unreachable_warehouse(monkeypatch: pytest.MonkeyP
     agent = make_agent(
         ScriptedProvider([draft(GOOD)]), executor=FakeExecutor(errors={GOOD_RAN: down})
     )
-    monkeypatch.setattr(cli, "_local_agent", lambda provider: agent)
+    monkeypatch.setattr(cli, "_local_agent", lambda provider, **_: agent)
     for args in (["ask", "How many edits?"], ["sql", GOOD]):
         out = CliRunner().invoke(app, args)
         assert out.exit_code == 2, out.output
