@@ -36,5 +36,8 @@ jobs:
       # is not what the reports render to.
       - run: make eval
       - run: make eval-link
+      # M13: both warehouse passes replayed offline (model calls and executions recorded),
+      # the agreement tables re-rendered.
+      - run: make eval-agree
       - name: Committed results are what the commands produce
         run: git diff --exit-code eval/results RESULTS.md

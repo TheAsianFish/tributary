@@ -1,4 +1,4 @@
-.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse record serve bird eval eval-link results bench bench-scale bench-query bench-results dist bench-skew bench-poison bench-late
+.PHONY: check fmt lint typecheck test test-integration test-warehouse test-live up up-lakehouse up-airflow up-api down logs demo-data sample-stats dbt eval-guard eval-guard-diff eval-guard-db eval-warehouse eval-agree record serve bird eval eval-link results bench bench-scale bench-query bench-results dist bench-skew bench-poison bench-late
 
 check: ## The quality gate (CI runs exactly this)
 	uv run ruff format --check .
@@ -108,6 +108,9 @@ else
 		--tracks $(TRACKS) --subset $(SUBSET) $(if $(MODEL),--model $(MODEL)) $(if $(RECORD),--record) $(if $(RESUME),--resume)
 endif
 	uv run python -m eval.bird.report $(if $(filter fake,$(PROVIDER)),--check)
+
+eval-agree: ## Agreement of two prompt passes against correctness (offline; replays both passes)
+	uv run python -m eval.agree
 
 eval-link: ## Schema-linking recall and precision on BIRD, full vs bm25 (offline)
 	uv run python -m eval.bird.link_eval

@@ -5,15 +5,20 @@ from __future__ import annotations
 from decimal import Decimal
 from types import SimpleNamespace
 
+from eval.bird.recorded import execution_key, load_executions
 from eval.warehouse_eval import (
+    DATABASE,
+    EXECUTIONS,
     _display,
     limits_of,
+    load_questions,
     report_name,
     result_key,
     same_result,
     summarise,
     variant,
 )
+from tributary.agent.guard import Guard
 from tributary.config import REPO_ROOT, Settings
 
 
@@ -59,3 +64,15 @@ def test_a_run_with_planner_features_gets_its_own_report() -> None:
     assert report_name(plain, provider) == "warehouse-ollama-qwen2.5-coder-7b.json"
     assert report_name(second, provider) == "warehouse-ollama-qwen2.5-coder-7b-vf.json"
     assert limits_of(second)["examples"] == 3
+
+
+def test_recorded_executions_hold_every_gold_query_with_one_outcome_each() -> None:
+    from eval.agree import load_catalog
+
+    records = load_executions(EXECUTIONS)
+    assert {r["database"] for r in records.values()} == {DATABASE}
+    assert all(("result" in r) != ("error" in r) for r in records.values())
+    guard = Guard.for_catalog(load_catalog(), max_rows=1000)
+    for q in load_questions():
+        record = records[execution_key(DATABASE, guard.enforce(q.sql).sql)]
+        assert "result" in record, q.id

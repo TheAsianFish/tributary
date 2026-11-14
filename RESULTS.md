@@ -2087,6 +2087,121 @@ each pass (`full` 32 / 41 agreed against 6 / 59 differed; `full+v+f+a`
 idea. The model time the second pass adds per question.
 <!-- /m13:prereg -->
 
+### The second pass
+
+`TRIBUTARY_OLLAMA_MODEL=qwen2.5-coder:7b TRIBUTARY_AGENT_VALUES=true
+TRIBUTARY_AGENT_EXAMPLES=3
+TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record
+PROVIDER=ollama`, on 2026-11-14: `qwen2.5-coder:7b` (digest
+`dae161e27b0e`) on Ollama 0.40.16, run natively (not in Compose), whose
+server used 2 threads on the 4 vCPU (AMD EPYC 7763, 15 GB), temperature 0,
+seed 0. Wall time **56 min 36 s** for the 40 questions; 46 model calls,
+135,167 input and 8,080 output tokens; **$0**. Raw:
+[`eval/results/warehouse-ollama-qwen2.5-coder-7b-vf.json`](eval/results/warehouse-ollama-qwen2.5-coder-7b-vf.json),
+recordings in `tests/recordings/warehouse-vf.jsonl`, the executions of
+both passes and the gold queries in
+`tests/recordings/warehouse-executions.jsonl.gz`.
+
+Its own score, with the product's defaults left alone: **28 / 40**
+(simple 11 / 12, moderate 14 / 20, challenging 3 / 8), against the plain
+pass's 25 / 40: +6 −3 question by question, exact McNemar p = 0.51. It
+answered 34, declared 4 unanswerable and failed 2 after its repairs; the
+plain pass answered all 40. Turning value hints and examples on in the
+product would take M10's kind of rule on more questions than these 40, so
+the defaults stay off (the plan said so before the run).
+
+**Added model time.** The second pass waited on the model for a median of
+60.4 s per question (mean 84.9 s, 56.6 min in all), on top of the first
+pass. The plain pass's recorded median, 37.9 s, was measured on Ollama
+0.40.6 in Compose, so the two medians are not a like-for-like comparison of
+the prompts; the second pass's own time is what `--second-pass` adds to each answer.
+
+### The 40 warehouse questions: agreement against correctness
+
+`make eval-agree` (offline: no model, no database; in CI) re-runs both
+passes through the agent from their recordings and the recorded
+executions, checks every replayed verdict against its recorded run
+(status, correctness, attempts, SQL), and builds the tables below. Raw:
+[`eval/results/agree.json`](eval/results/agree.json). Graded answer: the
+plain pass.
+
+<!-- agree:warehouse -->
+| Questions | Agreed: plain pass right | Differed: plain pass right | Gap (points) | One-sided Fisher p | Under the rule |
+|---|---:|---:|---:|---:|---|
+| **All 40** | **22 / 25** | **3 / 15** | +68.0 | **2.7e-05** | **transfers** |
+| simple | 9 / 10 | 0 / 2 | +90.0 | 0.045 | (not tested) |
+| moderate | 11 / 13 | 2 / 7 | +56.0 | 0.022 | (not tested) |
+| challenging | 2 / 2 | 1 / 6 | +83.3 | 0.107 | (not tested) |
+
+| Signal marking an answer as probably right | Coverage | Marked: right | Not marked: right | Gap (points) | One-sided Fisher p |
+|---|---:|---:|---:|---:|---:|
+| The two passes agree | 62.5% | 22 / 25 | 3 / 15 | +68.0 | 2.7e-05 |
+| Answered without a repair | 87.5% | 24 / 35 | 1 / 5 | +48.6 | 0.056 |
+| Labelled `simple` | 30.0% | 9 / 12 | 16 / 28 | +17.9 | 0.241 |
+<!-- /agree:warehouse -->
+
+The per-difficulty rows and the baselines are context, not tests: only the
+40-question row was registered.
+
+**Under the rule: the signal transfers.** When the two passes return the
+same rows, the plain pass is right 22 times in 25 (88%); when they do not,
+3 times in 15 (20%). One-sided Fisher p = 2.7 × 10⁻⁵, far under 0.05; at
+25 agreed it needed 19 right. The 15 differed questions split two ways: in
+9, the second pass answered with other rows, and the plain pass was wrong
+on all 9; in 6, the second pass refused or failed, and the plain pass was
+right on 3 of those. Graded on the second pass instead, the split is
+22 / 25 against 6 / 15 (p = 0.002).
+
+**The hypotheses, answered.**
+
+| Hypothesis (fixed before the run) | Result |
+|---|---|
+| The passes agree on 14 to 24 of the 40 | **No, by one:** 25 agreed |
+| The plain pass is right more often when they agree, one-sided Fisher p < 0.05 | **Yes:** 22 / 25 against 3 / 15, p = 2.7 × 10⁻⁵ (*transfers*; the simulation gave this outcome 41.6% before the run) |
+| The stated `confidence` is "high" on at least 95% of answers | **Yes, on all of them:** 40 / 40 in the plain pass, 34 / 34 answered in the second |
+
+**Against the baselines.** Answered without a repair marks more questions
+(88% against 62.5%) and is right on fewer of them (69% against 88%), so by
+the stated rule agreement does not beat it: agreement is not more accurate
+at a coverage at least as large; it is a different trade-off. It leaves
+out 10 more questions, of which the plain pass got only 2 right. It does
+beat the `simple` label, which marks 30% of the questions at 75%.
+
+**What agreement cannot see.** The three agreed answers that were wrong are
+the same query in both passes, up to aliases, and the same errors the M3
+failure analysis found: `bot-edits-total` sums a per-editor table where
+the question counts edits (`agg_editor_activity WHERE is_bot`, 10,168
+against 10,099), `edits-by-project-family` sums `dim_wiki.edits` after
+joining `fct_edits` (a fan-out), and `english-language-edits-by-family`
+sums bytes where it should count edits. Value hints and examples did not
+change how the model reads those tables, so both prompts made the same
+mistake and agreed on it. Agreement flags an answer that one prompt change
+moves; it cannot flag an error that every prompt shares.
+
+### BIRD, graded on each pass (exploratory)
+
+The same split on the recorded BIRD runs (official track, `full` against
+`full+v+f+a`, both at temperature 0), from the committed reports and
+executions. These runs suggested the idea, so they test nothing; they show
+the warehouse result is not one dataset's accident.
+
+<!-- agree:bird -->
+| Subset (official track) | Graded on | Agreed: right | Differed: right | Gap (points) | One-sided Fisher p | Agreed but wrong |
+|---|---|---:|---:|---:|---:|---|
+| dev50 | `full` | 18 / 21 | 3 / 29 | +75.4 | 7.4e-08 | 37, 200, 405 |
+| dev50 | `full+v+f+a` | 18 / 21 | 8 / 29 | +58.1 | 5.0e-05 | (same questions) |
+| holdout50 | `full` | 14 / 20 | 3 / 30 | +60.0 | 1.7e-05 | 231, 469, 963, 1145, 1241, 1281 |
+| holdout50 | `full+v+f+a` | 14 / 20 | 10 / 30 | +36.7 | 0.012 | (same questions) |
+| both, n = 100 | `full` | 32 / 41 | 6 / 59 | +67.9 | 2.9e-12 | 37, 200, 405, 231, 469, 963, 1145, 1241, 1281 |
+| both, n = 100 | `full+v+f+a` | 32 / 41 | 18 / 59 | +47.5 | 2.5e-06 | (same questions) |
+<!-- /agree:bird -->
+
+The nine agreed answers that `full` got wrong are listed by question id.
+Graded on `full+v+f+a` the split is weaker (18 / 59 right when differed)
+because that variant is the stronger of the two and is often right where
+`full` failed, which is the same pattern as the warehouse second pass.
+
+
 ## To measure
 
 | What | Command | Milestone | Cost |
@@ -2100,6 +2215,5 @@ idea. The model time the second pass adds per question.
 | The `core` linker in the grid, once `link_core` is written | `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b VARIANTS=full,bm25-k4,full+a,full+v+f+a,core-k4+v+f+a RECORD=1 RESUME=1`, then `make eval-link` | M7 | $0 |
 | The M7 grid on Claude Haiku 5.5 | `ANTHROPIC_API_KEY=... make eval PROVIDER=anthropic MODEL=claude-haiku-5-5 VARIANTS=<as above> RECORD=1` | M7 | see [Cost](#cost): the four recorded cells, estimated from their measured tokens |
 | The provider against the real API: one structured-output call with usage and cost | `ANTHROPIC_API_KEY=... make test-live` (or the `Live` workflow, run by hand) | M8 | under $0.01 on `claude-haiku-5-5` (one call, about 100 input and 50 output tokens) |
-| The 40 warehouse questions with value hints and three worked examples on the local model, so the product's defaults can include them | `TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3 TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record PROVIDER=ollama` (about 35 min of CPU, from the 7B run's pace) | M8 | $0 |
 | The `Guard differential` workflow on GitHub (M9 ran it locally only) | `gh workflow run guard-diff.yml --ref dev/m9`, then compare the artifact with `eval/results/guard-diff/after.json` | M9 | $0 (the repository's Actions minutes: about 25 min) |
 | CI on GitHub for this release: `CI`, `Integration` and `Warehouse` green on the pull request, and both release workflows' dry runs green on the branch | push the branch, open the pull request, then `gh workflow run release.yml --ref dev/m8` and `gh workflow run images.yml --ref dev/m8` | M8 | $0 (the repository's Actions minutes: a few minutes for the gate, up to 35 for Integration, about 10 for the images) |

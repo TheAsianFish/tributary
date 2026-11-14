@@ -1,0 +1,593 @@
+{
+  "bird": {
+    "dev50": {
+      "agreed_wrong": [
+        {
+          "db_id": "california_schools",
+          "difficulty": "moderate",
+          "id": 37
+        },
+        {
+          "db_id": "toxicology",
+          "difficulty": "simple",
+          "id": 200
+        },
+        {
+          "db_id": "card_games",
+          "difficulty": "moderate",
+          "id": 405
+        }
+      ],
+      "graded_on": {
+        "full": {
+          "agreed_right": 18,
+          "agreed_wrong": 3,
+          "coverage": 0.42,
+          "differed_right": 3,
+          "differed_wrong": 26,
+          "gap_points": 75.4,
+          "p_one_sided": 7.35e-08,
+          "verdict": "transfers"
+        },
+        "full+v+f+a": {
+          "agreed_right": 18,
+          "agreed_wrong": 3,
+          "coverage": 0.42,
+          "differed_right": 8,
+          "differed_wrong": 21,
+          "gap_points": 58.1,
+          "p_one_sided": 4.97e-05,
+          "verdict": "transfers"
+        }
+      }
+    },
+    "holdout50": {
+      "agreed_wrong": [
+        {
+          "db_id": "toxicology",
+          "difficulty": "challenging",
+          "id": 231
+        },
+        {
+          "db_id": "card_games",
+          "difficulty": "moderate",
+          "id": 469
+        },
+        {
+          "db_id": "formula_1",
+          "difficulty": "moderate",
+          "id": 963
+        },
+        {
+          "db_id": "european_football_2",
+          "difficulty": "simple",
+          "id": 1145
+        },
+        {
+          "db_id": "thrombosis_prediction",
+          "difficulty": "challenging",
+          "id": 1241
+        },
+        {
+          "db_id": "thrombosis_prediction",
+          "difficulty": "moderate",
+          "id": 1281
+        }
+      ],
+      "graded_on": {
+        "full": {
+          "agreed_right": 14,
+          "agreed_wrong": 6,
+          "coverage": 0.4,
+          "differed_right": 3,
+          "differed_wrong": 27,
+          "gap_points": 60.0,
+          "p_one_sided": 1.67e-05,
+          "verdict": "transfers"
+        },
+        "full+v+f+a": {
+          "agreed_right": 14,
+          "agreed_wrong": 6,
+          "coverage": 0.4,
+          "differed_right": 10,
+          "differed_wrong": 20,
+          "gap_points": 36.7,
+          "p_one_sided": 0.0117,
+          "verdict": "transfers"
+        }
+      }
+    },
+    "pooled": {
+      "agreed_wrong": [
+        {
+          "db_id": "california_schools",
+          "difficulty": "moderate",
+          "id": 37
+        },
+        {
+          "db_id": "toxicology",
+          "difficulty": "simple",
+          "id": 200
+        },
+        {
+          "db_id": "card_games",
+          "difficulty": "moderate",
+          "id": 405
+        },
+        {
+          "db_id": "toxicology",
+          "difficulty": "challenging",
+          "id": 231
+        },
+        {
+          "db_id": "card_games",
+          "difficulty": "moderate",
+          "id": 469
+        },
+        {
+          "db_id": "formula_1",
+          "difficulty": "moderate",
+          "id": 963
+        },
+        {
+          "db_id": "european_football_2",
+          "difficulty": "simple",
+          "id": 1145
+        },
+        {
+          "db_id": "thrombosis_prediction",
+          "difficulty": "challenging",
+          "id": 1241
+        },
+        {
+          "db_id": "thrombosis_prediction",
+          "difficulty": "moderate",
+          "id": 1281
+        }
+      ],
+      "graded_on": {
+        "full": {
+          "agreed_right": 32,
+          "agreed_wrong": 9,
+          "coverage": 0.41,
+          "differed_right": 6,
+          "differed_wrong": 53,
+          "gap_points": 67.9,
+          "p_one_sided": 2.87e-12,
+          "verdict": "transfers"
+        },
+        "full+v+f+a": {
+          "agreed_right": 32,
+          "agreed_wrong": 9,
+          "coverage": 0.41,
+          "differed_right": 18,
+          "differed_wrong": 41,
+          "gap_points": 47.5,
+          "p_one_sided": 2.54e-06,
+          "verdict": "transfers"
+        }
+      }
+    }
+  },
+  "rule": {
+    "alpha": 0.05,
+    "gap_points": 15.0
+  },
+  "warehouse": {
+    "agreed_wrong": [
+      {
+        "difficulty": "simple",
+        "id": "bot-edits-total",
+        "plain_sql": "SELECT SUM(edits) FROM marts.agg_editor_activity WHERE is_bot = TRUE LIMIT 1000"
+      },
+      {
+        "difficulty": "moderate",
+        "id": "edits-by-project-family",
+        "plain_sql": "SELECT project_family, SUM(edits) AS total_edits FROM marts.dim_wiki JOIN marts.fct_edits ON marts.fct_edits.wiki = marts.dim_wiki.wiki GROUP BY project_family HAVING SUM(edits) > 0 LIMIT 1000"
+      },
+      {
+        "difficulty": "moderate",
+        "id": "english-language-edits-by-family",
+        "plain_sql": "SELECT dim_wiki.project_family, SUM(marts.fct_edits.length_new - marts.fct_edits.length_old) AS total_edits FROM marts.fct_edits JOIN marts.dim_wiki ON marts.fct_edits.wiki = marts.dim_wiki.wiki WHERE marts.dim_wiki.language_code = 'en' GROUP BY dim_wiki.project_family ORDER BY total_edits DESC LIMIT 1000"
+      }
+    ],
+    "baselines": {
+      "answered_without_a_repair": {
+        "agreed_right": 24,
+        "agreed_wrong": 11,
+        "coverage": 0.875,
+        "differed_right": 1,
+        "differed_wrong": 4,
+        "gap_points": 48.6,
+        "p_one_sided": 0.0564,
+        "verdict": "inconclusive"
+      },
+      "labelled_simple": {
+        "agreed_right": 9,
+        "agreed_wrong": 3,
+        "coverage": 0.3,
+        "differed_right": 16,
+        "differed_wrong": 12,
+        "gap_points": 17.9,
+        "p_one_sided": 0.241,
+        "verdict": "inconclusive"
+      }
+    },
+    "by_difficulty": {
+      "challenging": {
+        "agreed_right": 2,
+        "agreed_wrong": 0,
+        "coverage": 0.25,
+        "differed_right": 1,
+        "differed_wrong": 5,
+        "gap_points": 83.3,
+        "p_one_sided": 0.107,
+        "verdict": "inconclusive"
+      },
+      "moderate": {
+        "agreed_right": 11,
+        "agreed_wrong": 2,
+        "coverage": 0.65,
+        "differed_right": 2,
+        "differed_wrong": 5,
+        "gap_points": 56.0,
+        "p_one_sided": 0.0223,
+        "verdict": "transfers"
+      },
+      "simple": {
+        "agreed_right": 9,
+        "agreed_wrong": 1,
+        "coverage": 0.8333,
+        "differed_right": 0,
+        "differed_wrong": 2,
+        "gap_points": 90.0,
+        "p_one_sided": 0.0455,
+        "verdict": "transfers"
+      }
+    },
+    "confidence_high": {
+      "plain": "40 / 40",
+      "second": "34 / 34"
+    },
+    "differed_by_kind": {
+      "other rows": {
+        "n": 9,
+        "plain_right": 0
+      },
+      "second pass did not answer": {
+        "n": 6,
+        "plain_right": 3
+      }
+    },
+    "graded": "plain",
+    "graded_on_second": {
+      "agreed_right": 22,
+      "agreed_wrong": 3,
+      "coverage": 0.625,
+      "differed_right": 6,
+      "differed_wrong": 9,
+      "gap_points": 48.0,
+      "p_one_sided": 0.00223,
+      "verdict": "transfers"
+    },
+    "in_hypothesised_range": false,
+    "model_ms": {
+      "plain_p50": 37873.6,
+      "plain_total_s": 1882.4,
+      "second_mean": 84854.1,
+      "second_p50": 60448.7,
+      "second_total_s": 3394.2
+    },
+    "n": 40,
+    "needed_right_among_agreed": 19,
+    "plain_correct": 25,
+    "questions": [
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "total-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "total-page-creations",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "bot-edits-total",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "anonymous-edits-total",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "wikis-with-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "top-5-wikis-by-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "wiktionary-wiki-count",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "enwiki-minor-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "simple",
+        "id": "edits-first-ten-minutes-after-midnight",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "pages-edited-ten-plus-times",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "simple",
+        "id": "wikidata-edits-midnight-hour",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "simple",
+        "id": "commons-editor-count",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "edits-by-project-family",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "dewiki-page-creations",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "frwiktionary-edits-by-namespace",
+        "plain": "answered right",
+        "second": "failed wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "wikidata-bot-vs-human",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "top-3-wikis-anonymous-edits",
+        "plain": "answered right",
+        "second": "unanswerable wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "wikipedia-article-creations",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "enwiki-article-net-bytes",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "enwiki-largest-removal",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "bytes-added-removed-per-hour",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "japanese-edits-by-family",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "enwiki-draft-pages-edited",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "wikidata-editors-over-100-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "enwiki-created-pages-multiple-editors",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "wikipedias-with-100-edits",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "english-language-edits-by-family",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "wikipedia-talk-page-edits",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "enwiki-human-logged-in-edits-per-hour",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "anonymous-editors-top-3-wikis",
+        "plain": "answered wrong",
+        "second": "unanswerable wrong"
+      },
+      {
+        "agreed": true,
+        "difficulty": "moderate",
+        "id": "wiktionary-page-creations-by-wiki",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "moderate",
+        "id": "wikis-without-edits",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "bot-share-by-family",
+        "plain": "answered wrong",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "challenging",
+        "id": "busiest-wiki-hour",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": true,
+        "difficulty": "challenging",
+        "id": "enwiki-distinct-editors-total",
+        "plain": "answered right",
+        "second": "answered right"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "distinct-editors-midnight-hour-all-wikis",
+        "plain": "answered wrong",
+        "second": "unanswerable wrong"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "top-wiki-per-family",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "editors-on-five-plus-wikis",
+        "plain": "answered wrong",
+        "second": "answered wrong"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "busiest-minute",
+        "plain": "answered wrong",
+        "second": "unanswerable wrong"
+      },
+      {
+        "agreed": false,
+        "difficulty": "challenging",
+        "id": "wikis-busiest-in-earlier-hour",
+        "plain": "answered right",
+        "second": "failed wrong"
+      }
+    ],
+    "second_against_plain": {
+      "gained": 6,
+      "lost": 3,
+      "mcnemar_p": 0.5078
+    },
+    "second_by_difficulty": {
+      "challenging": "3 / 8",
+      "moderate": "14 / 20",
+      "simple": "11 / 12"
+    },
+    "second_correct": 28,
+    "second_status": {
+      "answered": 34,
+      "failed": 2,
+      "unanswerable": 4
+    },
+    "table": {
+      "agreed_right": 22,
+      "agreed_wrong": 3,
+      "coverage": 0.625,
+      "differed_right": 3,
+      "differed_wrong": 12,
+      "gap_points": 68.0,
+      "p_one_sided": 2.68e-05,
+      "verdict": "transfers"
+    }
+  }
+}
