@@ -2001,6 +2001,92 @@ lake keeps its losses, and two things report them:
   new query id), and a benchmark's discarding sink records no offsets.
 - **It recovers into one store.** See the lake above.
 
+## An answer that says when it is probably wrong (M13)
+
+The planner's own `confidence` field says "high" on 526 of 527 answerable
+BIRD drafts, right or wrong, so it tells a reader nothing. M10 found that
+one added sentence changes answers it was never about. This section asks
+whether that instability is a signal: when two prompt variants at
+temperature 0 return the same rows, is the answer more often right? The
+idea came from looking at the BIRD runs, so they cannot test it. The 40
+warehouse questions did not suggest it, and they test it here.
+
+### Fixed before any model call
+
+<!-- m13:prereg -->
+**The graded answer.** The recorded plain pass on the 40 warehouse
+questions: `tests/recordings/warehouse.jsonl`, `qwen2.5-coder:7b`
+(digest `dae161e27b0e`), 25 / 40 right under the warehouse rule (rows as
+a multiset, numbers to six decimals; [The 40 warehouse
+questions](#the-40-warehouse-questions)). It is not re-run and its
+verdicts do not change.
+
+**The second pass.** The same model, value hints on and three worked
+examples from the dbt docs (`TRIBUTARY_AGENT_VALUES=true
+TRIBUTARY_AGENT_EXAMPLES=3`), temperature 0, seed 0, up to two repairs, as
+the plain pass:
+`TRIBUTARY_AGENT_VALUES=true TRIBUTARY_AGENT_EXAMPLES=3
+TRIBUTARY_RECORDINGS_PATH=tests/recordings/warehouse-vf.jsonl make record
+PROVIDER=ollama`. The executions of both passes and of the gold queries
+are recorded with their value types
+(`tests/recordings/warehouse-executions.jsonl.gz`), so `make eval-agree`
+re-runs both passes offline. The plain pass was recorded on Ollama 0.40.6;
+this machine has 0.40.16 with the same model digest. The second pass's own
+score is reported. The product's defaults stay as they are, whatever it
+is: M10's rule is what would change them, and 40 questions are too few for
+it.
+
+**Agreement.** A question is *agreed* when both passes answered (status
+`answered`) and their rows are equal under BIRD's set rule (the same set
+of rows, values compared with their database types,
+`eval/bird/score.py::execution_match`). Anything else is *differed*: other
+rows, an error, a block or a refusal in either pass.
+
+**The leak check.** A worked example that repeats a gold query would make
+the second pass agree mostly when the plain pass is right, and favour the
+hypothesis. A unit test fails if any example in the dbt YAML asks one of
+the 40 questions (also as a near paraphrase) or carries one of the 40 gold
+queries (compared as parsed SQL with output aliases removed).
+
+**The hypothesis.** The two passes agree on 14 to 24 of the 40 questions,
+and the plain pass is right more often when they agree than when they
+differ: one-sided Fisher exact test on the 2 × 2 table of agreement against
+correctness, p < 0.05. With 25 right in 40, p < 0.05 needs at least this
+many right among the agreed answers:
+
+| Agreed | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Right among them, at least | 12 | 13 | 13 | 14 | 15 | 15 | 16 | 17 | 17 | 18 | 18 |
+
+**The rule.** p < 0.05: the signal *transfers*. Otherwise, a gap under 15
+points between the accuracy of agreed and of differed answers (or no
+agreed or no differed answer) is reported as *not seen at n = 40*, not as
+evidence that there is no signal; a gap of 15 points or more is
+*inconclusive*, with the counts that would have been needed. Nothing else
+counts as a result.
+
+**The odds before the run.** BIRD's split, grading the plain pass and
+rescaled to 25 right in 40 (78% right when agreed, 52% when not, 41%
+agreed), is P(agreed | right) = 0.51 and P(agreed | wrong) = 0.24. Holding
+the 25 / 15 split fixed and drawing agreement per question with those
+rates, 100,000 runs (seed 13, `eval/agree_stats.py::simulate`) give
+*transfers* 41.6%, *inconclusive* 35.6% and *not seen* 22.8%. With BIRD's
+own unscaled rates (0.84 and 0.15) it would be 99.8% / 0.2% / 0.0%; with
+agreement independent of correctness (0.41 for both), 2.8% / 13.2% / 84.0%.
+n = 40 is small, and these odds say so before the result does.
+
+**Beside it, not tests.** Two baselines, each with its own table, Fisher
+p and coverage (the share of questions it marks as probably right):
+answered without a repair, and the questions labelled `simple`. Agreement
+beats a baseline only if its agreed answers are more accurate at a
+coverage at least as large. The share of answers whose stated
+`confidence` is "high" (expected at least 95%, as on BIRD). The same
+table on per-difficulty rows, and on BIRD dev50 and holdout50 graded on
+each pass (`full` 32 / 41 agreed against 6 / 59 differed; `full+v+f+a`
+32 / 41 against 18 / 59), marked exploratory: those runs suggested the
+idea. The model time the second pass adds per question.
+<!-- /m13:prereg -->
+
 ## To measure
 
 | What | Command | Milestone | Cost |

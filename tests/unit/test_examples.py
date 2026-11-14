@@ -318,3 +318,34 @@ def test_bird_pool_never_offers_a_graded_question() -> None:
     assert [e.source for e in pools["x"].examples] == ["bird:1"]
     assert [e.source for e in pools["y"].examples] == ["bird:2"]
     assert pools["x"].select("count schools") == (pools["x"].examples[0],)
+
+
+def canonical_sql(query: str) -> str:
+    """A query as parsed SQL with its output aliases removed (layout and case ignored)."""
+    tree = sqlglot.parse_one(query, read="postgres")
+    for node in tree.find_all(sqlglot.exp.Select):
+        node.set(
+            "expressions",
+            [e.this if isinstance(e, sqlglot.exp.Alias) else e for e in node.expressions],
+        )
+    return tree.sql(dialect="postgres", normalize=True, comments=False)
+
+
+def test_documented_examples_do_not_carry_an_evaluation_gold_query() -> None:
+    # M13: a worked example that repeats a gold query would make the second pass agree with
+    # the first mainly when the first is right, which favours the agreement hypothesis.
+    gold = {
+        canonical_sql(q["sql"]) for q in yaml.safe_load(EVAL_QUESTIONS.read_text())["questions"]
+    }
+    assert len(gold) == 40
+    for relation, example in documented():
+        assert canonical_sql(example["sql"]) not in gold, (relation, example["question"])
+
+
+def test_the_gold_query_check_would_catch_a_reformatted_gold_query() -> None:
+    first = yaml.safe_load(EVAL_QUESTIONS.read_text())["questions"][0]["sql"]
+    disguised = "select   COUNT(*) as how_many\n  from MARTS.FCT_EDITS -- the total\n"
+    assert canonical_sql(disguised) == canonical_sql(first)
+    assert canonical_sql("SELECT count(*) FROM marts.fct_edits WHERE is_bot") != canonical_sql(
+        first
+    )
