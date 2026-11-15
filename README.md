@@ -567,9 +567,9 @@ each built to fail differently from the others.
 
 Known limits, stated rather than hidden:
 - The rate limit is per process, so N replicas admit N times the rate.
-- `SELECT repeat('x', 1e9)` is one cheap-looking row that builds 1 GB, and
-  only the statement timeout bounds it (a result byte cap is on the
-  roadmap).
+- `SELECT repeat('x', 1e9)` is one cheap-looking row that the server still
+  builds before the byte cap refuses it. The cap keeps the value from the
+  client; only the statement timeout bounds the work on the server.
 - The Airflow UI makes every user an admin; it is for local use only.
 
 ### Design decisions
@@ -594,7 +594,7 @@ Known limits, stated rather than hidden:
 | Data-quality tests | dbt generic tests plus two custom ones: arrival freshness, and an hourly volume z-score that counts empty hours as zero | Great Expectations, Soda, dbt source freshness | A few SQL statements, versioned with the models; results go to `ops.quality_runs` so answers can carry them. The volume test skips with too little history or zero variance rather than firing on noise; a fixture project proves each test passes and fails where it should. |
 | Triggering the warehouse | A 5-minute DAG that emits the `raw.recentchange` asset only when rows arrived (high-water mark kept in the asset event's `extra`); `warehouse_refresh` is scheduled on the asset | A cron schedule; the stream job calling Airflow's API | No rebuild when nothing changed, no coupling of the stream job to the orchestrator, and the trigger's state lives with the asset it describes. When nothing arrived, the same task runs the freshness tests alone, so a stalled sink turns the run red instead of leaving the last `pass` standing. |
 | Airflow image | `python:3.12-slim` plus this repository's `uv.lock` | `apache/airflow` with pip installs on top | The scheduler runs exactly the dbt, Trino client and Airflow versions the tests ran, with no constraint-file conflicts. |
-| Agent safety | AST policy, then a restricted role with per-query limits | Prompt instructions; a regex deny-list; the database role alone | Regexes miss CTEs, comments and quoting; the role alone lets 26 of the 119 attacks run (measured). Two layers that fail differently, each tested on its own. |
+| Agent safety | AST policy, then a restricted role with per-query limits | Prompt instructions; a regex deny-list; the database role alone | Regexes miss CTEs, comments and quoting; the role alone lets 39 of the 131 attacks run (measured). Two layers that fail differently, each tested on its own. |
 | The agent's role | `tributary_agent`: marts and `ops` only | Reusing `tributary_reader` | The reader serves Trino and can read `raw`, where editor names are; the agent never needs it, so the database refuses it without the guard. |
 | Answer text | Composed from the rows; the model's one-line explanation is written before it sees them | A second model call that summarises the rows | A summary can misquote a number; this cannot, and it costs no extra call. |
 | Repair loop | Feed the guard's reasons or PostgreSQL's error back, at most two repairs | One shot; unbounded retries | Most failed drafts fail on a column PostgreSQL names in its error (all six repairs in the 7B run); a bound keeps the worst case at three calls. |
