@@ -36,6 +36,10 @@ BATCH_ID = 900_000_000 + uuid.uuid4().int % 1_000_000
 @pytest.fixture
 def dropped_batch(conninfo: str) -> Iterator[int]:
     ensure_schema(conninfo, "ops.sql")
+    with psycopg.connect(conninfo) as conn:
+        row = conn.execute("SELECT clock_timestamp()").fetchone()
+    assert row is not None
+    planted_at = row[0]
     record_health(
         conninfo,
         BatchHealth(
@@ -58,6 +62,13 @@ def dropped_batch(conninfo: str) -> Iterator[int]:
             (BATCH_ID,),
         )
         conn.execute("DELETE FROM ops.reconcile_runs WHERE topic = %s", (TOPIC,))
+        # The verdicts on the planted batch go with it. Left behind, the red one would be
+        # the warehouse's newest stream_loss row, and the next run of this directory on
+        # the same database would read it into every answer's provenance.
+        conn.execute(
+            "DELETE FROM ops.quality_runs WHERE check_type = 'stream_loss' AND recorded_at >= %s",
+            (planted_at,),
+        )
 
 
 class FakeSpark:
