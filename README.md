@@ -21,32 +21,29 @@ every claim about it is a command that re-runs the measurement.
 ![Demo: the running Compose stack, the 50,000 sample events in PostgreSQL once each, guarded queries through tributary sql (a DELETE and a disguised pg_terminate_backend both blocked), and a question answered by tributary ask with its SQL and provenance](docs/demo.gif)
 
 **Status: release 0.1.0, and all thirteen milestones in
-[PLAN.md](PLAN.md) done.** Kafka feeds one Spark
-application with two streaming queries: one into the PostgreSQL warehouse,
-modelled with dbt, and one into an Iceberg table on MinIO, queried with Trino.
-Airflow rebuilds the marts when new rows land, records every quality check in
-`ops.quality_runs`, publishes the catalog, and checks the lake against the
-warehouse hour by hour. On top,
+[PLAN.md](PLAN.md) done.** What was measured, in six lines (the
+[full table](#results) is below, and [RESULTS.md](RESULTS.md) has each
+number's command and raw output; every model call ran on a local model, $0):
+
+| Question | Answer |
+|---|---|
+| Does a crash lose or duplicate events? (`make bench`) | 0 lost and 0 duplicated in PostgreSQL and Iceberg over 9 runs of 50,000 events, with the stream job and the broker each killed 9 times (SIGKILL) |
+| What does one event stamped in the future cost? (`make bench-skew`) | With the old one-day bound, an event one hour ahead cost 39,000 of the sample's 50,000 events, exactly the count predicted from the sample first; with the bound at half the watermark delay, 0 |
+| Is a row the watermark dropped a lost event? (`make bench-late`) | No: 35,554 rows dropped on a second replay and 0 events lost. Reconciling the topic against the warehouse tells the two apart and wrote back 100 of 100 truly late events |
+| Can the agent's SQL do harm? (`make eval-guard`) | 131 / 131 unsafe statements blocked with 0 of 989 gold queries blocked; the read-only role alone lets 39 of the 131 run |
+| How often is the agent right? (`make eval`, BIRD Mini-Dev, `qwen2.5-coder:7b`) | 24 / 50 on held-out questions against 17 / 50 for the plain prompt; pooled over 100 questions +18 −6, McNemar p = 0.023 |
+| Can it say when it is probably wrong? (`make eval-agree`) | Under a rule fixed before the run: right 22 / 25 when two prompt passes return the same rows, 3 / 15 when they differ (Fisher p = 2.7 × 10⁻⁵); the model's own confidence said "high" on 40 / 40 |
+
+Kafka feeds one Spark application with two streaming queries: one into the
+PostgreSQL warehouse, modelled with dbt, and one into an Iceberg table on
+MinIO, queried with Trino. Airflow rebuilds the marts when new rows land,
+records every quality check in `ops.quality_runs`, publishes the catalog,
+and checks the lake against the warehouse hour by hour. On top,
 `tributary ask` and a FastAPI service turn a question into SQL with a model
 (Claude by default, a local Ollama model offline). The SQL passes an AST guard
 and a read-only database role, and the answer carries the rows, the SQL and
-each table's freshness and quality status. `make bird` loads BIRD
-Mini-Dev into PostgreSQL and `make eval` grades the agent on it by
-execution accuracy, on the official and the corrected labels, from
-recordings that CI replays without a model or a database. `make bench` kills
-the stream job and the broker mid-batch and checks every event landed once in
-both stores. `make bench-scale` measures throughput at 1, 3 and 6 partitions
-and names what limits it. `make bench-skew` measures what one event
-stamped in the future costs the events after it, against a prediction made
-from the sample first. `make bench-late` replays the sample twice and sends
-late, malformed and future events, to show that a reconciliation of the
-topic tells a late copy from a lost event and writes the lost ones back.
-`make eval-agree` tests, under a rule written down before the run, whether
-two prompt variants agreeing on an answer's rows says it is probably right;
-`tributary ask --second-pass` shows that agreement with the answer.
-`make bench-query` times ten queries on PostgreSQL,
-Trino over PostgreSQL and Trino over Iceberg at 1M and 20M rows. Measured
-numbers are in [RESULTS.md](RESULTS.md), and changes in
+each table's freshness and quality status. Every benchmark and evaluation is
+a `make` target, listed in [CONTRIBUTING.md](CONTRIBUTING.md); changes are in
 [CHANGELOG.md](CHANGELOG.md).
 
 ## Why
