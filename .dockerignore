@@ -1,7 +1,5 @@
 .git
 .venv
-.agent
-.claude
 .env
 **/__pycache__
 .mypy_cache

@@ -28,10 +28,6 @@ spark-warehouse/
 !data/sample/*.jsonl.gz
 
 # Tooling
-.agent/
-.claude/
-CLAUDE.md
-AGENTS.md
 .idea/
 .vscode/
 .DS_Store
