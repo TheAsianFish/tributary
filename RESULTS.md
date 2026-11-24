@@ -1638,6 +1638,53 @@ weaker now: on holdout50 it is 8 and 8. The other two stand, and the
 warehouse re-recording under To measure is what would decide it, not
 BIRD.
 
+### Beside BIRD's published baselines
+
+The outside reference for these numbers is the baseline table the BIRD
+authors publish for Mini-Dev itself (execution accuracy on all 500
+questions, PostgreSQL column; [bird-bench/mini_dev](https://github.com/bird-bench/mini_dev#baseline-performance-on-mini-dev-dataset),
+read 2026-11-24). I did not re-run any of those models.
+
+| System | Questions | EX, PostgreSQL |
+|---|---:|---:|
+| llama3-8b-instruct (BIRD's baseline) | 500 | 18.4% |
+| llama3-70b-instruct (BIRD's baseline) | 500 | 29.4% |
+| gpt-4 (BIRD's baseline) | 500 | 35.8% |
+| gpt-4-turbo (BIRD's baseline, the best PostgreSQL row) | 500 | 36.0% |
+| `qwen2.5-coder:7b`, `full-r0`: full schema, one call, no repair (this repository) | 100 | 37.0% (28.2%–46.8%) |
+| `qwen2.5-coder:7b`, `full`: up to two repairs | 100 | 38.0% (29.1%–47.8%) |
+| `qwen2.5-coder:7b`, `full+v+f+a`, holdout50 only | 50 | 48.0% (34.8%–61.5%) |
+| `qwen2.5-coder:7b`, `full+v+f+a`, dev50 + holdout50 | 100 | 50.0% (40.4%–59.6%) |
+
+Read it as "beside", not "beats". What is the same: the benchmark, the
+PostgreSQL databases, the metric (BIRD's `calculate_ex`, which the harness
+agrees with on every pair) and the difficulty mix (both subsets are
+stratified 30 / 50 / 20% simple, moderate and challenging, as Mini-Dev is:
+148 / 250 / 102). What is not:
+
+- **100 questions, not 500.** The intervals above are the honest size of
+  the claim. holdout50 alone (the only sample that did not choose the
+  variant) has an interval that contains GPT-4's 36%, so on fresh questions
+  the default variant is not separated from that baseline; pooled, the
+  lower bound clears it, but dev50 is biased toward the variant it picked.
+  Only the 8B open model's 18.4% is outside every interval here.
+- **The protocol is richer, except in one row.** BIRD's baselines are one
+  zero-shot call. `full-r0` is the like-for-like row (the full schema, one
+  call, 21 + 16 of 100), though with this repository's prompt, not BIRD's.
+  The other rows allow up to two repairs after a database error, and
+  `full+v+f+a` adds value hints and three worked examples.
+- **The subsets are drawn from the questions Arcwise-Plat-SQL also
+  covers** (498 of the 500), by a hash rule fixed before any model call.
+- **The models are two years apart**, and the published table predates the
+  label revision pinned here (`mini_dev_pg` of 2025-07-04) and BIRD's
+  2026-10-28 annotation update, whose baselines I have not run against.
+- **No top-of-leaderboard system is in that table for PostgreSQL.** BIRD's
+  strongest published Mini-Dev row is SQLite-only (TA + gpt-4o, 63.0%); a
+  7B model on a laptop CPU is not near it, and nothing here claims to be.
+
+The same-protocol number that would settle it is the 500-question run under
+[To measure](#to-measure) (about 13 h of CPU, $0).
+
 ### The run
 
 `make eval PROVIDER=ollama MODEL=qwen2.5-coder:7b SUBSET=holdout50
